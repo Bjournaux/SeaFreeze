@@ -8,7 +8,7 @@ The SeaFreeze package allows to compute the thermodynamic and elastic properties
 
 
 ### Installing
-Report to READEME file for each version (Python or Matlab) for 
+Report to the READEME file for each version (Python or Matlab) for installing SeaFreeze.
 
 
 ## Running SeaFreeze
