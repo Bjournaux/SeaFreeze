@@ -146,7 +146,7 @@ Ks=rho.*vel.^2/1e6;
 alpha=1e-6*dPT.*rho; % 1e6 for MPa to Pa
 
 U=G-1e6*Pm./rho+Tm.*S;
-A=U-Tm.*S
+A=U-Tm.*S;
 H=G+Tm.*S;
 Kt=-d1P./d2P;
 Kp=d1P.*d2P.^(-2).*d3P -1;
@@ -185,6 +185,7 @@ if iscell(input) % gridded output
        Ks=Ks(:,:,2:end);
        alpha=alpha(:,:,2:end);
        U=U(:,:,2:end);
+       A=A(:,:,2:end);
        H=H(:,:,2:end);
        Kt=Kt(:,:,2:end);
        Kp=Kp(:,:,2:end);
