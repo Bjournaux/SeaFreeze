@@ -13,8 +13,7 @@ This Matlab version of SeaFreeze has been tested on MATLAB_R2018a. SeaFreeze doe
 
 ### Installing
 
-To run SeaFreeze, you can either have it in your active directory or add the SeaFreeze directory added to your path.
-
+To run SeaFreeze, either change your active directory to SeaFreeze/Matlab, or add that directory to your Matlab path.  In either case, the SeaFreeze_Gibbs.mat file must be in the parent directory of the Matlab functions.
 
 ## Running SeaFreeze
 
