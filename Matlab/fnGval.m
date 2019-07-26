@@ -1,8 +1,8 @@
 function  Results=fnGval(sp,input)
-% function to return rho,vel, G, Cp, alpha S U H K and Kp for G splines in either (P and T) or (m, P, and T)
+% function to return rho,vel, G, Cp, alpha S U A H K and Kp for G splines in either (P and T) or (m, P, and T)
 %  ALL MKS with P in MPa
-%    Usage: Results=G_sp_eval(sp,input, MW) 
-%   Results=Result.rho,vel,G,Cp,alpha,S,U,H,Kt,Kp,Ks,mus,muw
+%    Usage: Results=fnGval(sp,input, MW) 
+%   Results=Result.rho,vel,G,Cp,alpha,S,U,A,H,Kt,Kp,Ks,mus,muw
 %          where input is either a npts by (2 or 3) matrix of scatter points in [P  T m] or input is a cell of {P,T,m}  
 %                 m in molality, P in MPa and T in K.  optional MW is molecular
 %                 weight in kg/mol - needed for chemical potentials and
@@ -251,6 +251,7 @@ else  % Scattered data  - broken at moment - need to calculate second set of poi
 end
 
 
+
 Results.G=G;
 Results.S=S;
 Results.U=U;
@@ -280,4 +281,3 @@ if mu_flg
     Results.Gex=Gex;
     Results.aw=aw;
 end
-
