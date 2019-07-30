@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V0.8.0 (Python version)
+V0.8
 
 The SeaFreeze package allows computation of the thermodynamic and elastic properties of water and ice polymorphs Ih, III, V and VI in the 0-2300 MPa and 220-500 K range. It is based on the evaluation of Local Basis Functions for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019).
 
@@ -39,6 +39,8 @@ Also included are
 - `Vp`: compressional wave velocity, in m/s
 - `Vs`: shear wave velocity, in m/s
 - `shear`: shear modulus, in MPa
+
+## Examples
 
 ```python
 import numpy as np
