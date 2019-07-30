@@ -53,21 +53,27 @@ sf.phases.keys()
 PT = np.empty((1,), np.object)
 PT[0] = (900, 255)
 out = sf.get_phase_thermodynamics('VI', PT)
-# show density and compressional wave velocity 
-out.rho
-out.Vp
+# view a couple of the calculated thermodynamic quantities at this P and T
+out.rho     # density
+out.Vp      # compressional wave velocity
 
-# evaluate ice V thermodynamics for ice IV at three separate PT conditions
+# evaluate thermodynamics for water at three separate PT conditions
 PT = np.empty((3,), np.object)
 PT[0] = (441.0858, 313.95)
 PT[1] = (478.7415, 313.96)
 PT[2] = (444.8285, 313.78)
-out = sf.get_phase_thermodynamics('V', PT)
-
-# evaluate water's thermodynamics for a grid of pressures and temperatures
-P = np.arange(0.1, 1000.2, 10)
-T = np.arange(240, 501, 2)
-PT = np.array([P, T])
 out = sf.get_phase_thermodynamics('water1', PT)
+# values for output fields correspond positionally to (P,T) tuples 
+out.H       # enthalpy
+out.Vs      # shear wave velocity
+
+# evaluate ice V thermodynamics at pressures 400-500 MPa and temperatures 240-250 K
+P = np.arange(400, 501, 2)
+T = np.arange(240, 250.1, 0.5)
+PT = np.array([P, T])
+out = sf.get_phase_thermodynamics('V', PT)
+# rows in output correspond to pressures; columns to temperatures
+out.A       # Helmholtz energy
+out.shear   # shear modulus
 ```
 
