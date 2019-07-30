@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='SeaFreeze',
-    version='0.8.0',
+    version='0.8.0c',
     author='pennythewho',
     author_email='who@pennythewho.com',
     description='thermodynamic properties of the phases of H₂O',

@@ -1,28 +1,19 @@
 from collections import namedtuple
-from math import sqrt
+import os.path as op
 import numpy as np
 from mlbspline import load
 from lbftd import evalGibbs as eg
 
-def get_phase_thermodynamics(phase, PT=None, path='SeaFreeze_Gibbs.mat'):
-    """ Calculates the following thermodynamic quantities for H2O water or ice polymorphs Ih, III, V, and VI
-            for all phases:
-                - rho (density, in kg/m³)
-                - Ks (isentropic bulk modulus, in MPa)
-                - Kt (isothermal bulk modulus, in MPa)
-                - Kp (pressure derivative of isothermal bulk modulus, dimensionless)
-                - G (Gibbs energy, in J/kg)
-                - S (entropy, in J/kg·K)
-                - H (Helmholtz energy, in J/kg)
-                - U (internal energy, in J/kg)
-                - Cp (isobaric specific heat, in J/kg·K)
-                - Cv (isochoric specific heat, in J/kg·K)
-                - alpha (thermal expansivity, in K⁻¹)
-            for solid phases only:
-                - Vp (compressional wave velocity, in m/s)
-                - Vs (shear wave velocity, in m/s)
-                - shear (shear modulus, in MPa)
-    Requires the SeaFreeze_Gibbs.mat library containing the Gibbs LBF parametrization.
+defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
+
+def get_phase_thermodynamics(phase, PT=None, path=defpath):
+    """ Calculates thermodynamic quantities for H2O water or ice polymorphs Ih, III, V, and VI for all phases
+        (see lbftd documentation for full list)
+        for solid phases only:
+            - Vp (compressional wave velocity, in m/s)
+            - Vs (shear wave velocity, in m/s)
+            - shear (shear modulus, in MPa)
+    Requires the SeaFreeze_Gibbs.mat library containing the Gibbs LBF parametrization (installed with this module).
 
     NOTE:  The authors recommend the use of 'water1' for any application in the 200-355 K range and up to 2300 MPa.
     The ice Gibbs parametrizations are optimized for use with the 'water1' phase for phase equilibrium calculations.
@@ -46,7 +37,7 @@ def get_phase_thermodynamics(phase, PT=None, path='SeaFreeze_Gibbs.mat'):
                                 T = np.arange(240, 501, 2)
                                 PT = np.array([P, T])
     :param path:    an optional path to the SeaFreeze_Gibbs.mat file
-                    default value assumes the file structure of this project
+                    default path assumes the spline distributed along with the project
     :return:        object containing the calculated thermodynamic quantities (as named properties), as well as
                     a PTM property (a copy of PT)
     """
@@ -75,7 +66,7 @@ def _get_tdvs(sp, PT, is_scatter):
     :return:    tdv object
     """
     fn = eg.evalSolutionGibbsScatter if is_scatter else eg.evalSolutionGibbsGrid
-    return fn(sp, PT, 'rho', 'Ks', 'Kt', 'Kp', 'G', 'S', 'H', 'U', 'Cp', 'Cv', 'alpha', failOnExtrapolate=False)
+    return fn(sp, PT, failOnExtrapolate=False)
 
 
 def _get_shear_mod_GPa(sm, rho, T):
@@ -102,6 +93,7 @@ def _get_T(PT, is_scatter):
 ## Constants
 #########################################
 PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod_parms')
+defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
 phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15]),  # Feistel and Wagner, 2006
           "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273]),       # Journaux et al, 2019
           "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273]),           # Journaux et al, 2019
