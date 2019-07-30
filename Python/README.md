@@ -32,8 +32,6 @@ The main function of SeaFreeze is `seafreeze.seafreeze.get_phase_thermodynamics`
     with temperatures -- each inner array must be sorted from low to high values
     a grid will be constructed from the P and T arrays such that each row of the output
     will correspond to a pressure and each column to a temperature 
-- `path`: optional parameter with the location of the spline file to be evaluated.  The
-    default value assumes the file is distributed with this project.
 
 The output of the function is an object with properties corresponding to thermodynamic quantities, most
 of which are listed in the [lbftd](https://github.com/jmichaelb/LocalBasisFunction/tree/master/Python/lbftd) README.
