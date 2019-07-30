@@ -4,7 +4,7 @@ import numpy as np
 from mlbspline import load
 from lbftd import evalGibbs as eg
 
-def get_phase_thermodynamics(phase, PT=None, path='../SeaFreeze_Gibbs.mat'):
+def get_phase_thermodynamics(phase, PT=None, path='SeaFreeze_Gibbs.mat'):
     """ Calculates the following thermodynamic quantities for H2O water or ice polymorphs Ih, III, V, and VI
             for all phases:
                 - rho (density, in kg/m³)

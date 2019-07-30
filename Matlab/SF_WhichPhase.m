@@ -16,7 +16,7 @@ function out=SF_WhichPhase(PT)
 %
 
  
-load('../SeaFreeze_Gibbs.mat')
+load('SeaFreeze_Gibbs.mat')
 
 out_Ih=fnval(G_iceIh,PT');
 out_III=fnval(G_iceIII,PT');

@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# delete contents of dist folder
+if [ -d dist ]; then
+  rm -r dist
+fi
+
+# copy LICENSE and spline file locally
+if [ -e LICENSE.txt ]; then
+  DELL=0
+else
+  DELL=1
+  cp ../LICENSE.txt .
+fi
+
+if [ -e SeaFreeze_Gibbs.mat ]; then
+  DELSP=0
+else
+  DELSP=1
+  cp ../Matlab/SeaFreeze_Gibbs.mat seafreeze/
+fi
+
+# create src and wheel dists (upgrade first)
+python3 -m pip install --user --upgrade setuptools wheel
+python3 setup.py sdist bdist_wheel
+
+# remove local license and spline files if copied just for the build
+if [ $DELL -eq 1 ]; then
+  rm LICENSE.txt
+fi
+
+if [ $DELSP -eq 1 ]; then
+  rm seafreeze/SeaFreeze_Gibbs.mat
+fi

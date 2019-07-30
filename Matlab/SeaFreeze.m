@@ -74,61 +74,61 @@ test_toolbox = license('test','curve_fitting_toolbox');
 if test_toolbox == 1;   
     switch material
         case 'Ih'
-            load('../SeaFreeze_Gibbs.mat', 'G_iceIh');
+            load('SeaFreeze_Gibbs.mat', 'G_iceIh');
             out=fnGval(G_iceIh,PT);
             shear_mod=[3.04 -0.00462 0 -0.00607 1000 273.15];
 
         case 'III'
-            load('../SeaFreeze_Gibbs.mat', 'G_iceIII');
+            load('SeaFreeze_Gibbs.mat', 'G_iceIII');
              out=fnGval(G_iceIII,PT);
              shear_mod=[2.57 0.0175 0 -0.014 1100 273];
         case 'V'
-            load('../SeaFreeze_Gibbs.mat', 'G_iceV');
+            load('SeaFreeze_Gibbs.mat', 'G_iceV');
              out=fnGval(G_iceV,PT);
              shear_mod=[2.57 0.0175 0 -0.014 1100 273];
         case 'VI'
-            load('../SeaFreeze_Gibbs.mat', 'G_iceVI');
+            load('SeaFreeze_Gibbs.mat', 'G_iceVI');
              out=fnGval(G_iceVI,PT);
             shear_mod=[2.57 0.0175 0 -0.014 1100 273];
 
         case 'water1'
-            load('../SeaFreeze_Gibbs.mat', 'G_H2O_2GPa_500K');
+            load('SeaFreeze_Gibbs.mat', 'G_H2O_2GPa_500K');
              out=fnGval(G_H2O_2GPa_500K,PT);
         case 'water2'
-            load('../SeaFreeze_Gibbs.mat', 'G_H2O_100GPa_10000K');
+            load('SeaFreeze_Gibbs.mat', 'G_H2O_100GPa_10000K');
              out=fnGval(G_H2O_100GPa_10000K,PT);
         case 'water_IAPWS95'
-            load('../SeaFreeze_Gibbs.mat', 'G_H2O_IAPWS');
+            load('SeaFreeze_Gibbs.mat', 'G_H2O_IAPWS');
             out=fnGval(G_H2O_IAPWS,PT);
     end
 else
     switch material
         case 'Ih'
-            load('../SeaFreeze_Gibbs.mat', 'G_iceIh');
+            load('SeaFreeze_Gibbs.mat', 'G_iceIh');
             out=OpenGval(G_iceIh,PT);
             shear_mod=[3.04 -0.00462 0 -0.00607 1000 273.15];
 
         case 'III'
-            load('../SeaFreeze_Gibbs.mat', 'G_iceIII');
+            load('SeaFreeze_Gibbs.mat', 'G_iceIII');
              out=OpenGval(G_iceIII,PT);
              shear_mod=[2.57 0.0175 0 -0.014 1100 273];
         case 'V'
-            load('../SeaFreeze_Gibbs.mat', 'G_iceV');
+            load('SeaFreeze_Gibbs.mat', 'G_iceV');
              out=OpenGval(G_iceV,PT);
              shear_mod=[2.57 0.0175 0 -0.014 1100 273];
         case 'VI'
-            load('../SeaFreeze_Gibbs.mat', 'G_iceVI');
+            load('SeaFreeze_Gibbs.mat', 'G_iceVI');
              out=OpenGval(G_iceVI,PT);
             shear_mod=[2.57 0.0175 0 -0.014 1100 273];
 
         case 'water1'
-            load('../SeaFreeze_Gibbs.mat', 'G_H2O_2GPa_500K');
+            load('SeaFreeze_Gibbs.mat', 'G_H2O_2GPa_500K');
              out=OpenGval(G_H2O_2GPa_500K,PT);
         case 'water2'
-            load('../SeaFreeze_Gibbs.mat', 'G_H2O_100GPa_10000K');
+            load('SeaFreeze_Gibbs.mat', 'G_H2O_100GPa_10000K');
              out=OpenGval(G_H2O_100GPa_10000K,PT);
         case 'water_IAPWS95'
-            load('../SeaFreeze_Gibbs.mat', 'G_H2O_IAPWS');
+            load('SeaFreeze_Gibbs.mat', 'G_H2O_IAPWS');
             out=OpenGval(G_H2O_IAPWS,PT);
     end
 end
