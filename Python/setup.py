@@ -5,14 +5,14 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='SeaFreeze',
-    version='0.8.1',
+    version='0.8.1a',
     author='pennythewho',
     author_email='who@pennythewho.com',
     description='thermodynamic properties of the phases of H₂O',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/Bjournaux/SeaFreeze',
-    install_requires=['uw-highP-geophysics-tools'],
+    install_requires=['uw-highP-geophysics-tools>=0.8'],
     packages=['seafreeze'],
     classifiers=[
         "Programming Language :: Python :: 3.7",
