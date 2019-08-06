@@ -20,7 +20,7 @@ else
   cp ../Matlab/SeaFreeze_Gibbs.mat seafreeze/
 fi
 
-# create src and wheel dists (upgrade first)
+# update tools then create src and wheel distributions
 python3 -m pip install --user --upgrade setuptools wheel
 python3 setup.py sdist bdist_wheel
 

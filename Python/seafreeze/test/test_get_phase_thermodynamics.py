@@ -1,6 +1,6 @@
 import warnings, unittest as ut
 import numpy as np
-import seafreeze.seafreeze as sf
+import seafreeze as sf
 
 
 class TestGetPhaseThermodynamics(ut.TestCase):
