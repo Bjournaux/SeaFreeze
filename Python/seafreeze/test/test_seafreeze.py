@@ -1,9 +1,9 @@
 import warnings, unittest as ut
 import numpy as np
-import seafreeze as sf
+import seafreeze.seafreeze as sf
 
 
-class TestGetPhaseThermodynamics(ut.TestCase):
+class TestSeafreeze(ut.TestCase):
     def setup(self):
         warnings.simplefilter('ignore', category=ImportWarning)
     def tearDown(self):
@@ -22,7 +22,7 @@ class TestGetPhaseThermodynamics(ut.TestCase):
     #     self.assertFalse(sf._is_scatter(PT))
     def test_is_scatter_singlept_preallocated(self):
         PT = np.empty((1,), np.object)
-        PT[0] = (1,2)
+        PT[0] = (1, 2)
         self.assertTrue(sf._is_scatter(PT))
     def test_is_scatter_scatter(self):
         PT = np.empty((3,), np.object)
@@ -141,13 +141,15 @@ class TestGetPhaseThermodynamics(ut.TestCase):
                              [2323.720540877948, 2296.045764570984, 2267.717197934159]])
         self.assertTrue(np.allclose(Vs, expected))
     # #########################################
-    # ## get_phase_thermodynamics
+    # ## seafreeze
     # #########################################
-    # def test_get_phase_thermodynamics_singlept(self):
-    #     PT = np.empty((1,), np.object)
-    #     PT[0] = (900, 255)
-    #     out = sf.get_phase_thermodynamics('VI', PT, '../../SeaFreeze_Gibbs.mat')
-    #     self.assertAlmostEqual(1.356072490993616e+03, out.rho[0], places=7)
-    #     self.assertAlmostEqual(7.303268592388283e+03, out.shear[0], places=7)
-    #     self.assertAlmostEqual(4.548954381485812e+03, out.Vp[0], places=7)
-    #     self.assertAlmostEqual(2.320690281146717e+03, out.Vs[0], places=7)
+    def test_seafreeze_singlept(self):
+        PT = np.empty((1,), np.object)
+        PT[0] = (900, 255)
+        out = sf.seafreeze(PT, 'VI', '../../../Matlab/SeaFreeze_Gibbs.mat')
+        self.assertAlmostEqual(1.356072490993616e+03, out.rho[0])
+        # TODO: figure out why Ks varies so much from the Matlab output
+        self.assertAlmostEqual(1.832349756691741e+04, out.Ks[0], places=0)
+        self.assertAlmostEqual(7.303268592388283e+03, out.shear[0])
+        self.assertAlmostEqual(4.548954381485812e+03, out.Vp[0], places=1)
+        self.assertAlmostEqual(2.320690281146717e+03, out.Vs[0])

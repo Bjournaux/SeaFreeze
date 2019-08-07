@@ -6,7 +6,7 @@ from lbftd import evalGibbs as eg
 
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
 
-def get_phase_thermodynamics(phase, PT=None, path=defpath):
+def seafreeze(PT, phase, path=defpath):
     """ Calculates thermodynamic quantities for H2O water or ice polymorphs Ih, III, V, and VI for all phases
         (see lbftd documentation for full list)
         for solid phases only:
@@ -20,7 +20,6 @@ def get_phase_thermodynamics(phase, PT=None, path=defpath):
     Using other water parametrizations will lead to incorrect melting curves -- 'water2' and 'water_IAPWS95'
     parametrizations are provided for HP extension up to 100 GPa and comparison only.
 
-    :param phase:   one of the keys of the phases dict, indicating the phase of H2O to be evaluated
     :param PT:      the pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
                     calculated -- note that these are required units, as conversions are built into several calculations
                     This parameter can have one of the following formats:
@@ -36,6 +35,7 @@ def get_phase_thermodynamics(phase, PT=None, path=defpath):
                                 P = np.arange(0.1, 1000.2, 10)
                                 T = np.arange(240, 501, 2)
                                 PT = np.array([P, T])
+    :param phase:   one of the keys of the phases dict, indicating the phase of H2O to be evaluated
     :param path:    an optional path to the SeaFreeze_Gibbs.mat file
                     default path assumes the spline distributed along with the project
     :return:        object containing the calculated thermodynamic quantities (as named properties), as well as
@@ -98,7 +98,7 @@ phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15]
           "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273]),       # Journaux et al, 2019
           "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273]),           # Journaux et al, 2019
           "VI": PhaseDesc("G_iceVI", [2.57, 0.0175, 0, -0.014, 1100, 273]),         # Journaux et al, 2019
-          "water1": PhaseDesc("G_H2O_2GPa_500K", None),     # extends to 500 K and 2300 MPa; Bollengier et al 2019
-          "water2": PhaseDesc("G_H2O_100GPa_10000K", None), # extends to 100 GPa; Brown 2018
-          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None)   # LBF representation of IAPWS 95; Wagner and Pruß, 2002
+          "water1": PhaseDesc("G_H2O_2GPa_500K", None),         # extends to 500 K and 2300 MPa; Bollengier et al 2019
+          "water2": PhaseDesc("G_H2O_100GPa_10000K", None),     # extends to 100 GPa; Brown 2018
+          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None)       # LBF representation of IAPWS 95; Wagner and Pruß, 2002
           }
