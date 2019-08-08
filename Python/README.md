@@ -131,13 +131,13 @@ out = sf.whichphase(PT)
 
 ## Change log
 
+### Changes since 0.9.0
+- `0.9.1`: add `whichphase` function
+
 ### Changes from 0.8
 - rename function get_phase_thermodynamics to seafreeze
 - reverse order of PT and phase in function signature
 - remove a layer of nesting (`seafreeze.seafreeze` rather than `seafreeze.seafreeze.seafreeze`)
-
-### Changes since 0.9.0
-- `0.9.1`: add `whichphase` function
 
 
 
