@@ -148,7 +148,11 @@ out =
 ```
 
 ## Important remarks 
+### Water representation
 The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parametrization wil lead to incorect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
+
+### Ices phase diagram
+The current version of SeaFreeze does not inlcude stable ice II Local basis function parametrization (It will be in the near future). Therefore the phase diagram generated is not yet valid below 248.8K and between 208.6 and 620 MPa which delimit the current accepted stability field of ice II (Bridgman, 1912). 
 
 ## References
 - Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151; doi: 10.1063/1.5097179
