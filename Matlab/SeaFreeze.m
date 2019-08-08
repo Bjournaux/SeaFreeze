@@ -48,7 +48,7 @@ function out=SeaFreeze(PT,material)
 %
 %%%% Examples  :
 %  - Single point for ice VI at 900 MPa and 255 K
-%          out=SeaFreeze({900,255},'VI')
+%          out=SeaFreeze([900,255],'VI')
 %  - Array for ice V every 2 MPa from 400 to 500 MPa and every 0.5 K from
 %  220 to 250 K
 %          out=SeaFreeze({400:2:500,240:0.5:250},'VI')

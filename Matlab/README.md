@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V1.0 (Matlab version)
+V0.8 (Matlab version)
 
 The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, III, V and VI) in the 0-2300 MPa and 220-500K range. It is based on the evaluation of Local Basis Functions (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
@@ -13,8 +13,7 @@ This Matlab version of SeaFreeze has been tested on MATLAB_R2018a. SeaFreeze doe
 
 ### Installing
 
-To run SeaFreeze, you can either have it in your active directory or add the SeaFreeze directory added to your path.
-
+To run SeaFreeze, either change your active directory to SeaFreeze/Matlab, or add that directory to your Matlab path.  In either case, the SeaFreeze_Gibbs.mat file must be in the same directory as the Matlab functions.
 
 ## Running SeaFreeze
 
