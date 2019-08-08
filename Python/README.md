@@ -6,16 +6,17 @@ The SeaFreeze package allows computation of the thermodynamic and elastic proper
 
 
 ## Installation
-This package will install [uw-highP-geophysics-tools](https://github.com/jmichaelb/LocalBasisFunction) and its dependencies.
+This package will install [uw-highP-geophysics-tools](https://pypi.org/project/uw-highP-geophysics-tools/) and its dependencies.
 
-Run the following command in Terminal on OSX or in Git Bash on Windows.
+Run the following command to install
 
 `pip3 install SeaFreeze`
 
-Note that scripts can be run in the regular command prompt on Windows; it is only the install that needs to be done in Git Bash.
 
 ## Usage
-The main function of SeaFreeze is `seafreeze.seafreeze.get_phase_thermodynamics`, which has the following parameters:
+
+### `seafreeze.seafreeze`
+The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following parameters:
 - `PT`: the pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
   calculated -- note that these are required units, as conversions are built into several calculations
   This parameter can have one of the following formats:
@@ -41,7 +42,28 @@ Also included are
 - `Vs`: shear wave velocity, in m/s
 - `shear`: shear modulus, in MPa
 
+### `seafreeze.whichphase`
+Seafreeze also includes a function to determine which of the supported phases is most likely to exist
+under the given pressure and temperature conditions. 
+The function `seafreeze.whichphase` has a single parameter, `PT`, 
+which requires the same format as in the `seafreeze.seafreeze` function.
+
+The output of the function is a [Numpy array](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
+with an integer indicating the phase number corresponding to the `PT` input.  
+The phase number 0 means liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.
+- for a list of scattered (P,T) conditions, each value corresponds to the same index in the input
+- for a grid of PT conditions, each row corresponds to a pressure and each column to a temperature from the input.
+
+`seafreeze.phasenum2phase` can be used to map output phase numbers to a phase.  
+Each item in this dictionary has the phase number as its key and the phase as the value. 
+
+
+
+
+
 ## Examples
+
+### Calculating thermodynamics for a phase
 
 ```python
 import numpy as np
@@ -77,8 +99,48 @@ out.A       # Helmholtz energy
 out.shear   # shear modulus
 ```
 
-## Changes from 0.8
-- remove a layer of nesting
+### Determining the probable phase 
+
+```python
+import numpy as np
+import seafreeze as sf
+
+# determine the phase of water at 900 MPa and 255 K
+PT = np.empty((1,), np.object)
+PT[0] = (900, 255)
+out = sf.whichphase(PT)
+# map to a phase using phasenum2phase
+sf.phasenum2phase[out[0]]
+
+
+# determine phase for three separate (P,T) conditions
+PT = np.empty((3,), np.object)
+PT[0] = (100, 200)
+PT[1] = (400, 250)
+PT[2] = (1000, 300)
+out = sf.whichphase(PT)
+# show 
+[for zip(PT, )]
+
+# evaluate ice V thermodynamics at pressures 400-500 MPa and temperatures 240-250 K
+P = np.arange(400, 501, 2)
+T = np.arange(240, 250.1, 0.5)
+PT = np.array([P, T])
+out = sf.seafreeze(PT, 'V')
+# rows in output correspond to pressures; columns to temperatures
+out.A       # Helmholtz energy
+out.shear   # shear modulus
+```
+
+## Change log
+
+### Changes from 0.8
 - rename function get_phase_thermodynamics to seafreeze
 - reverse order of PT and phase in function signature
+- remove a layer of nesting (`seafreeze.seafreeze` rather than `seafreeze.seafreeze.seafreeze`)
+
+### Changes from 0.9.0
+- `0.9.1`: add `whichphase` function
+
+
 
