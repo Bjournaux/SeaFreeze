@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V0.9
+V0.9.1
 
 The SeaFreeze package allows computation of the thermodynamic and elastic properties of water and ice polymorphs Ih, III, V and VI in the 0-2300 MPa and 220-500 K range. It is based on the evaluation of Local Basis Functions for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019).
 
@@ -49,8 +49,8 @@ The function `seafreeze.whichphase` has a single parameter, `PT`,
 which requires the same format as in the `seafreeze.seafreeze` function.
 
 The output of the function is a [Numpy array](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
-with an integer indicating the phase number corresponding to the `PT` input.  
-The phase number 0 means liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.
+with an integer indicating the phase number corresponding to the `PT` input.  The phase number 0 means 
+liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.
 - for a list of scattered (P,T) conditions, each value corresponds to the same index in the input
 - for a grid of PT conditions, each row corresponds to a pressure and each column to a temperature from the input.
 
