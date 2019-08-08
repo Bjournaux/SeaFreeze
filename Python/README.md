@@ -119,17 +119,14 @@ PT[0] = (100, 200)
 PT[1] = (400, 250)
 PT[2] = (1000, 300)
 out = sf.whichphase(PT)
-# show 
-[for zip(PT, )]
+# show phase for each (P,T)
+[(PT, sf.phasenum2phase[pn]) for (PT, pn) in zip(PT, out)]
 
-# evaluate ice V thermodynamics at pressures 400-500 MPa and temperatures 240-250 K
-P = np.arange(400, 501, 2)
-T = np.arange(240, 250.1, 0.5)
+# find the likely phases at pressures 0-5 MPa and temperatures 240-300 K
+P = np.arange(0, 5, 0.1)
+T = np.arange(240, 300)
 PT = np.array([P, T])
-out = sf.seafreeze(PT, 'V')
-# rows in output correspond to pressures; columns to temperatures
-out.A       # Helmholtz energy
-out.shear   # shear modulus
+out = sf.whichphase(PT)
 ```
 
 ## Change log
@@ -139,7 +136,7 @@ out.shear   # shear modulus
 - reverse order of PT and phase in function signature
 - remove a layer of nesting (`seafreeze.seafreeze` rather than `seafreeze.seafreeze.seafreeze`)
 
-### Changes from 0.9.0
+### Changes since 0.9.0
 - `0.9.1`: add `whichphase` function
 
 
