@@ -13,9 +13,9 @@ Run the following command to install
 `pip3 install SeaFreeze`
 
 
-## Usage
+## `seafreeze.seafreeze`: calculating thermodynamic and elastic properties of a phase of water
 
-### `seafreeze.seafreeze`
+### Usage
 The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following parameters:
 - `PT`: the pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
   calculated -- note that these are required units, as conversions are built into several calculations
@@ -35,35 +35,27 @@ The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following
   - 'water_IAPWS95' - LBF representation of IAPWS 95; from Wagner and Pruß, 2002
 
 
-The output of the function is an object with properties corresponding to thermodynamic quantities, most
-of which are listed in the [lbftd](https://github.com/jmichaelb/LocalBasisFunction/tree/master/Python/lbftd) README.
-Also included are
-- `Vp`: compressional wave velocity, in m/s
-- `Vs`: shear wave velocity, in m/s
-- `shear`: shear modulus, in MPa
+The output of the function is an object with properties corresponding to the following thermodynamic quantities
+(all but the last three are from [lbftd](https://github.com/jmichaelb/LocalBasisFunction/tree/master/Python/lbftd)):
+- _G_:  Gibbs energy in J kg<sup>-1</sup>
+- _rho_: density in kg m<sup>-3</sup>
+- _vel_: sound speed in m s<sup>-1</sup>
+- _Cp_: isobaric specific heat in J kg<sup>-1</sup> K<sup>-1</sup>
+- _Cv_: isochoric specific heat in J kg<sup>-1</sup> K<sup>-1</sup>
+- _alpha_: thermal expansivity in K<sup>-1</sup>
+- _U_: internal energy in J kg<sup>-1</sup>
+- _A_: Helmholtz energy in J kg<sup>-1</sup>
+- _H_: enthalpy in J kg<sup>-1</sup>
+- _S_: entropy in J kg<sup>-1</sup> K<sup>-1</sup>
+- _Kt_: isothermal bulk modulus in MPa
+- _Kp_: pressure derivatives of isothermal bulk modulus (dimensionless)
+- _Ks_: isotropic bulk modulus in MPa
+- _V_: unit volume in m<sup>3</sup> kg<sup>-1</sup>
+- _Vp_: compressional wave velocity in m s<sup>-1</sup>
+- _Vs_: shear wave velocity in m s<sup>-1</sup>
+- _shear_: shear modulus in MPa
 
-### `seafreeze.whichphase`
-Seafreeze also includes a function to determine which of the supported phases is most likely to exist
-under the given pressure and temperature conditions. 
-The function `seafreeze.whichphase` has a single parameter, `PT`, 
-which requires the same format as in the `seafreeze.seafreeze` function.
-
-The output of the function is a [Numpy array](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
-with an integer indicating the phase number corresponding to the `PT` input.  The phase number 0 means 
-liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.
-- for a list of scattered (P,T) conditions, each value corresponds to the same index in the input
-- for a grid of PT conditions, each row corresponds to a pressure and each column to a temperature from the input.
-
-`seafreeze.phasenum2phase` can be used to map output phase numbers to a phase.  
-Each item in this dictionary has the phase number as its key and the phase as the value. 
-
-
-
-
-
-## Examples
-
-### Calculating thermodynamics for a phase
+### Example
 
 ```python
 import numpy as np
@@ -99,7 +91,25 @@ out.A       # Helmholtz energy
 out.shear   # shear modulus
 ```
 
-### Determining the probable phase 
+
+## `seafreeze.whichphase`: determining the stable phase of water
+
+### Usage
+Seafreeze also includes a function to determine which of the *supported* phases is stable
+under the given pressure and temperature conditions. 
+The function `seafreeze.whichphase` has a single parameter, `PT`, 
+which requires the same format as in the `seafreeze.seafreeze` function.
+
+The output of the function is a [Numpy array](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
+with an integer indicating the phase number corresponding to the `PT` input.  The phase number 0 means 
+liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.
+- for a list of scattered (P,T) conditions, each value corresponds to the same index in the input
+- for a grid of PT conditions, each row corresponds to a pressure and each column to a temperature from the input.
+
+`seafreeze.phasenum2phase` can be used to map output phase numbers to a phase.  
+Each item in this dictionary has the phase number as its key and the phase as the value. 
+
+### Example
 
 ```python
 import numpy as np
