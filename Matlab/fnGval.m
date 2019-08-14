@@ -9,8 +9,9 @@ function  Results=fnGval(sp,input)
 %                 partial molar quantities
 %           rho in kg/m^3, vel in m/s, G in J/kg Cp in J/kg/K alpha in K^(-1)
 %           mu is dG/dm where m is in units determined externally
-%  
-% JMB 2015-2019  
+%
+% JMB 2015-2019
+
 nw=1000/18.01528;  % number of moles of water in a kilogram of water
 R=8.3144;  %kJ/mol/K
 
@@ -29,7 +30,9 @@ else % scattered data in columns
 end
 
 % handle P T representations
-if nd==2   % spline in P and T only
+if nd==1
+    error('Check input PTm: fnGval finds one column of input. Input needs to be column centric: [P(:) T(:) optional m(:)]')
+elseif nd==2   % spline in P and T only
     if iscell(input)  % gridded output
         P=input{1};T=input{2};    
         [Pm,Tm]=ndgrid(P,T);
@@ -52,7 +55,7 @@ if nd==2   % spline in P and T only
         d3P=fnval(fnder(sp,[3 0]),input')';
     end
 
-else  % spline in P, T and compositions
+elseif nd==3  % spline in P, T and compositions
     if (isfield(sp,'MW'))
         M=sp.MW;
         % default.  In the  future water may not be  the solvent and the
@@ -80,7 +83,7 @@ else  % spline in P, T and compositions
         else
             Go=1;
         end
-        m(m==0)=eps; % add eps to zero concentrations
+        m(m==0)=eps; % add eps to zero concentrations to avoid divide by zero
         mflg=0;
         if mu_flg
         if (m(1)>eps)
@@ -140,7 +143,9 @@ end
 Cp=-d2T.*Tm;
 Cv= Cp + Tm.*dPT.^2./d2P;
 S=-d1T;
-vel=real(sqrt(d1P.^2./(dPT.^2./d2T - d2P))); % MPa-Pa units conversion cancels
+vel=real(sqrt(d1P.^2./(dPT.^2./d2T - d2P))); % MPa-Pa units conversion cancels. 
+%  Problem with poor parameters that might produce an imaginary sound
+%  speed is overcome by reporting just the real component.  
 rho=1e6*d1P.^(-1);  % 1e6 for MPa to Pa
 Ks=rho.*vel.^2/1e6;
 alpha=1e-6*dPT.*rho; % 1e6 for MPa to Pa
@@ -185,7 +190,6 @@ if iscell(input) % gridded output
        Ks=Ks(:,:,2:end);
        alpha=alpha(:,:,2:end);
        U=U(:,:,2:end);
-       A=A(:,:,2:end);
        H=H(:,:,2:end);
        Kt=Kt(:,:,2:end);
        Kp=Kp(:,:,2:end);
