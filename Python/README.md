@@ -37,23 +37,27 @@ The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following
 
 The output of the function is an object with properties corresponding to the following thermodynamic quantities
 (all but the last three are from [lbftd](https://github.com/jmichaelb/LocalBasisFunction/tree/master/Python/lbftd)):
-- _G_:  Gibbs energy in J kg<sup>-1</sup>
-- _rho_: density in kg m<sup>-3</sup>
-- _vel_: sound speed in m s<sup>-1</sup>
-- _Cp_: isobaric specific heat in J kg<sup>-1</sup> K<sup>-1</sup>
-- _Cv_: isochoric specific heat in J kg<sup>-1</sup> K<sup>-1</sup>
-- _alpha_: thermal expansivity in K<sup>-1</sup>
-- _U_: internal energy in J kg<sup>-1</sup>
-- _A_: Helmholtz energy in J kg<sup>-1</sup>
-- _H_: enthalpy in J kg<sup>-1</sup>
-- _S_: entropy in J kg<sup>-1</sup> K<sup>-1</sup>
-- _Kt_: isothermal bulk modulus in MPa
-- _Kp_: pressure derivatives of isothermal bulk modulus (dimensionless)
-- _Ks_: isotropic bulk modulus in MPa
-- _V_: unit volume in m<sup>3</sup> kg<sup>-1</sup>
-- _Vp_: compressional wave velocity in m s<sup>-1</sup>
-- _Vs_: shear wave velocity in m s<sup>-1</sup>
-- _shear_: shear modulus in MPa
+
+| Quantity        |  Symbol in SeaFreeze  |  Unit (SI)  |
+| --------------- |:---------------------:| :----------:|
+| Gibbs Energy           | `G` | J/kg |
+| Entropy                | `S` | J/K/kg |
+| Internal Energy        | `U` | J/kg |
+| Enthalpy               | `H` | J/kg |
+| Helmholtz free energy  | `A` | J/kg |
+| Density                |`rho`| kg/m<sup>3</sup> |
+|Specific heat capacity at constant pressure|`Cp`| J/kg/K |
+|Specific heat capacity at constant volume|`Cv`| J/kg/K |
+| Isothermal bulk modulus      |`Kt`| MPa |
+|Pressure derivative of the Isothermal bulk modulus|`Kp`| - |
+| Isoentropic bulk modulus     |`Ks`| MPa |
+| Thermal expansivity     |`alpha`| K<sup>-1</sup>  |
+| Shear modulus     |`shear`| MPa |
+| P wave velocity     |`Vp`| m/s |
+| S wave velocity     |`Vs`| m/s |
+| Bulk sound speed     |`vel`| m/s |
+
+ **NaN values returned when out of parametrization boundaries.**
 
 ### Example
 
@@ -147,11 +151,11 @@ The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF
 The current version of SeaFreeze does not inlcude stable ice II Local basis function parametrization (It will be in the near future). Therefore the phase diagram generated is not yet valid below 248.8K and between 208.6 and 620 MPa which delimit the current accepted stability field of ice II (Bridgman, 1912). 
 
 ## References
-- Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151; doi: 10.1063/1.5097179
-- Brown (2018) Fluid Phase Equilibria 463, pp. 18-31
-- Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047
-- Journaux et al., (2019) TBD
-- Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535
+- [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501; doi: 10.1063/1.5097179](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
+- [Brown (2018) Fluid Phase Equilibria 463, pp. 18-31](https://www.sciencedirect.com/science/article/pii/S0378381218300530)
+- [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
+- [Journaux et al., (2019), in review (available on ArXiv)](https://arxiv.org/abs/1907.09598)
+- [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
 
 ## Author
 
