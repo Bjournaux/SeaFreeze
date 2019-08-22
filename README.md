@@ -4,7 +4,7 @@ V0.9.1
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
-The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, III, V and VI) in the 0-2300 MPa and 220-500K range. It is based on the evaluation of Local Basis Functions (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
+The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, III, V and VI) in the 0-2300 MPa and 220-500K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
 ## Getting Started
 
@@ -37,24 +37,28 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 
 ### Outputs
 out is a structure containing all output quantities (SI units):
-- G (J/kg) Gibbs Energy
-- S (J/K/kg) Entropy
-- U (J/kg) Internal Energy
-- H (J/kg) Enthalpy
-- A (J/kg) Helmholtz free energy
-- rho(kg/m^3) Density
-- Cp (J/kg/K) Specific heat capacity at constant pressure
-- Cv (J/kg/K) Specific heat capacity at constant volume
-- Kt (MPa) Isothermal bulk modulus
-- Kp (dimensionless) Pressure derivative of the Isothermal bulk modulus
-- Ks (MPa) Isoentropic bulk modulus
-- alpha (/K)  Thermal expansivity
-- shear (MPa) Shear modulus
-- Vp (m/s) P wave velocity
-- Vs (m/s) S wave velocity
-- vel (m/s) bulk sound speed
 
- NaN values returned when out of parametrization boundaries.
+
+| Quantity        |  Symbol in SeaFreeze  |  Unit (SI)  |
+| --------------- |:---------------------:| :----------:|
+| Gibbs Energy           | `G` | J/kg |
+| Entropy                | `S` | J/K/kg |
+| Internal Energy        | `U` | J/kg |
+| Enthalpy               | `H` | J/kg |
+| Helmholtz free energy  | `A` | J/kg |
+| Density                |`rho`| kg/m^3 |
+|Specific heat capacity at constant pressure|`Cp`| J/kg/K |
+|Specific heat capacity at constant volume|`Cv`| J/kg/K |
+| Isothermal bulk modulus      |`Kt`| MPa |
+|Pressure derivative of the Isothermal bulk modulus|`Kp`| - |
+| Isoentropic bulk modulus     |`Ks`| MPa |
+| Thermal expansivity     |`alpha`| /K |
+| Shear modulus     |`shear`| MPa |
+| P wave velocity     |`Vp`| m/s |
+| S wave velocity     |`Vs`| m/s |
+| Bulk sound speed     |`vel`| m/s |
+
+ **NaN values returned when out of parametrization boundaries.**
 
 
 
@@ -66,12 +70,12 @@ An executable matlab live script (Example_SeaFreeze.mlx) is provided allowing to
 ### Single point input
 
 Single point for ice VI at 900 MPa and 255 K. This can be used to check returned thermodynamic properties values.
-```
+```Matlab
 PT = {900,255};
-out=SeaFreeze(,'VI')
+out=SeaFreeze(PT,'VI')
 ```
 Output :
-```
+```Matlab
 out = 
 
   struct with fields:
@@ -95,12 +99,12 @@ out =
 
 ### Grid  input
 Grid of points for ice V every 2 MPa from 400 to 500 MPa and every 0.5 K from 220 to 250 K
-```
+```Matlab
 PT = {400:2:500,240:0.5:250};
 out=SeaFreeze(PT,'V')
 ```
 Output :
-```
+```Matlab
 out = 
 
   struct with fields:
@@ -125,12 +129,12 @@ out =
 
 ### List  input
 List of 3 points for liquid water at 300K and 200, 223 and 225 MPa 
-```
+```Matlab
 PT = ([200 300 ; 223 300 ; 225 300 ]);
 out=SeaFreeze(PT,'water1')
 ```
 
-```
+```Matlab
 out = 
 
   struct with fields:
@@ -157,11 +161,11 @@ The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF
 The current version of SeaFreeze does not inlcude stable ice II Local basis function parametrization (It will be in the near future). Therefore the phase diagram generated is not yet valid below 248.8K and between 208.6 and 620 MPa which delimit the current accepted stability field of ice II (Bridgman, 1912). 
 
 ## References
-- Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151; doi: 10.1063/1.5097179
-- Brown (2018) Fluid Phase Equilibria 463, pp. 18-31
-- Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047
-- Journaux et al., (2019) TBD
-- Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535
+- [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501; doi: 10.1063/1.5097179](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
+- [Brown (2018) Fluid Phase Equilibria 463, pp. 18-31](https://www.sciencedirect.com/science/article/pii/S0378381218300530)
+- [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
+- [Journaux et al., (2019), in review (available on ArXiv)](https://arxiv.org/abs/1907.09598)
+- [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
 
 ## Authors
 
