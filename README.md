@@ -32,7 +32,7 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 - 'V' for ice V (Journaux et al. 2019)
 - 'VI' for ice VI (Journaux et al. 2019)
 - 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
-- 'water2' for the modified EOS in Brown 2018 extending to 100 GPa
+- 'water2' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 - 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
 
 ### Outputs
