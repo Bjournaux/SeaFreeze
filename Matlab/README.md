@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V0.9.1 (Matlab version)
+V0.9.2 (Matlab version)
 
 The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, III, V and VI) in the 0-2300 MPa and 220-500K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
@@ -28,6 +28,7 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 
 'material' defines which ice or water to use.  Possibilities:
 - 'Ih' for ice Ih (Feistel and Wagner, 2006)
+- 'II' for ice II (Journaux et al. 2019)
 - 'III' for ice III (Journaux et al. 2019)
 - 'V' for ice V (Journaux et al. 2019)
 - 'VI' for ice VI (Journaux et al. 2019)
@@ -157,8 +158,6 @@ out =
 ### Water representation
 The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parametrization wil lead to incorect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
 
-### Ices phase diagram
-The current version of SeaFreeze does not inlcude stable ice II Local basis function parametrization (It will be in the near future). Therefore the phase diagram generated is not yet valid below 248.8K and between 208.6 and 620 MPa which delimit the current accepted stability field of ice II (Bridgman, 1912). 
 
 ## References
 - [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501; doi: 10.1063/1.5097179](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
