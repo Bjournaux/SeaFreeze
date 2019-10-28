@@ -1,9 +1,10 @@
 function out=SF_WhichPhase(PT)
-% Version 1.0, 
+% Version 0.9.1, 
 % Calculate which phase is stable at a given PT array
 % Returns a numerical value with
 % 0 = liquid
 % 1 = ice Ih
+% 2 = ice II
 % 3 = ice III
 % 5 = ice V
 % 6 = ice VI
@@ -19,6 +20,7 @@ function out=SF_WhichPhase(PT)
 load('SeaFreeze_Gibbs.mat')
 
 out_Ih=fnval(G_iceIh,PT');
+out_II=fnval(G_iceII,PT');
 out_III=fnval(G_iceIII,PT');
 out_V=fnval(G_iceV,PT');
 out_VI=fnval(G_iceVI,PT');
@@ -31,7 +33,7 @@ out_Bollengier=fnval(G_H2O_2GPa_500K,PT');
 
  
   for i=1:np*nt
-            all_phaseG = [out_Bollengier(i) out_Ih(i) NaN out_III(i) NaN out_V(i) out_VI(i)];
+            all_phaseG = [out_Bollengier(i) out_Ih(i) out_II(i) out_III(i) NaN out_V(i) out_VI(i)];
             all_phaseG(find(all_phaseG == 0)) = NaN;
             [Y,I]=min(all_phaseG);
             out(i)=I-1;
