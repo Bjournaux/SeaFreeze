@@ -1,5 +1,5 @@
 function out=SeaFreeze(PT,material)
-% Version 1.0 ; Journaux & Brown 2019
+% Version 0.9.1 ; Journaux & Brown 2019
 % Calculate thermodynamic quantities for water or ices polymorphs 
 % (Ih, III, V and VI). Needs the SeaFreeze_Gibbs.mat library containing the
 % Gibbs Local Basis Function parametrization to run
@@ -34,7 +34,7 @@ function out=SeaFreeze(PT,material)
 %         VI for ice VI (Journaux et al. 2019)
 %         water1 for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 %         water2 for the modified EOS in Brown 2018 extending to 100 GPa
-%         water_IAPWS95 for IAPWS95 water (Wagner and Pruﬂ, 2002)
+%         water_IAPWS95 for IAPWS95 water (Wagner and Pru√ü, 2002)
 %
 %%%% !! Important remarks : !!
 %       The ices Gibbs parametrizations are optimized to be used with
@@ -60,7 +60,7 @@ function out=SeaFreeze(PT,material)
 %   Brown (2018) Fluid Phase Equilibria 463, pp. 18-31
 %   Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047
 %   Journaux et al., (2019) TBD
-%   Wagner and Pruﬂ (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535
+%   Wagner and Pru√ü (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535
 
 test_toolbox = license('test','curve_fitting_toolbox');
 
@@ -78,6 +78,11 @@ if test_toolbox == 1;
             out=fnGval(G_iceIh,PT);
             shear_mod=[3.04 -0.00462 0 -0.00607 1000 273.15];
 
+        case 'II'
+            load('SeaFreeze_Gibbs.mat', 'G_iceII');
+             out=fnGval(G_iceII,PT);
+             shear_mod=[4.1 0.0175 0 -0.014 1100 273];
+            
         case 'III'
             load('SeaFreeze_Gibbs.mat', 'G_iceIII');
              out=fnGval(G_iceIII,PT);
@@ -107,7 +112,12 @@ else
             load('SeaFreeze_Gibbs.mat', 'G_iceIh');
             out=OpenGval(G_iceIh,PT);
             shear_mod=[3.04 -0.00462 0 -0.00607 1000 273.15];
-
+        
+        case 'II'
+            load('SeaFreeze_Gibbs.mat', 'G_iceII');
+             out=OpenGval(G_iceII,PT);
+             shear_mod=[4.1 0.0175 0 -0.014 1100 273];
+            
         case 'III'
             load('SeaFreeze_Gibbs.mat', 'G_iceIII');
              out=OpenGval(G_iceIII,PT);
