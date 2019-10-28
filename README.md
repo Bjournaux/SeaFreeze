@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V0.9.1 
+V0.9.2
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
@@ -28,6 +28,7 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 
 'material' defines which ice or water to use.  Possibilities:
 - 'Ih' for ice Ih (Feistel and Wagner, 2006)
+- 'II' for ice II (Journaux et al. 2019)
 - 'III' for ice III (Journaux et al. 2019)
 - 'V' for ice V (Journaux et al. 2019)
 - 'VI' for ice VI (Journaux et al. 2019)
@@ -157,14 +158,12 @@ out =
 ### Water representation
 The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parametrization wil lead to incorect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
 
-### Ices phase diagram
-The current version of SeaFreeze does not inlcude stable ice II Local basis function parametrization (It will be in the near future). Therefore the phase diagram generated is not yet valid below 248.8K and between 208.6 and 620 MPa which delimit the current accepted stability field of ice II (Bridgman, 1912). 
 
 ## References
 - [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501; doi: 10.1063/1.5097179](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
 - [Brown (2018) Fluid Phase Equilibria 463, pp. 18-31](https://www.sciencedirect.com/science/article/pii/S0378381218300530)
 - [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
-- [Journaux et al., (2019), in review (available on ArXiv)](https://arxiv.org/abs/1907.09598)
+- [Journaux et al., (2019), in review in JGR: Planets (available on ArXiv)](https://arxiv.org/abs/1907.09598)
 - [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
 
 ## Authors
