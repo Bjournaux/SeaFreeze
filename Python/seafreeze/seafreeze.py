@@ -100,7 +100,7 @@ def _get_tdvs(sp, PT, is_scatter, *tdvSpec):
     :param sp:          the Gibbs LBF
     :param PT:          the PT data
     :param is_scatter:  Boolean indicating whether the PT data is scatter or not (if not, it is a grid)
-    :param tdvSpec:     optional list of thermodynamic variables to calculate (see lbftdd documentation)
+    :param tdvSpec:     optional list of thermodynamic variables to calculate (see lbftd documentation)
     :return:            tdv object (see lbftd documentation)
     """
     fn = eg.evalSolutionGibbsScatter if is_scatter else eg.evalSolutionGibbsGrid
@@ -132,6 +132,7 @@ def _get_T(PT, is_scatter):
 #########################################
 PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod_parms phase_num')
 phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15], 1),  # Feistel and Wagner, 2006
+          "II": PhaseDesc("G_iceII", [4.1, 0.0175, 0, -0.014, 1100, 273], 2),          # Journaux et al, 2019
           "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273], 3),       # Journaux et al, 2019
           "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273], 5),           # Journaux et al, 2019
           "VI": PhaseDesc("G_iceVI", [2.57, 0.0175, 0, -0.014, 1100, 273], 6),         # Journaux et al, 2019
