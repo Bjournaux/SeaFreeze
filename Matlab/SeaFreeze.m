@@ -29,6 +29,7 @@ function out=SeaFreeze(PT,material)
 %
 %    Material defines which ice or water to use.  Possibilities:
 %         Ih for ice Ih (Feistel and Wagner, 2006)
+%         II for ice II (Journaux et al. 2019)
 %         III for ice III (Journaux et al. 2019)
 %         V for ice V (Journaux et al. 2019)
 %         VI for ice VI (Journaux et al. 2019)
