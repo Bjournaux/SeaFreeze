@@ -101,7 +101,7 @@ def whichphase(PT, path=defpath):
             else:
                 pt = np.logical_or(PT[iP] < sp['knots'][iP].min(), PT[iP] > sp['knots'][iP].max())
                 tt = np.logical_or(PT[iT] < sp['knots'][iT].min(), PT[iT] > sp['knots'][iT].max())
-                extrap = np.logical_or(*np.meshgrid(pt, tt))
+                extrap = np.logical_or(*np.meshgrid(pt, tt, indexing='ij'))
             tdvs[extrap] = np.nan
             comp[sl] = tdvs
     # output for all-nan slices should be nan
