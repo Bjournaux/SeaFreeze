@@ -12,6 +12,10 @@ Run the following command to install
 
 `pip3 install SeaFreeze`
 
+To upgrade to the latest version, use
+
+`pip3 install --upgrade SeaFreeze`
+
 
 ## `seafreeze.seafreeze`: calculating thermodynamic and elastic properties of a phase of water
 

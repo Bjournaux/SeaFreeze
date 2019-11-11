@@ -5,6 +5,7 @@ import os.path as op
 import numpy as np
 from mlbspline import load
 from lbftd import evalGibbs as eg
+from lbftd.statevars import iP, iT
 
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
 
@@ -85,13 +86,29 @@ def whichphase(PT, path=defpath):
     """
     isscatter = _is_scatter(PT)
     phase_sp = {v.phase_num: load.loadSpline(path, v.sp_name) for v in phases.values() if not np.isnan(v.phase_num)}
-    comp = np.full(((PT.size,) if isscatter else (PT[0].size, PT[1].size)) + (max_phase_num+1,), np.nan)
+    ptsh = ((PT.size,) if isscatter else (PT[0].size, PT[1].size))      # reference shape based on PT
+    comp = np.full(ptsh + (max_phase_num+1,), np.nan)                   # comparison matrix
     for p in phase_sp.keys():
         sl = tuple(repeat(slice(None), 1 if isscatter else 2))+(p,)     # slice for this phase
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            comp[sl] = _get_tdvs(phase_sp[p], PT, isscatter, 'G').G
-    return np.nanargmin(comp, 1 if isscatter else 2)
+            sp = phase_sp[p]
+            tdvs = _get_tdvs(sp, PT, isscatter, 'G').G
+            # wipe out G for PT values that fall outside the knot sequence
+            if isscatter:
+                extrap = [(pt[iP] < sp['knots'][iP].min()) + (pt[iP] > sp['knots'][iP].max()) +
+                          (pt[iT] < sp['knots'][iT].min()) + (pt[iT] > sp['knots'][iT].max()) for pt in PT]
+            else:
+                pt = np.logical_or(PT[iP] < sp['knots'][iP].min(), PT[iP] > sp['knots'][iP].max())
+                tt = np.logical_or(PT[iT] < sp['knots'][iT].min(), PT[iT] > sp['knots'][iT].max())
+                extrap = np.logical_or(*np.meshgrid(pt, tt, indexing='ij'))
+            tdvs[extrap] = np.nan
+            comp[sl] = tdvs
+    # output for all-nan slices should be nan
+    all_nan_sl = np.all(np.isnan(comp), -1)     # find slices where all values are nan along the innermost axis
+    out = np.full(ptsh, np.nan)        # initialize output to nan
+    out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl],-1)      # find min values for other slices
+    return out
 
 
 def _get_tdvs(sp, PT, is_scatter, *tdvSpec):
