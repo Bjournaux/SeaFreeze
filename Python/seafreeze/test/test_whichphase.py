@@ -10,7 +10,7 @@ class TestWhichPhase(ut.TestCase):
         pass
     def test_scatter_singlePt(self):
         PT = np.empty((1,), np.object)
-        PT[0] = (950, 255)
+        PT[0] = (2000, 334) #(950, 255)
         self.assertEqual(6, sf.whichphase(PT, '../../../Matlab/SeaFreeze_Gibbs.mat')[0])
     def test_scatter_multiPt(self):
         PT = np.empty((3,), np.object)
@@ -21,5 +21,19 @@ class TestWhichPhase(ut.TestCase):
     def test_grid(self):
         P = np.arange(0, 1001, 200)
         T = np.arange(200, 351, 50)
-        exp = np.array([[1, 1, 0, 0], [1, 1, 0, 0], [3, 5, 0, 0], [5, 5, 0, 0], [6, 6, 0, 0], [6, 6, 6, 0]])
-        self.assertTrue(np.array_equal(exp, sf.whichphase(np.array([P, T]), '../../../Matlab/SeaFreeze_Gibbs.mat')))
+        exp = np.array([[1, 1, 0, 0], [2, 1, 0, 0], [2, 5, 0, 0], [2, 5, 0, 0], [6, 6, 0, 0], [6, 6, 6, 0]])
+        act = sf.whichphase(np.array([P, T]), '../../../Matlab/SeaFreeze_Gibbs.mat')
+        self.assertTrue(np.array_equal(exp, act))
+    def test_phases(self):
+        PT = np.empty((8,), np.object)
+        PT[0] = (500, 300)  # liquid water
+        PT[1] = (1, 200)    # ice Ih
+        PT[2] = (300, 200)  # ice II
+        PT[3] = (300, 250)  # ice III
+        PT[4] = (500, 250)  # ice V
+        PT[5] = (800, 250)  # ice VI
+        PT[6] = (2000, 334) # extreme pressures at low temps should map to ice VI
+        PT[7] = (2000, 600) # extreme pressures at high temps should map to liquid water
+        act = sf.whichphase(PT, '../../../Matlab/SeaFreeze_Gibbs.mat')
+        np.testing.assert_array_equal([0, 1, 2, 3, 5, 6, 6, np.nan], act)  # will throw AssertionError if not equal
+
