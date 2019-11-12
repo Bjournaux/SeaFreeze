@@ -172,7 +172,8 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 ## Change log
 
 ### Changes since 0.9.0
-- `0.9.2`: `whichphase` returns `numpy.nan` if PT is outside the regime of all phases
+- `0.9.2.post2`: `whichphase` returns `numpy.nan` if PT is outside the regime of all phases
+- `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function
 
 ### Changes from 0.8

@@ -161,6 +161,11 @@ The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF
 ### Range of validity
 SeaFreeze stability prediction is currently considered valid down to 130K, which correspond to the ice VI - ice XV transition. The ice Ih - II transition is potentially valid down to 73.4 K (ice Ih - ice XI transition).
 
+The following figure shows the prediction of phase transitions from SeaFreeze (melting & solid-solid) and comparison with experimental data:
+![Logo](https://bjournaux.files.wordpress.com/2019/10/phase-diagram.png)
+
+
+
 ## References
 - [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501; doi: 10.1063/1.5097179](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
 - [Brown (2018) Fluid Phase Equilibria 463, pp. 18-31](https://www.sciencedirect.com/science/article/pii/S0378381218300530)
@@ -174,6 +179,11 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 
+## Change log
+
+### Changes since 0.9.0
+- `0.9.2`: add ice II to the representation.
+- `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
 
 
 ## License
