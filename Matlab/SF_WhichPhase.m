@@ -8,6 +8,7 @@ function out=SF_WhichPhase(PT)
 % 3 = ice III
 % 5 = ice V
 % 6 = ice VI
+% returns NaN for PT values outside the range of all phases
 %
 %%% Example 
 %
@@ -18,6 +19,8 @@ function out=SF_WhichPhase(PT)
 
  
 load('SeaFreeze_Gibbs.mat')
+
+
 
 out_Ih=fnval(G_iceIh,PT');
 out_II=fnval(G_iceII,PT');
@@ -35,7 +38,11 @@ out_Bollengier=fnval(G_H2O_2GPa_500K,PT');
   for i=1:np*nt
             all_phaseG = [out_Bollengier(i) out_Ih(i) out_II(i) out_III(i) NaN out_V(i) out_VI(i)];
             all_phaseG(find(all_phaseG == 0)) = NaN;
-            [Y,I]=min(all_phaseG);
-            out(i)=I-1;
+            if all(isnan(all_phaseG))
+                out(i) = NaN;
+            else
+                [Y,I]=min(all_phaseG);
+                out(i)=I-1;
+            end
   end
    out=reshape(out,np,nt);  
