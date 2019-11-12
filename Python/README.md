@@ -112,7 +112,7 @@ which requires the same format as in the `seafreeze.seafreeze` function.
 The output of the function is a [Numpy array](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
 with an integer indicating the phase number corresponding to the `PT` input.  The phase number 0 means 
 liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.  Points outside the range
-of all phases will return np.nan.
+of all phases will return `numpy.nan`.
 - for a list of scattered (P,T) conditions, each value corresponds to the same index in the input
 - for a grid of PT conditions, each row corresponds to a pressure and each column to a temperature from the input.
 
@@ -172,7 +172,7 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 ## Change log
 
 ### Changes since 0.9.0
-- `0.9.2`: `whichphase` returns np.nan if PT is outside the regime of all phases
+- `0.9.2`: `whichphase` returns `numpy.nan` if PT is outside the regime of all phases
 - `0.9.1`: add `whichphase` function
 
 ### Changes from 0.8
