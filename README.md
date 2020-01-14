@@ -6,6 +6,10 @@ V0.9.2
 
 The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, II, III, V and VI) in the 0-2300 MPa and 220-500K range. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase, constructed to reproduce thermodynamic measurments. The formalism is described in more details in Brown (2018), Journaux et al. (2020), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
+> **There is a known bug with 0.9.2post1**
+
+> **Please make sure you update SeaFreeze to 0.9.2post2**
+
 ## Getting Started
 
 
