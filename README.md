@@ -29,10 +29,10 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 
 'material' defines which ice or water to use.  Possibilities:
 - 'Ih' for ice Ih (Feistel and Wagner, 2006)
-- 'II' for ice II (Journaux et al. 2019)
-- 'III' for ice III (Journaux et al. 2019)
-- 'V' for ice V (Journaux et al. 2019)
-- 'VI' for ice VI (Journaux et al. 2019)
+- 'II' for ice II (Journaux et al. 2020)
+- 'III' for ice III (Journaux et al. 2020)
+- 'V' for ice V (Journaux et al. 2020)
+- 'VI' for ice VI (Journaux et al. 2020)
 - 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 - 'water2' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 - 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
@@ -185,6 +185,10 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ### Changes since 0.9.0
 - `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
+
+### Planned updates
+- ice VII and X (early-mid 2020)
+- NaCl and MgSO4 aqueous solutions (early-mid 2020)
 
 
 ## License
