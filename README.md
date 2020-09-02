@@ -192,6 +192,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
 
 ### Planned updates
+- SeaFreeze GUI (mid 2020)
 - ice VII and X (late 2020)
 - NaCl and MgSO4 aqueous solutions (late 2020)
 
