@@ -1,9 +1,9 @@
 function out=SeaFreeze(PT,material)
-% Version 0.9.1 ; Journaux & Brown 2019
+% Version 0.9.2 ; Journaux & Brown 2019
 % Calculate thermodynamic quantities for water or ices polymorphs 
-% (Ih, III, V and VI). Needs the SeaFreeze_Gibbs.mat library containing the
+% (Ih, II, III, V and VI). Needs the SeaFreeze_Gibbs.mat library containing the
 % Gibbs Local Basis Function parametrization to run
-% Reference publication : Journaux et al., (2019)
+% Reference publication : Journaux et al., (2020)
 % usage:
 %    out=SeaFreeze(PT,'material')
 % where:
@@ -29,10 +29,10 @@ function out=SeaFreeze(PT,material)
 %
 %    Material defines which ice or water to use.  Possibilities:
 %         Ih for ice Ih (Feistel and Wagner, 2006)
-%         II for ice II (Journaux et al. 2019)
-%         III for ice III (Journaux et al. 2019)
-%         V for ice V (Journaux et al. 2019)
-%         VI for ice VI (Journaux et al. 2019)
+%         II for ice II (Journaux et al. 2020)
+%         III for ice III (Journaux et al. 2020)
+%         V for ice V (Journaux et al. 2020)
+%         VI for ice VI (Journaux et al. 2020)
 %         water1 for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 %         water2 for the modified EOS in Brown 2018 extending to 100 GPa
 %         water_IAPWS95 for IAPWS95 water (Wagner and Pruß, 2002)
@@ -60,7 +60,7 @@ function out=SeaFreeze(PT,material)
 %   Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151; doi: 10.1063/1.5097179
 %   Brown (2018) Fluid Phase Equilibria 463, pp. 18-31
 %   Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047
-%   Journaux et al., (2019) TBD
+%   Journaux et al., (2020) JGR: Planets, 125, e2019JE006176.
 %   Wagner and Pruß (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535
 
 test_toolbox = license('test','curve_fitting_toolbox');
