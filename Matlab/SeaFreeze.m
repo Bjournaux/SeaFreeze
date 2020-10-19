@@ -77,7 +77,7 @@ if test_toolbox == 1;
         case 'Ih'
             load('SeaFreeze_Gibbs.mat', 'G_iceIh');
             out=fnGval(G_iceIh,PT);
-            shear_mod=[3.04 -0.00462 0 -0.00607 1000 273.15];
+            shear_mod=[3.1 -0.00462 0 -0.00657 1000 273.15];
 
         case 'II'
             load('SeaFreeze_Gibbs.mat', 'G_iceII');
@@ -112,7 +112,7 @@ else
         case 'Ih'
             load('SeaFreeze_Gibbs.mat', 'G_iceIh');
             out=OpenGval(G_iceIh,PT);
-            shear_mod=[3.04 -0.00462 0 -0.00607 1000 273.15];
+            shear_mod=[3.1 -0.00462 0 -0.00657 1000 273.15];
         
         case 'II'
             load('SeaFreeze_Gibbs.mat', 'G_iceII');
