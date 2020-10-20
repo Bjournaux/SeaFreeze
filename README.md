@@ -188,6 +188,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ## Change log
 
 ### Changes since 0.9.0
+- `0.9.2` patch1 : added `SF_WPD`, `SF_PhaseLines` and `SeaFreeze_version` to the Matlab distribution.
 - `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
 
