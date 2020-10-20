@@ -193,8 +193,8 @@ SF_PhaseLines('Ih', 'water1')
 'plot','meta'
 ```
 
-'plot' graphically displays the requested phase equilibria coordinates 
-'meta' provides part of the metastable extensions. 
+`'plot'` graphically displays the requested phase equilibria coordinates 
+`'meta'` provides part of the metastable extensions. 
 These options can be used separately or in conjunction with each other.
   #### Outputs
 

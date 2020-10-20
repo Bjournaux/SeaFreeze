@@ -11,7 +11,7 @@ load('WPD','-mat', 'Solid_Solid', 'Melt_Line')
 %Plot Data 
 plot(Melt_Line.TP_Ih_water1(2,:),Melt_Line.TP_Ih_water1(1,:),'k-')
 hold on
-plot(Solid_Solid.TP_Ih_II(2,1:209), Solid_Solid.TP_Ih_II(1,1:209), 'k--');
+plot(Solid_Solid.TP_Ih_II(2,1:209), Solid_Solid.TP_Ih_II(1,1:209), 'k-.');
 hold on
 plot(Solid_Solid.TP_Ih_II(2,209:656), Solid_Solid.TP_Ih_II(1,209:656),'k-');
 hold on
@@ -21,7 +21,9 @@ plot(Solid_Solid.TP_II_III(2,:), Solid_Solid.TP_II_III(1,:),'k-');
 hold on
 plot(Solid_Solid.TP_II_V(2,:), Solid_Solid.TP_II_V(1,:),'k-');
 hold on
-plot(Solid_Solid.TP_II_VI(2,:), Solid_Solid.TP_II_VI(1,:),'k-');
+plot(Solid_Solid.TP_II_VI(2,506:end), Solid_Solid.TP_II_VI(1,506:end),'k-');
+hold on
+plot(Solid_Solid.TP_II_VI(2,1:506), Solid_Solid.TP_II_VI(1,1:506),'k-.');
 hold on
 plot(Solid_Solid.TP_III_V(2,1:19), Solid_Solid.TP_III_V(1,:),'k-');
 hold on
@@ -42,6 +44,7 @@ text(525,250, 'V')
 text(1000,250,'VI')
 xlabel('Pressure (MPa)')
 ylabel('Temperature (K)') 
+legend('Phase Transitions','Metastable extensions')
 
 Tbound=[0 400];
 Pbound=[0 2300];
