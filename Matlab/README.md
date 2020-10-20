@@ -157,6 +157,13 @@ out =
 ## Functions
 ### `SeaFreeze_version` 
 Print the current version of SeaFreeze
+```Matlab
+SeaFreeze_version
+
+ans =
+
+    '0.9.2'
+```
 ### `SF_WhichPhase`
 Function to determine which of the *supported* phases is stable under given pressure and temperature conditions. The `PT` input format is the same as the main `SeaFreeze` function.
 
