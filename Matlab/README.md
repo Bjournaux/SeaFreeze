@@ -18,9 +18,9 @@ To install SeaFreeze, either change your active directory to SeaFreeze/Matlab, o
 ## Running SeaFreeze
 
 ### Inputs
-To run the SeaFreeze function you need to provide pressure (MPa) and temperature (K) coordinates and a material input:
+To run the `SeaFreeze` function you need to provide pressure (MPa) and temperature (K) coordinates and a material input:
 
-```
+```Matlab
 out=SeaFreeze(PT,'material')
 ```
 
@@ -154,6 +154,57 @@ out =
     alpha: [3×1 double]
 ```
 
+## Functions
+### `SeaFreeze_version` 
+Print the current version of SeaFreeze
+### `SF_WhichPhase`
+Function to determine which of the *supported* phases is stable under given pressure and temperature conditions. The `PT` input format is the same as the main `SeaFreeze` function.
+
+The output of the function is an array with an integer indicating the phase number corresponding to the `PT` input.  The phase number 0 means 
+liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.  
+
+#### Example
+Which phase is stable at 300 MPa and 300 K:
+```Matlab
+SF_WhichPhase({300,300})
+ans = 0
+```
+Liquid water (0) is predicted to be stable.
+
+
+### `SF_Phaselines`
+The `SF_PhaseLines` function calculates phase boundary coordinates (melting or solid-solid) for all phases included in SeaFreeze. It computes the interesection of Gibbs energies surfaces, and is able to provide metastable extentions beyound published tripple points (Journaux et al. 2020).
+#### Inputs
+
+ Phaselines requires two phases input in any order, e.g. :
+```Matlab
+SF_PhaseLines('Ih', 'water1')
+```
+
+ #### Options:
+```Matlab
+'plot','meta'
+```
+
+'plot' graphically displays the requested phase equilibria coordinates 
+'meta' provides part of the metastable extensions. 
+These options can be used separately or in conjunction with each other.
+  #### Outputs
+
+  The output of `SF_Phaselines` is a series of Pressure (MPa) and Temperature (K) coordinates. Additionally, if 'plot' is selected, a figure appears with plotted coordinates.
+
+  #### Example
+Ice Ih melting curve with figure and metastable extention
+```Matlab
+Phaselines('Ih', 'water1','plot', 'meta')
+```
+
+### `SF_WPD`
+Plot the full water phase diagram
+```Matlab
+SF_WPD
+```
+
 ## Important remarks 
 ### Water representation
 The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parametrization wil lead to incorect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
@@ -173,6 +224,7 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 * **Baptiste Journaux** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA*
 
 
 
