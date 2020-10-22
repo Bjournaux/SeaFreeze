@@ -1,5 +1,5 @@
 function out=Phaselines(material_1, material_2, varargin)
-    %v. 0.9 Clinton & Journaux, 2020
+    %v. 1.0 Clinton & Journaux, 2020
     %Function calculates phase equilibria coordinates (K,MPa) based on the 
     %Gibbs energy of two materials. 
     %
