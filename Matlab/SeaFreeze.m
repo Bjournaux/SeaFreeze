@@ -1,5 +1,5 @@
 function out=SeaFreeze(PT,material)
-% Version 0.9.2 ; Journaux & Brown 2019
+% Version 0.9.2 ; Journaux et al. 2020
 % Calculate thermodynamic quantities for water or ices polymorphs 
 % (Ih, II, III, V and VI). Needs the SeaFreeze_Gibbs.mat library containing the
 % Gibbs Local Basis Function parametrization to run
