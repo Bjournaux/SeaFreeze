@@ -1,4 +1,4 @@
-# SeaFreeze GUI
+# SeaFreeze GUI (Coming by early february 2021)
 The SeaFreeze GUI allows thermodynamic and seismic data to be effortlessly viewed and extracted for ices Ih, II, III, V, and VI and liquid water.
 ## Installation 
 Select the corresponding version for your operating system. Using the app installer, download the standalone app. Once loaded, the app can be opened and run. All necessary files are included within the package. 
