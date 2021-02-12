@@ -1,7 +1,8 @@
-# SeaFreeze GUI (Coming by early february 2021)
+# SeaFreeze GUI 
 The SeaFreeze GUI allows thermodynamic and seismic data to be effortlessly viewed and extracted for ices Ih, II, III, V, and VI and liquid water.
 ## Installation 
 Select the corresponding version for your operating system. Using the app installer, download the standalone app. Once loaded, the app can be opened and run. All necessary files are included within the package. 
+Please wait for the application to load; MATLAB can take a while to launch the application after the title screen disappears. 
 ## Using the Interface 
 The interface includes a series of panels and tab subsets for exploration of thermodynamic and seismic properties. 
 ![Screenshot 2020-12-01 171323](https://user-images.githubusercontent.com/70338087/100821704-c89ac880-3405-11eb-94eb-d47613ee0f94.jpg)
@@ -87,8 +88,9 @@ The properties and potentials for the material are now displayed and can be copi
 To generate the full Sea Freeze water phase diagram, check the appropriate box. 
 Click on the 'Plot' button to visualize the data. 
 The line coordinates are saved by choosing a file type and exporting. 
+*Clicking the lines produces data for the current point. If the marker does not land directly where clicked, switch to full screen.
 
-![WPD](https://user-images.githubusercontent.com/70338087/100824270-b8391c80-340a-11eb-8f8d-384fea445a7a.png)
+![WPD2](https://user-images.githubusercontent.com/70338087/107826239-6d585100-6d39-11eb-93c5-8585f8cc98c8.jpg)
 
 ## Remarks 
 Range of validity
