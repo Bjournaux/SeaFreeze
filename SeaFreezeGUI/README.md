@@ -88,7 +88,7 @@ The properties and potentials for the material are now displayed and can be copi
 To generate the full Sea Freeze water phase diagram, check the appropriate box. 
 Click on the 'Plot' button to visualize the data. 
 The line coordinates are saved by choosing a file type and exporting. 
-*Clicking the lines produces data for the current point. If the marker does not land directly where clicked, switch to full screen.
+*Clicking the lines produces data for the current point. If the marker does not land directly where clicked, switch to full screen.*
 
 ![WPD2](https://user-images.githubusercontent.com/70338087/107826239-6d585100-6d39-11eb-93c5-8585f8cc98c8.jpg)
 
