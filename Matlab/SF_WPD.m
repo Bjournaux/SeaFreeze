@@ -33,7 +33,7 @@ text(525,250, 'V','FontSize',12)
 text(1000,250,'VI','FontSize',12)
 xlabel('Pressure (MPa)')
 ylabel('Temperature (K)') 
-legend('Phase transitions','Metastable extensions','FontSize',12)
+%legend('Phase transitions','Metastable extensions','FontSize',12)
 
 Tbound=[0 400];
 Pbound=[0 2300];
