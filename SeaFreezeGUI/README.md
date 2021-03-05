@@ -1,8 +1,8 @@
 # SeaFreeze GUI 
 The SeaFreeze GUI allows thermodynamic and seismic data to be effortlessly viewed and extracted for ices Ih, II, III, V, and VI and liquid water.
 ## Installation 
-Select the corresponding version for your operating system. Using the app installer, download the standalone app. Once loaded, the app can be opened and run. All necessary files are included within the package. 
-Please wait for the application to load; MATLAB can take a while to launch the application after the title screen disappears. 
+Download the corresponding .zip file version for your operating system. Using the app installer, download and isntall the standalone app. The Installer will download the required Matlab libraries for the standalone app (around 600MB). After the installation process, the app can be opened and run. All necessary files are included within the package. 
+Please wait for the application to load; MATLAB can take a little while to launch the application after the title screen disappears. 
 ## Using the Interface 
 The interface includes a series of panels and tab subsets for exploration of thermodynamic and seismic properties. 
 ![Screenshot 2020-12-01 171323](https://user-images.githubusercontent.com/70338087/100821704-c89ac880-3405-11eb-94eb-d47613ee0f94.jpg)
