@@ -188,14 +188,16 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ## Change log
 
 ### Changes since 0.9.0
+- [SeaFreeze GUI](https://github.com/Bjournaux/SeaFreeze/tree/master/SeaFreezeGUI) available
 - `0.9.2` patch1 : added `SF_WPD`, `SF_PhaseLines` and `SeaFreeze_version` to the Matlab distribution.
 - `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
 
 ### Planned updates
-- SeaFreeze GUI (mid 2020)
-- ice VII and X (late 2020)
-- NaCl and MgSO4 aqueous solutions (late 2020)
+- ice VII and X 
+- NaCl and MgSO4 aqueous solutions 
+- NH_3 aqueous solutions
+- NaCl bearing solids (Halite and hydrohalite)
 
 
 ## License
