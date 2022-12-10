@@ -5,7 +5,7 @@ import os.path as op
 import numpy as np
 from mlbspline import load
 from lbftd import evalGibbs as eg
-from lbftd.statevars import iP, iT
+from lbftd.statevars import iP, iT, iM
 
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
 
@@ -140,7 +140,7 @@ def whichphase(PTm, solute='water1', path=defpath):
         if p == 0:
             passPTm = PTm
         else:
-            passPTm = _get_PTm(PTm, isscatter)
+            passPTm = _get_PT(PTm, isscatter)
         sl = tuple(repeat(slice(None), 1 if isscatter else 2))+(p,)  # slice for this phase
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -203,7 +203,7 @@ def _get_T(PTm, is_scatter):
         return PTm[1]
 
 
-def _get_PTm(PTm, is_scatter):
+def _get_PT(PTm, is_scatter):
     if is_scatter:
         if len(PTm[0]) < 3:
             return PTm
