@@ -9,6 +9,7 @@ from lbftd.statevars import iP, iT, iM
 
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
 
+
 def seafreeze(PTm, phase, path=defpath):
     """ Calculates thermodynamic quantities for H2O water or ice polymorphs Ih, II, III, V, and VI for all phases
         (see lbftd documentation for full list)
@@ -64,7 +65,7 @@ def seafreeze(PTm, phase, path=defpath):
         phasedesc = phases[phase]
     except KeyError:
         raise ValueError('The specified phase is not recognized.  Supported phases are ' +
-                         ', '.join(phases.keys())+'.')
+                         ', '.join(phases.keys()) + '.')
     sp = load.loadSpline(path, phasedesc.sp_name)
     sp['MW'] = phasedesc.MW
     # calc density and isentropic bulk modulus
@@ -72,9 +73,9 @@ def seafreeze(PTm, phase, path=defpath):
     if sp['ndT']:
         # Dimensionless temperature is used, convert input T to dimensionless
         if isscatter:
-            PTm[:,iT] = np.log(PTm[:,iT]/sp['Tc'])
+            PTm[:, iT] = np.log(PTm[:, iT] / sp['Tc'])
         else:
-            PTm[iT] = np.log(PTm[iT]/sp['Tc'])
+            PTm[iT] = np.log(PTm[iT] / sp['Tc'])
     tdvs = _get_tdvs(sp, PTm, isscatter)
     if phasedesc.shear_mod_parms:
         smg = _get_shear_mod_GPa(phasedesc.shear_mod_parms, tdvs.rho, _get_T(PTm, isscatter))
@@ -124,28 +125,32 @@ def whichphase(PTm, solute='water1', path=defpath):
     :return:        A numpy.ndarray the same size as PTm, with the phase of each pressure/temperature represented by
                     an integer, as shown in phasenum2phase
     """
-    
+
     isscatter = _is_scatter(PTm)
-    phase_sp = {v.phase_num: load.loadSpline(path, v.sp_name) for pcomp, v in phases.items() if v.phase_num > 0 or pcomp == solute}
+    phase_sp = {v.phase_num: load.loadSpline(path, v.sp_name) for pcomp, v in phases.items() if
+                v.phase_num > 0 or pcomp == solute}
     ptsh = (PTm.size,) if isscatter else (PTm[iP].size, PTm[iT].size)  # reference shape based on PTm
-    comp = np.full(ptsh + (max_phase_num+1,), np.nan)  # comparison matrix
+    comp = np.full(ptsh + (max_phase_num + 1,), np.nan)  # comparison matrix
     for p in phase_sp.keys():
-        phase_sp[p]['MW'] = phases[phasenum2phase[p]].MW
         if phase_sp[p]['ndT']:
             # Dimensionless temperature is used, convert input T to dimensionless
             if isscatter:
-                PTm[:,iT] = np.log(PTm[:,iT]/phase_sp[p]['Tc'])
+                PTm[:, iT] = np.log(PTm[:, iT] / phase_sp[p]['Tc'])
             else:
-                PTm[iT] = np.log(PTm[iT]/phase_sp[p]['Tc'])
-        if p == 0:
-            passPTm = PTm
-        else:
-            passPTm = _get_PT(PTm, isscatter)
-        sl = tuple(repeat(slice(None), 1 if isscatter else 2))+(p,)  # slice for this phase
+                PTm[iT] = np.log(PTm[iT] / phase_sp[p]['Tc'])
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+            sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (p,)  # slice for this phase
             sp = phase_sp[p]
-            tdvs = _get_tdvs(sp, passPTm, isscatter, 'G').G
+            if p == 0:
+                phase_sp[p]['MW'] = phases[solute].MW
+                if 'water' in solute:
+                    tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
+                else:
+                    tdvs = _get_tdvs(sp, PTm, isscatter, 'G', 'muw').muw
+            else:
+                phase_sp[p]['MW'] = phases[phasenum2phase[p]].MW
+                tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
             # wipe out G for PTm values that fall outside the knot sequence
             if isscatter:
                 extrap = [(pt[iP] < sp['knots'][iP].min()) + (pt[iP] > sp['knots'][iP].max()) +
@@ -159,7 +164,7 @@ def whichphase(PTm, solute='water1', path=defpath):
     # output for all-nan slices should be nan
     all_nan_sl = np.all(np.isnan(comp), -1)  # find slices where all values are nan along the innermost axis
     out = np.full(ptsh, np.nan)  # initialize output to nan
-    out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl],-1)  # find min values for other slices
+    out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl], -1)  # find min values for other slices
     return out
 
 
@@ -177,20 +182,20 @@ def _get_tdvs(sp, PTm, is_scatter, *tdvSpec):
 
 
 def _get_shear_mod_GPa(sm, rho, T):
-    return None if sm is None else sm[0] + sm[1]*(rho - sm[4]) + sm[2]*(rho-sm[4])**2 + sm[3]*(T-sm[5])
+    return None if sm is None else sm[0] + sm[1] * (rho - sm[4]) + sm[2] * (rho - sm[4]) ** 2 + sm[3] * (T - sm[5])
 
 
 def _get_Vp(smg, rho, Ks):
-    return 1e3 * np.sqrt((Ks/1e3 + 4/3*smg)/rho/1e-3)
+    return 1e3 * np.sqrt((Ks / 1e3 + 4 / 3 * smg) / rho / 1e-3)
 
 
 def _get_Vs(smg, rho):
-    return 1e3 * np.sqrt(smg/rho/1e-3)
+    return 1e3 * np.sqrt(smg / rho / 1e-3)
 
 
 def _is_scatter(PTm):
-    return isinstance(PTm[0], tuple) or (PTm.shape == (1,2) and np.isscalar(PTm[0]) and np.isscalar(PTm[1])) \
-        or (PTm.shape == (1,3) and np.isscalar(PTm[0]) and np.isscalar(PTm[1]) and np.isscalar(PTm[2]))
+    return isinstance(PTm[0], tuple) or (PTm.shape == (1, 2) and np.isscalar(PTm[0]) and np.isscalar(PTm[1])) \
+           or (PTm.shape == (1, 3) and np.isscalar(PTm[0]) and np.isscalar(PTm[1]) and np.isscalar(PTm[2]))
 
 
 def _get_T(PTm, is_scatter):
@@ -208,7 +213,7 @@ def _get_PT(PTm, is_scatter):
         if len(PTm[0]) < 3:
             return PTm
         else:
-            return np.array([(P,T) for P, T, m in PTm])
+            return np.array([(P, T) for P, T, m in PTm])
     else:
         return PTm[:2]
 
@@ -216,16 +221,21 @@ def _get_PT(PTm, is_scatter):
 #########################################
 ## Constants
 #########################################
+mH2O_kgmol = 18.015e-3
 PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod_parms phase_num MW')
-phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15], 1, None),  # Feistel and Wagner, 2006
-          "II": PhaseDesc("G_iceII", [4.1, 0.0175, 0, -0.014, 1100, 273], 2, None),          # Journaux et al, 2019
-          "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273], 3, None),       # Journaux et al, 2019
-          "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273], 5, None),           # Journaux et al, 2019
-          "VI": PhaseDesc("G_iceVI", [2.57, 0.0175, 0, -0.014, 1100, 273], 6, None),         # Journaux et al, 2019
-          "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, None),              # extends to 500 K and 2300 MPa; Bollengier et al 2019
-          "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, None),     # extends to 100 GPa; Brown 2018
-          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, None),      # LBF representation of IAPWS 95; Wagner and Pruß, 2002
-          "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3)                # LBF representation of unpublished NH3 data from B Journaux and JM Brown
+phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15], 1, mH2O_kgmol),  # Feistel and Wagner, 2006
+          "II": PhaseDesc("G_iceII", [4.1, 0.0175, 0, -0.014, 1100, 273], 2, mH2O_kgmol),  # Journaux et al, 2019
+          "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273], 3, mH2O_kgmol),  # Journaux et al, 2019
+          "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273], 5, mH2O_kgmol),  # Journaux et al, 2019
+          "VI": PhaseDesc("G_iceVI", [2.57, 0.0175, 0, -0.014, 1100, 273], 6, mH2O_kgmol),  # Journaux et al, 2019
+          "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol),  # extends to 500 K and 2300 MPa; Bollengier et al 2019
+          "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol),  # extends to 100 GPa; Brown 2018
+          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol),
+          # LBF representation of IAPWS 95; Wagner and Pruß, 2002
+          "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3),
+          # LBF representation of unpublished NH3 data from B Journaux and JM Brown
+          "NaCl": PhaseDesc("NaCl_LBF_8000MPa", None, 0, 58.44e-3)
+          # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
           }
 max_phase_num = max([p.phase_num for p in phases.values()])
-phasenum2phase = {v.phase_num: k for (k,v) in phases.items() if not np.isnan(v.phase_num)}
+phasenum2phase = {v.phase_num: k for (k, v) in phases.items()}
