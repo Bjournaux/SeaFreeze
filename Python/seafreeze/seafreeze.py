@@ -221,7 +221,7 @@ def _get_PT(PTm, is_scatter):
 #########################################
 ## Constants
 #########################################
-mH2O_kgmol = 18.015e-3
+mH2O_kgmol = 18.01528e-3
 PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod_parms phase_num MW')
 phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15], 1, mH2O_kgmol),  # Feistel and Wagner, 2006
           "II": PhaseDesc("G_iceII", [4.1, 0.0175, 0, -0.014, 1100, 273], 2, mH2O_kgmol),  # Journaux et al, 2019
