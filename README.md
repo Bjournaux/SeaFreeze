@@ -180,11 +180,12 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 - [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
 - [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
 
-## Authors
+## Contributors
 
-* **Baptiste Journaux** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* **Baptiste Journaux (Lead)** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* **Marshall Styczinski** - *NASA Jet Propulsion Laboratory, Pasadena, USA* 
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 
 ## Change log
