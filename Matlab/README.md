@@ -228,6 +228,7 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 - [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
 - [Journaux et al., (2019), in review (available on ArXiv)](https://arxiv.org/abs/1907.09598)
 - [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
+- [French and Redmer (2015), Physical Review B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
 
 ## Authors
 

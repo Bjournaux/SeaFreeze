@@ -1,8 +1,8 @@
 # SeaFreeze
 
-V0.9.2
+V0.9.3
 
-The SeaFreeze package allows computation of the thermodynamic and elastic properties of water and ice polymorphs Ih, II, III, V and VI in the 0-2300 MPa and 220-500 K range. It is based on the evaluation of Local Basis Functions for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parameterization by Bollengier, Brown, and Shaw (2019).
+The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, III, V, VI and ice VII/ice X) in the 0-100 GPa and 220 - 10000K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
 
 ## Installation
@@ -35,6 +35,7 @@ The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following
   - 'III' - from Journaux et al., 2019
   - 'V' - from Journaux et al., 2019
   - 'VI' - from Journaux et al., 2019
+  - 'VII_X_French' for ice VII and ice X (French and Redmer 2015)
   - 'water1' -  extends to 500 K and 2300 MPa; from Bollengier et al. 2019
   - 'water2' -  extends to 100 GPa; from Brown 2018
   - 'water_IAPWS95' - LBF representation of IAPWS 95; from Wagner and Pruß, 2002
@@ -154,7 +155,7 @@ out = sf.whichphase(PT)
 The ices Gibbs parameterizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parameterization wil lead to incorrect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
 
 ### Range of validity
-SeaFreeze stability prediction is currently considered valid down to 130K, which correspond to the ice VI - ice XV transition. The ice Ih - II transition is potentially valid down to 73.4 K (ice Ih - ice XI transition).
+SeaFreeze stability prediction is currently considered valid down to 130K, which correspond to the ice VI - ice XV transition. The ice Ih - II transition is potentially valid down to 73.4 K (ice Ih - ice XI transition). The ice VII and ice X representation extend to 1TPa (1e6 MPa) and 2000K.
 
 ## References
 - [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501; doi: 10.1063/1.5097179](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
@@ -162,16 +163,19 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 - [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
 - [Journaux et al., (2019), in review in JGR: Planets (available on ArXiv)](https://arxiv.org/abs/1907.09598)
 - [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
+- [French and Redmer (2015), Physical Review B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
 
-## Author
+## Authors
 
-* **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Baptiste Journaux** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
 
 ## Change log
 
 ### Changes since 0.9.0
+- `0.9.3`: add ice VII and ice X from French and Redmer (2015).
 - `0.9.2.post2`: `whichphase` returns `numpy.nan` if PT is outside the regime of all phases
 - `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function
@@ -182,4 +186,35 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 - remove a layer of nesting (`seafreeze.seafreeze` rather than `seafreeze.seafreeze.seafreeze`)
 
 
+## License
 
+SeaFreeze is licensed under the GPL-3 License :
+
+Copyright (c) 2019, B. Journaux
+
+This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3.
+    
+This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
+IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+## Acknowledgments
+
+This work was produced with the financial support provided by the NASA Postdoctoral Program fellowship, by the NASA Solar System Workings Grant 80NSSC17K0775 and by the Icy Worlds node of NASA's Astrobiology Institute (08-NAI5-0021).
+
+Illustration montage uses pictures from NASA Galileo and Cassini spacecrafts (from top to bottom: Enceladus, Europa and Ganymede). Terrestrial sea ice picture use with the authorization of the author [Rowan Romeyn](https://arcex.no/meet-rowan-romeyn-a-new-arcex-phd-student/).
