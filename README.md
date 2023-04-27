@@ -4,11 +4,11 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-V0.9.2
+V0.9.3
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
-The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, II, III, V and VI) in the 0-2300 MPa and 220-500K range. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase, constructed to reproduce thermodynamic measurments. The formalism is described in more details in [Journaux et al. (2020)](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2019JE006176), and in the liquid water Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). 
+The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, II, III, V VI and ice VII/ice X) the 0-100 GPa and 220 - 10000K range. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase, constructed to reproduce thermodynamic measurments. The formalism is described in more details in [Journaux et al. (2020)](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2019JE006176), and in the liquid water Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). 
 
 
 ## Getting Started
@@ -37,6 +37,7 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 - 'III' for ice III (Journaux et al. 2020)
 - 'V' for ice V (Journaux et al. 2020)
 - 'VI' for ice VI (Journaux et al. 2020)
+- 'VII_X_French' for ice VII and ice X (French and Redmer 2015)
 - 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 - 'water2' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 - 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
@@ -179,6 +180,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 - [Brown (2018) Fluid Phase Equilibria 463, pp. 18-31](https://www.sciencedirect.com/science/article/pii/S0378381218300530)
 - [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
 - [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
+- [French and Redmer (2015), Physical Review B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
 
 ## Contributors
 
@@ -187,10 +189,12 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Marshall Styczinski** - *NASA Jet Propulsion Laboratory, Pasadena, USA* 
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
 
 ## Change log
 
 ### Changes since 0.9.0
+- `0.9.3`: add ice VII and ice X from French and Redmer (2015).
 - [SeaFreeze GUI](https://github.com/Bjournaux/SeaFreeze/tree/master/SeaFreezeGUI) available
 - `0.9.2` patch1 : added `SF_WPD`, `SF_PhaseLines` and `SeaFreeze_version` to the Matlab distribution.
 - `0.9.2`: add ice II to the representation.
@@ -205,27 +209,30 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 
 ## License
 
-This project is licensed under the MIT License :
+SeaFreeze is licensed under the GPL-3 License :
 
 Copyright (c) 2019, B. Journaux
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files, to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3.
+    
+This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
+HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
+OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
+IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
+ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
 
 ## Acknowledgments
 
