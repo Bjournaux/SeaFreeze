@@ -19,7 +19,10 @@ setuptools.setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent'
     ],
-    package_data={'seafreeze': ['SeaFreeze_Gibbs.mat', 'LICENSE.txt']},
     include_package_data=True,
-    install_requires=['numpy', 'scipy', 'psutil']
+    install_requires=[
+        'numpy >= 1.24.2',
+        'scipy >= 1.10.1',
+        'psutil >= 5.9.4'
+    ]
 )
