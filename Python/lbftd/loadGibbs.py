@@ -1,10 +1,14 @@
 from math import isnan
 from numbers import Number
-from warnings import warn
+import logging
 
 import numpy as np
 
 from mlbspline import load
+
+log = logging.getLogger('lbftd')
+stream = logging.StreamHandler()
+stream.setFormatter(logging.Formatter('[LBFTD %(levelname)s] %(message)s'))
 
 def loadGibbsSpline(splineFile, splineVar=None):
     """Loads a Gibbs energy spline from .mat format file
@@ -40,7 +44,7 @@ def _getMW(raw):
     try:
         MW = load._stripNestingToValue(raw['MW'])
     except KeyError:
-        warn('Could not load MW - defaulting to empty value - will not be able to calculate some thermodynamic values')
+        log.warning('Could not load MW - defaulting to empty value - will not be able to calculate some thermodynamic values')
         MW = np.empty(0)
     MW = np.array([MW]) if isinstance(MW, Number) else MW   # wrap scalar value
     if MW.size > 2:

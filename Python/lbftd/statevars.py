@@ -27,11 +27,15 @@ def evalGibbsEnergy(gibbsSp, PTM):
     return evalMultivarSpline(gibbsSp, PTM)
 
 
-def evalIsobaricSpecificHeat(gPTM, derivs):
+def evalIsobaricSpecificHeat(gibbsSp, gPTM, derivs):
     """
     :return:        Cp
     """
-    return -1 * derivs.d2T * gPTM[iT]
+    if gibbsSp['ndT']:
+        T = np.exp(gPTM[iT])*gibbsSp['Tc']
+    else:
+        T = gPTM[iT]
+    return -1 * derivs.d2T * T
 
 
 def evalIsochoricSpecificHeat(tdv, gPTM, derivs):
@@ -277,7 +281,7 @@ def _getSupportedThermodynamicVariables():
         _getTDVSpec('S', evalEntropy, reqDerivs=['d1T']),
         _getTDVSpec('rho', evalDensity, reqDerivs=['d1P']),
         _getTDVSpec('V', evalVolume, reqTDV=['rho']),
-        _getTDVSpec('Cp', evalIsobaricSpecificHeat, reqGrid=True, reqDerivs=['d2T']),
+        _getTDVSpec('Cp', evalIsobaricSpecificHeat, reqSpline=True, reqGrid=True, reqDerivs=['d2T']),
         _getTDVSpec('Cv', evalIsochoricSpecificHeat, reqGrid=True, reqDerivs=['dPT', 'd2P'], reqTDV=['Cp']),
         _getTDVSpec('Kt', evalIsothermalBulkModulus, reqDerivs=['d1P', 'd2P']),
         _getTDVSpec('Kp', evalPDerivIsothermalBulkModulus, reqDerivs=['d1P', 'd2P', 'd3P']),
@@ -366,7 +370,7 @@ def expandTDVSpec(tdvSpec, dimCt):
 #########################################
 ## Constants
 #########################################
-iT = 1; iP = 0; iM = 2      # dimension indices
+iP = 0; iT = 1; iM = 2      # dimension indices
 defDer = 0                  # default derivative
 
 derivSpec = namedtuple('DerivativeSpec', ['name', 'wrtP', 'wrtT', 'wrtM'])
@@ -377,5 +381,3 @@ statevars, statevarnames = _getSupportedThermodynamicVariables()
 # [(sv.name, sv.calcFn.__name__[4:]) for sv in statevars]        # lists TDV symbols and names
 
 tdvsPTOnly = _getPTOnlyTDVSpec()
-
-

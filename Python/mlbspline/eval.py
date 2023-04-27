@@ -1,6 +1,7 @@
 from scipy.interpolate import splev
 import numpy as np
 
+iT = 1
 
 def evalMultivarSpline(spd, x, der=[]):
     """ Performs recursive evaluation of b-spline for the given independent values
@@ -31,6 +32,13 @@ def evalMultivarSpline(spd, x, der=[]):
         raise ValueError("The dimensions of the derivative directives do not match the dimensions of the spline.")
     if not all((isinstance(i, int) and i >= 0) for i in der):
         raise ValueError('At least one derivative directive is not a non-negative integer.')
+    # Use chain rule to get multiplicative factor for non-dimensional temperatures in B spline
+    ndT1, ndT2 = (1, 1)
+    if der[iT] > 0 and spd['ndT']:
+        T_K = np.exp(x[iT])*spd['Tc']
+        ndT1 = 1/T_K
+        if der[iT] > 1:
+            ndT2 = -1/T_K**2
 
     y = spd['coefs']
     # start at the last index and work downward to the first
@@ -40,7 +48,14 @@ def evalMultivarSpline(spd, x, der=[]):
         if not isinstance(xi, np.ndarray):
             xi = np.asarray([xi])
         tck = _getNextSpline(di, dimCt, spd, y)
-        y = np.array(splev(xi, tck, der=der[di]))
+        if di == iT and spd['ndT']:
+            if der[iT] == 2 and spd['ndT']:
+                # Use product rule to combine derivates in terms of non-dimensional T
+                y = np.array(splev(xi, tck, der=2))*ndT1**2 + np.array(splev(xi, tck, der=1))*ndT2
+            else:
+                y = np.array(splev(xi, tck, der=der[di]))*ndT1
+        else:
+            y = np.array(splev(xi, tck, der=der[di]))
     # need to rearrange back to original order and shape
     return _getNextSpline(-1, dimCt, spd, y)[1]
 
@@ -61,18 +76,3 @@ def _getNextSpline(dimIdx, dimCt, spd, coefs):
     t = spd['knots'][dimIdx]
     k = spd['order'][dimIdx] - 1    # scipy wants the degree, not the order (MatLab gives the orders)
     return [t, coefs, k]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
