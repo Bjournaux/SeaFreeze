@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Run this script from the Python directory to create PyPI package for upload
+
 # delete contents of dist folder
 if [ -d dist ]; then
   rm -r dist
