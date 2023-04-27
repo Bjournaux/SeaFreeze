@@ -4,7 +4,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-V0.9.2
+V0.9.3
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
@@ -15,7 +15,7 @@ The SeaFreeze package allows to compute the thermodynamic and elastic properties
 
 
 ### Installing
-Report to the READEME file for each version (Python or Matlab) for installing SeaFreeze.
+Report to the README file for each version (Python or Matlab) for installing SeaFreeze.
 
 
 ## Running SeaFreeze
@@ -71,7 +71,7 @@ out is a structure containing all output quantities (SI units):
 
 ## Example
 
-An executable matlab live script (Example_SeaFreeze.mlx) is provided allowing to run the following examples.
+An executable Matlab live script (Example_SeaFreeze.mlx) is provided allowing to run the following examples.
 
 ### Single point input
 
@@ -185,14 +185,15 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **Baptiste Journaux (Lead)** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Marshall Styczinski** - *NASA Jet Propulsion Laboratory, Pasadena, USA* 
+* **Marshall Styczinski** - *Jet Propulsion Laboratory, California Institute of Technology, Pasadena, USA* 
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 
 ## Change log
 
 ### Changes since 0.9.0
 - [SeaFreeze GUI](https://github.com/Bjournaux/SeaFreeze/tree/master/SeaFreezeGUI) available
-- `0.9.2` patch1 : added `SF_WPD`, `SF_PhaseLines` and `SeaFreeze_version` to the Matlab distribution.
+- `0.9.3`: LocalBasisFunction spline interpretation software integrated into SeaFreeze Python package.
+- `0.9.2` patch1: added `SF_WPD`, `SF_PhaseLines` and `SeaFreeze_version` to the Matlab distribution.
 - `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
 
@@ -205,7 +206,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 
 ## License
 
-SeaFreeze is licensed under the GPL-3 License :
+SeaFreeze is licensed under the GPL-3 License:
 
 Copyright (c) 2019, B. Journaux
 
@@ -218,6 +219,8 @@ You should have received a copy of the GNU General Public License along with thi
 THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
 
 ## Acknowledgments
+
+As of V0.9.3, SeaFreeze incorporates the mlbspline and lbftd packages originally developed by J. Michael Brown. Historical versions of these packages are no longer being updated and are available at https://github.com/jmichaelb/LocalBasisFunction. 
 
 This work was produced with the financial support provided by the NASA Postdoctoral Program fellowship, by the NASA Solar System Workings Grant 80NSSC17K0775 and by the Icy Worlds node of NASA's Astrobiology Institute (08-NAI5-0021).
 
