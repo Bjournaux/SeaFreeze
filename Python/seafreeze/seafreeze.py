@@ -1,12 +1,16 @@
 from collections import namedtuple
 from itertools import repeat
 import warnings
+import logging
 import os.path as op
 import numpy as np
 from mlbspline import load
 from lbftd import evalGibbs as eg
 from lbftd.statevars import iP, iT
 
+log = logging.getLogger('seafreeze')
+stream = logging.StreamHandler()
+stream.setFormatter(logging.Formatter('[SeaFreeze %(levelname)s] %(message)s'))
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
 
 def seafreeze(PT, phase, path=defpath):
@@ -23,39 +27,39 @@ def seafreeze(PT, phase, path=defpath):
     Using other water parametrizations will lead to incorrect melting curves -- 'water2' and 'water_IAPWS95'
     parametrizations are provided for HP extension up to 100 GPa and comparison only.
 
-    :param PT:      the pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
+    :param PT:      The pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
                     calculated -- the specified units are required, as conversions are built into several calculations.
                     This parameter can have one of the following formats:
-                        - a 1-dimensional numpy array of tuples with one or more scattered (P,T) tuples, e.g.
+                        - A 1-dimensional numpy array of tuples with one or more scattered (P,T) tuples, e.g.
                                 PT = np.empty((3,), np.object)
                                 PT[0] = (441.0858, 313.95)
                                 PT[1] = (478.7415, 313.96)
                                 PT[2] = (444.8285, 313.78)
-                        - a numpy array with 2 nested numpy arrays, the first with pressures and the second
+                        - A numpy array with 2 nested numpy arrays, the first with pressures and the second
                           with temperatures -- each inner array must be sorted from low to high values
-                          a grid will be constructed from the P and T arrays such that each row of the output
+                          A grid will be constructed from the P and T arrays such that each row of the output
                           will correspond to a pressure and each column to a temperature, e.g.
                                 P = np.arange(0.1, 1000.2, 10)
                                 T = np.arange(240, 501, 2)
                                 PT = np.array([P, T])
-    :param phase:   one of the keys of the phases dict, indicating the phase of H2O to be evaluated
-    :param path:    an optional path to the SeaFreeze_Gibbs.mat file
+    :param phase:   One of the keys of the phases dict, indicating the phase of H2O to be evaluated
+    :param path:    An optional path to the SeaFreeze_Gibbs.mat file
                     default value assumes the spline distributed along with the project
     :return:        object containing the calculated thermodynamic quantities (as named properties), as well as
-                    a PTM property (a copy of PT)
+                    A PTM property (a copy of PT)
     """
     try:
         phasedesc = phases[phase]
     except KeyError:
-        raise ValueError('The specified phase is not recognized.  Supported phases are ' +
+        raise ValueError('The specified phase is not recognized. Supported phases are ' +
                          ', '.join(phases.keys())+'.')
     sp = load.loadSpline(path, phasedesc.sp_name)
-    # calc density and isentropic bulk modulus
+    # Calc density and isentropic bulk modulus
     isscatter = _is_scatter(PT)
     tdvs = _get_tdvs(sp, PT, isscatter)
     if phasedesc.shear_mod_parms:
         smg = _get_shear_mod_GPa(phasedesc.shear_mod_parms, tdvs.rho, _get_T(PT, isscatter))
-        tdvs.shear = 1e3 * smg  # convert to MPa for consistency with other measures
+        tdvs.shear = 1e3 * smg  # Convert to MPa for consistency with other measures
         tdvs.Vp = _get_Vp(smg, tdvs.rho, tdvs.Ks)
         tdvs.Vs = _get_Vs(smg, tdvs.rho)
     return tdvs
@@ -64,7 +68,7 @@ def seafreeze(PT, phase, path=defpath):
 def whichphase(PT, path=defpath):
     """ Determines the most likely phase of water at each pressure/temperature
 
-    :param PT:      the pressure (MPa) and temperature (K) conditions at which the phase should be determined --
+    :param PT:      The pressure (MPa) and temperature (K) conditions at which the phase should be determined --
                     the specified units are required, as conversions are built into several calculations.
                     This parameter can have one of the following formats:
                         - a 1-dimensional numpy array of tuples with one or more scattered (P,T) tuples, e.g.
@@ -79,22 +83,22 @@ def whichphase(PT, path=defpath):
                                 P = np.arange(0.1, 1000.2, 10)
                                 T = np.arange(240, 501, 2)
                                 PT = np.array([P, T])
-    :param path:    an optional path to the SeaFreeze_Gibbs.mat file --
+    :param path:    An optional path to the SeaFreeze_Gibbs.mat file --
                     default value assumes the spline distributed along with the project
     :return:        A numpy.ndarray the same size as PT, with the phase of each pressure/temperature represented by
                     an integer, as shown in phasenum2phase
     """
     isscatter = _is_scatter(PT)
     phase_sp = {v.phase_num: load.loadSpline(path, v.sp_name) for v in phases.values() if not np.isnan(v.phase_num)}
-    ptsh = ((PT.size,) if isscatter else (PT[0].size, PT[1].size))      # reference shape based on PT
-    comp = np.full(ptsh + (max_phase_num+1,), np.nan)                   # comparison matrix
+    ptsh = ((PT.size,) if isscatter else (PT[0].size, PT[1].size))  # Reference shape based on PT
+    comp = np.full(ptsh + (max_phase_num+1,), np.nan)  # Comparison matrix
     for p in phase_sp.keys():
-        sl = tuple(repeat(slice(None), 1 if isscatter else 2))+(p,)     # slice for this phase
+        sl = tuple(repeat(slice(None), 1 if isscatter else 2))+(p,)  # Slice for this phase
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             sp = phase_sp[p]
             tdvs = _get_tdvs(sp, PT, isscatter, 'G').G
-            # wipe out G for PT values that fall outside the knot sequence
+            # Wipe out G for PT values that fall outside the knot sequence
             if isscatter:
                 extrap = [(pt[iP] < sp['knots'][iP].min()) + (pt[iP] > sp['knots'][iP].max()) +
                           (pt[iT] < sp['knots'][iT].min()) + (pt[iT] > sp['knots'][iT].max()) for pt in PT]
@@ -104,18 +108,18 @@ def whichphase(PT, path=defpath):
                 extrap = np.logical_or(*np.meshgrid(pt, tt, indexing='ij'))
             tdvs[extrap] = np.nan
             comp[sl] = tdvs
-    # output for all-nan slices should be nan
-    all_nan_sl = np.all(np.isnan(comp), -1)     # find slices where all values are nan along the innermost axis
-    out = np.full(ptsh, np.nan)        # initialize output to nan
-    out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl],-1)      # find min values for other slices
+    # Output for all-nan slices should be nan
+    all_nan_sl = np.all(np.isnan(comp), -1)  # Find slices where all values are nan along the innermost axis
+    out = np.full(ptsh, np.nan)  # Initialize output to nan
+    out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl],-1)  # Find min values for other slices
     return out
 
 
 def _get_tdvs(sp, PT, is_scatter, *tdvSpec):
-    """ peeks into PT to see if the PT data is for grid or scatter and calls the appropriate evalGibbs function
+    """ Peeks into PT to see if the PT data is for grid or scatter and calls the appropriate evalGibbs function
 
-    :param sp:          the Gibbs LBF
-    :param PT:          the PT data
+    :param sp:          The Gibbs LBF
+    :param PT:          The PT data
     :param is_scatter:  Boolean indicating whether the PT data is scatter or not (if not, it is a grid)
     :param tdvSpec:     optional list of thermodynamic variables to calculate (see lbftd documentation)
     :return:            tdv object (see lbftd documentation)

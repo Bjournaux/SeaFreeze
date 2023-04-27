@@ -21,5 +21,5 @@ setuptools.setup(
     ],
     package_data={'seafreeze': ['SeaFreeze_Gibbs.mat', 'LICENSE.txt']},
     include_package_data=True,
-    install_requires=['numpy', 'scipy', 'hdf5storage', 'psutil']
+    install_requires=['numpy', 'scipy', 'psutil']
 )

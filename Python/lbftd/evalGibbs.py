@@ -3,7 +3,6 @@ from pprint import pformat
 from time import time
 import logging
 from collections.abc import Iterable
-
 import numpy as np
 from psutil import virtual_memory
 
@@ -22,7 +21,7 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, fai
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Warning: units must be as specified here because some conversions are hardcoded into this function.
-        With the exception of pressure, units are SI.  Pressure is in MPa rather than Pa.
+    With the exception of pressure, units are SI.  Pressure is in MPa rather than Pa.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     :param gibbsSp: A B-spline  (in format given by loadSpline.loadMatSpline) for giving Gibbs energy (J/mg)
@@ -55,7 +54,7 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, fai
     """
     [dimCt, tdvSpec] = _parseInput(gibbsSp, *tdvSpec)
     _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, failOnExtrapolate)
-    tdvout = createThermodynamicStatesObj(tdvSpec, PTM)  # this has the original PTM
+    tdvout = createThermodynamicStatesObj(tdvSpec, PTM)  # This has the original PTM
     if _needs0M(dimCt, tdvSpec) and PTM[iM][0] != 0:
         PTM[iM] = np.insert(PTM[iM], 0, 0)
     tdvout = _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, tdvout, dimCt, verbose)
@@ -68,7 +67,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Warning: units must be as specified here because some conversions are hardcoded into this function.
-        With the exception of pressure, units are SI.  Pressure is in MPa rather than Pa.
+    With the exception of pressure, units are SI.  Pressure is in MPa rather than Pa.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     :param gibbsSp: A B-spline  (in format given by loadSpline.loadMatSpline) for giving Gibbs energy (J/mg)
@@ -102,19 +101,19 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, 
     """
     [dimCt, tdvSpec] = _parseInput(gibbsSp, *tdvSpec)
     needs0M = _needs0M(dimCt, tdvSpec)
-    fakePTM = _makeFakePTMGrid(dimCt, PTM)  # fakes grid-style input to do all input checks before processing
+    fakePTM = _makeFakePTMGrid(dimCt, PTM)  # Fakes grid-style input to do all input checks before processing
     _checkInputs(gibbsSp, dimCt, tdvSpec, fakePTM, MWv, MWu, failOnExtrapolate)
 
     tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True)
-    # point by point
+    # Point by point
     for p in range(PTM.size):
         wPTM = _ptmTuple2NestedArrays(PTM[p], dimCt, needs0M)
         tempout = createThermodynamicStatesObj(tdvSpec, wPTM)
-        # prepend a 0 concentration if one is needed by any of the quantities being calculated
+        # Prepend a 0 concentration if one is needed by any of the quantities being calculated
         if needs0M and wPTM[iM] != 0:
             wPTM[iM] = np.insert(wPTM[iM], 0, 0)
         tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, MWu, MWv, tempout, dimCt, verbose=False)
-        # copy temp output to the real output
+        # Copy temp output to the real output
         for t in tdvSpec:
             tolastpt = getattr(tdvout, t.name)
             tolastpt[p] = getattr(tempout, t.name)
@@ -127,17 +126,17 @@ def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, tdvout, dimCt, verbose=False)
     gPTM = _getGriddedPTM(tdvSpec, PTM, verbose) if any([tdv.reqGrid for tdv in tdvSpec]) else None
     f = _getVolSolventInVolSlnConversion(MWu, PTM) if any([tdv.reqF for tdv in tdvSpec]) else None
 
-    # calculate thermodynamic variables and store in appropriate fields in tdvout
+    # Calculate thermodynamic variables and store in appropriate fields in tdvout
     completedTDVs = set()  # list of completed tdvs
     while len(completedTDVs) < len(tdvSpec):
-        # get tdvs that either have empty reqTDV or all of those tdvs have already been calculated
+        # Get tdvs that either have empty reqTDV or all of those tdvs have already been calculated
         # but that are not in completedTDVs themselves (don't recalculate anything)
         tdvsToEval = tuple(t for t in tdvSpec if
                            t.name not in completedTDVs and (not t.reqTDV or not t.reqTDV.difference(completedTDVs)))
         for t in tdvsToEval:
             args = _buildEvalArgs(t, derivs, PTM, gPTM, MWv, MWu, tdvout, gibbsSp, f)
             start = time()
-            setattr(tdvout, t.name, t.calcFn(**args))  # calculate the value and set it in the output
+            setattr(tdvout, t.name, t.calcFn(**args))  # Calculate the value and set it in the output
             end = time()
             if verbose: _printTiming('tdv ' + t.name, start, end)
             completedTDVs.add(t.name)
@@ -147,11 +146,11 @@ def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, tdvout, dimCt, verbose=False)
 
 def _parseInput(gibbsSp, *tdvSpec):
     dimCt = gibbsSp['number'].size
-    # expand spec to add dependencies (or set to default spec if no spec given)
+    # Expand spec to add dependencies (or set to default spec if no spec given)
     origSpec = tdvSpec
     tdvSpec = statevars.expandTDVSpec(tdvSpec, dimCt)
     addedTDVs = [s.name for s in tdvSpec if s.name not in origSpec]
-    if origSpec and addedTDVs:  # the original spec was not empty and more tdvs were added
+    if origSpec and addedTDVs:  # The original spec was not empty and more tdvs were added
         print('NOTE: The requested thermodynamic variables depend on the following variables, which will be ' +
               'included as properties of the output object: ' + pformat(addedTDVs))
     return dimCt, tdvSpec
@@ -173,8 +172,8 @@ def _buildEvalArgs(tdv, derivs, PTM, gPTM, MWv, MWu, tdvout, gibbsSp, f):
 def _makeFakePTMGrid(dimCt, PTM):
     out = np.empty(dimCt, object)
     for d in np.arange(0, dimCt):
-        u = {t[d] for t in PTM}  # get unique values in each dimension
-        out[d] = np.array(sorted(u))  # sort the values in ascending order
+        u = {t[d] for t in PTM}  # Get unique values in each dimension
+        out[d] = np.array(sorted(u))  # Sort the values in ascending order
     return out
 
 
@@ -187,35 +186,35 @@ def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, failOnExtrapolate):
       Note that the mlbspline.eval module performs additional checks (like dimension count mismatches
     """
     knotranges = [(k[0], k[-1]) for k in gibbsSp['knots']]
-    # if a PTM spline, make sure the spline's concentration dimension starts with 0 if any tdv has req0M=True
+    # If a PTM spline, make sure the spline's concentration dimension starts with 0 if any tdv has req0M=True
     # Note that the evalGibbs functions elsewhere handle the case where PTM does not include 0 concentration.
     req0M = [t for t in tdvSpec if t.req0M]
     if dimCt == 3 and req0M and knotranges[iM][0] != 0:
         raise ValueError('You cannot calculate ' + pformat([t.name for t in req0M]) + ' with a spline that does ' +
                          'not include 0 concentration. Remove those statevars and all their dependencies, or ' +
                          'supply a spline that includes 0 concentration.')
-    # make sure that spline has 3 dims if tdvs using concentration or f are requested
+    # Make sure that spline has 3 dims if tdvs using concentration or f are requested
     reqF = [t for t in tdvSpec if t.reqF]
     reqM = [t for t in tdvSpec if t.reqM]
     if dimCt == 2 and (reqM or reqF):
         raise ValueError('You cannot calculate ' + pformat(set([t.name for t in (reqF + reqM)])) + ' with a spline ' +
                          'that does not include concentration. Remove those statevars and all their dependencies, ' +
                          'or supply a spline that includes concentration.')
-    # make sure that solvent molecular weight is provided if any tdvs that require MWv are requested
+    # Make sure that solvent molecular weight is provided if any tdvs that require MWv are requested
     reqMWv = [t for t in tdvSpec if t.reqMWv]
     if (MWv == 0 or not MWv) and reqMWv:
         raise ValueError('You cannot calculate ' + pformat([t.name for t in reqMWv]) + ' without ' +
                          'providing solvent molecular weight.  Remove those statevars and all their dependencies, or ' +
                          'provide a valid value for the MWv parameter.')
-    # make sure that solute molecular weight is provided if any tdvs that require MWu or f are requested
+    # Make sure that solute molecular weight is provided if any tdvs that require MWu or f are requested
     reqMWu = [t for t in tdvSpec if t.reqMWu]
     if (MWu == 0 or not MWu) and (reqMWu or reqF):
         raise ValueError('You cannot calculate ' + pformat([t.name for t in set(reqMWu + reqF)]) + ' without ' +
                          'providing solute molecular weight.  Remove those statevars and all their dependencies, or ' +
                          'provide a valid value for the MWu parameter.')
-    # make sure that all the PTM values fall inside the knot ranges of the spline
-    # for single point, PTM is a tuple - just report its min and max as the single value
-    # for a grid, PTM is an ndarray of sorted ndarrays, and so the min and max are the first and last elements
+    # Make sure that all the PTM values fall inside the knot ranges of the spline
+    # For single point, PTM is a tuple - just report its min and max as the single value
+    # For a grid, PTM is an ndarray of sorted ndarrays, and so the min and max are the first and last elements
     # TODO: make this less explictly dependent on data types
     ptmranges = [(d[0], d[-1]) if isinstance(d, Iterable) else (d, d) for d in PTM]
     hasValsOutsideKnotRange = lambda kr, dr: dr[0] < kr[0] or dr[1] > kr[1]
@@ -229,29 +228,28 @@ def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, failOnExtrapolate):
             raise ValueError(msg)
         else:
             log.warning(msg)
-    # warn the user if the calculation results will take more than some factor times total virtual memory
+    # Warn the user if the calculation results will take more than some factor times total virtual memory
     # TODO: make this less explicitly dependent on data types
     ptct = np.prod([len(d) if isinstance(d, Iterable) else 1 for d in PTM])  # the total number of points
-    # for each point, the output will include 1 value for the PTM point itself plus 1 for each tdv
+    # For each point, the output will include 1 value for the PTM point itself plus 1 for each tdv
     outputSize = (len(tdvSpec) + 1) * ptct * floatSizeBytes
     if outputSize > virtual_memory().total * vmWarningFactor:
-        log.warning('The projected output is more than {0} times the total virtual memory for this machine.'.format(
-            vmWarningFactor))
+        log.warning(f'The projected output is more than {vmWarningFactor} times the total virtual memory for this machine.')
     return
 
 
 def createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=False):
     """
 
-    :param tdvSpec:         the tdvSpec indicating which tdvs will need to be stored in the object
-    :param PTM:             the original PTM data, which will be stored in the object
+    :param tdvSpec:         The tdvSpec indicating which tdvs will need to be stored in the object
+    :param PTM:             The original PTM data, which will be stored in the object
     :param initializetdvs:  True if creating the ThermodynamicStates object for scatter data
-                            initializes output in the object by creating empty arrays matching the size of PTM
-    :return:                a ThermodynamicStates object ready to store calculated thermodynamic state variables
+                            Initializes output in the object by creating empty arrays matching the size of PTM
+    :return:                A ThermodynamicStates object ready to store calculated thermodynamic state variables
     """
     flds = {t.name for t in tdvSpec} | {'PTM'}
 
-    # copy PTM so if you add a 0 concentration, you affect only the version in the output var
+    # Copy PTM so if you add a 0 concentration, you affect only the version in the output var
     # so later you can compare the original PTM to the one in tdvout.PTM to see if you need to remove the 0 M
     TDS = type('ThermodynamicStates', (object,),
                {fld: (np.copy(PTM) if fld == 'PTM' else np.empty((PTM.size,), float) if initializetdvs else None) for
@@ -263,7 +261,7 @@ def createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=False):
 def _ptmTuple2NestedArrays(PTM, dimCt, needs0M):
     """ Converts a PTM tuple to numpy ndarrays
 
-    :return:  PTM as nested arrays, possibly with introduced 0 M
+    :return: PTM as nested arrays, possibly with introduced 0 M
     """
     out = np.empty(dimCt, object)
     for i in np.arange(0, dimCt):
@@ -291,8 +289,8 @@ def _remove0M(tdvout, wrappedPTM):
             firstM = tdvout.PTM[iM][0]
         except IndexError:
             firstM = tdvout.PTM[iM]
-        if firstM != 0:  # this means the wrapped PTM had a 0 concentration prepended
-            # go through all calculated values and remove the first item from the M dimension
+        if firstM != 0:  # This means the wrapped PTM had a 0 concentration prepended
+            # Go through all calculated values and remove the first item from the M dimension
             # TODO: figure out why PTM doesn't show up in vars
             for p, v in vars(tdvout).items():
                 slc = [slice(None)] * len(v.shape)
@@ -332,7 +330,7 @@ def getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose=False):
     """
     GibbsDerivs = _createGibbsDerivativesClass(tdvSpec)
     out = GibbsDerivs()
-    reqderivs = {d for t in tdvSpec for d in t.reqDerivs}  # get set of derivative names that are needed
+    reqderivs = {d for t in tdvSpec for d in t.reqDerivs}  # Get set of derivative names that are needed
     getDerivSpec = lambda dn: next(d for d in statevars.derivatives if d.name == dn)
     for rd in reqderivs:
         derivDirective = _buildDerivDirective(getDerivSpec(rd), dimCt)
@@ -346,7 +344,7 @@ def getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose=False):
 def _getGriddedPTM(tdvSpec, PTM, verbose=False):
     if any([t.reqGrid for t in tdvSpec]):
         start = time()
-        out = np.meshgrid(*PTM.tolist(), indexing='ij')  # grid the dimensions of PTM
+        out = np.meshgrid(*PTM.tolist(), indexing='ij')  # Grid the dimensions of PTM
         end = time()
         if verbose: _printTiming('grid', start, end)
     else:
@@ -356,7 +354,7 @@ def _getGriddedPTM(tdvSpec, PTM, verbose=False):
 
 def _getVolSolventInVolSlnConversion(MWu, PTM):
     """ Dimensionless conversion factor for how much of the volume of 1 kg of solution is really just the solvent
-    :return:    f
+    :return: f
     """
     return 1 + MWu * PTM[iM]
 
@@ -369,5 +367,5 @@ def _printTiming(calcdesc, start, end):
 #########################################
 ## Constants
 #########################################
-vmWarningFactor = 2  # warn the user when size of output would exceed vmWarningFactor times total virtual memory
+vmWarningFactor = 2  # Warn the user when size of output would exceed vmWarningFactor times total virtual memory
 floatSizeBytes = int(np.finfo(float).bits / 8)

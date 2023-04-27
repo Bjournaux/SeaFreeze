@@ -1,9 +1,7 @@
 from math import isnan
 from numbers import Number
 import logging
-
 import numpy as np
-
 from mlbspline import load
 
 log = logging.getLogger('lbftd')
@@ -23,20 +21,20 @@ def loadGibbsSpline(splineFile, splineVar=None):
             If MW.size == 1 (pure substance), the value will be ignored so the field can be absent --
             otherwise the field must be present and have a numeric value.
 
-    :param splineFile:  full or relative path to Matlab file
-    :param splineVar:   variable to load from splineFile.
+    :param splineFile:  Full or relative path to Matlab file
+    :param splineVar:   Variable to load from splineFile.
                         If not provided, the splineFile must contain exactly one variable
-    :return:            a dict with the Gibbs energy spline representation required by evalGibbs functions
+    :return:            A dict with the Gibbs energy spline representation required by evalGibbs functions
     """
     raw = load._stripNestingToFields(load._getRaw(splineFile, splineVar))
     sp = load.getSplineDict(load._stripNestingToValue(raw['sp']))
     load.validateSpline(sp)
     MW = _getMW(raw)
     out = {
-        'sp':   sp,
-        'MW':   MW
+        'sp': sp,
+        'MW': MW
     }
-    if MW.size > 1:     #  only add nu if dealing with a solution rather than a pure substance
+    if MW.size > 1:  # Only add nu if dealing with a solution rather than a pure substance
         out['nu'] = _getnu(raw)
     return out
 
@@ -46,16 +44,16 @@ def _getMW(raw):
     except KeyError:
         log.warning('Could not load MW - defaulting to empty value - will not be able to calculate some thermodynamic values')
         MW = np.empty(0)
-    MW = np.array([MW]) if isinstance(MW, Number) else MW   # wrap scalar value
+    MW = np.array([MW]) if isinstance(MW, Number) else MW  # Wrap scalar value
     if MW.size > 2:
         raise ValueError('MW has too many elements, as multi-solute solutions are not currently supported.')
     if any([not isinstance(mw, Number) or isnan(mw) for mw in MW]):
-        raise ValueError('At least one value of MW is not numeric, so the entire value is ignored.')
+        raise ValueError('At least one value of MW is not numeric. The entire value will be ignored.')
     return MW
 
 
 def _getnu(raw):
-    # currently only supporting a single solute solution so this is just an integer
+    # Currently only supports a single solute solution so this is just an integer
     nu = load._stripNestingToValue(raw['nu'])
     if not isinstance(nu, Number) or nu != int(nu):
         raise ValueError('At least one value in nu is not an integer.')
