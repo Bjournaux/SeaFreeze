@@ -1,12 +1,16 @@
 from collections import namedtuple
 from itertools import repeat
 import warnings
+import logging
 import os.path as op
 import numpy as np
 from mlbspline import load
 from lbftd import evalGibbs as eg
 from lbftd.statevars import iP, iT, iM
 
+log = logging.getLogger('seafreeze')
+stream = logging.StreamHandler()
+stream.setFormatter(logging.Formatter('[SeaFreeze %(levelname)s] %(message)s'))
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
 
 
@@ -24,10 +28,15 @@ def seafreeze(PTm, phase, path=defpath):
     Using other water parametrizations will lead to incorrect melting curves -- 'water2' and 'water_IAPWS95'
     parametrizations are provided for HP extension up to 100 GPa and comparison only.
 
+<<<<<<< HEAD
     :param PTm:     The pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
+=======
+    :param PT:      The pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
+>>>>>>> master
                     calculated -- the specified units are required, as conversions are built into several calculations.
                     For solutes, molality (concentration in mol solute/kg solvent) is also required.
                     This parameter can have one of the following formats:
+<<<<<<< HEAD
                         - Scatter-type input: a 1-dimensional numpy array of tuples with one or more
                           (P,T) or (P,T,m) tuples, e.g.
                                 PTm = np.empty((3,), dtype=object)
@@ -60,6 +69,25 @@ def seafreeze(PTm, phase, path=defpath):
                     The default value assumes the spline distributed along with the project
     :return:        SF output class object containing the calculated thermodynamic quantities (as named attributes),
                     as well as a PTm property (a copy of PTm).
+=======
+                        - A 1-dimensional numpy array of tuples with one or more scattered (P,T) tuples, e.g.
+                                PT = np.empty((3,), np.object)
+                                PT[0] = (441.0858, 313.95)
+                                PT[1] = (478.7415, 313.96)
+                                PT[2] = (444.8285, 313.78)
+                        - A numpy array with 2 nested numpy arrays, the first with pressures and the second
+                          with temperatures -- each inner array must be sorted from low to high values
+                          A grid will be constructed from the P and T arrays such that each row of the output
+                          will correspond to a pressure and each column to a temperature, e.g.
+                                P = np.arange(0.1, 1000.2, 10)
+                                T = np.arange(240, 501, 2)
+                                PT = np.array([P, T])
+    :param phase:   One of the keys of the phases dict, indicating the phase of H2O to be evaluated
+    :param path:    An optional path to the SeaFreeze_Gibbs.mat file
+                    default value assumes the spline distributed along with the project
+    :return:        object containing the calculated thermodynamic quantities (as named properties), as well as
+                    A PTM property (a copy of PT)
+>>>>>>> master
     """
     try:
         phasedesc = phases[phase]
@@ -68,7 +96,7 @@ def seafreeze(PTm, phase, path=defpath):
                          ', '.join(phases.keys()) + '.')
     sp = load.loadSpline(path, phasedesc.sp_name)
     sp['MW'] = phasedesc.MW
-    # calc density and isentropic bulk modulus
+    # Calc density and isentropic bulk modulus
     isscatter = _is_scatter(PTm)
     if sp['ndT']:
         # Dimensionless temperature is used, convert input T to dimensionless
@@ -79,7 +107,7 @@ def seafreeze(PTm, phase, path=defpath):
     tdvs = _get_tdvs(sp, PTm, isscatter)
     if phasedesc.shear_mod_parms:
         smg = _get_shear_mod_GPa(phasedesc.shear_mod_parms, tdvs.rho, _get_T(PTm, isscatter))
-        tdvs.shear = 1e3 * smg  # convert to MPa for consistency with other measures
+        tdvs.shear = 1e3 * smg  # Convert to MPa for consistency with other measures
         tdvs.Vp = _get_Vp(smg, tdvs.rho, tdvs.Ks)
         tdvs.Vs = _get_Vs(smg, tdvs.rho)
     return tdvs
@@ -129,8 +157,8 @@ def whichphase(PTm, solute='water1', path=defpath):
     isscatter = _is_scatter(PTm)
     phase_sp = {v.phase_num: load.loadSpline(path, v.sp_name) for pcomp, v in phases.items() if
                 v.phase_num > 0 or pcomp == solute}
-    ptsh = (PTm.size,) if isscatter else (PTm[iP].size, PTm[iT].size)  # reference shape based on PTm
-    comp = np.full(ptsh + (max_phase_num + 1,), np.nan)  # comparison matrix
+    ptsh = (PTm.size,) if isscatter else (PTm[iP].size, PTm[iT].size)  # Reference shape based on PTm
+    comp = np.full(ptsh + (max_phase_num + 1,), np.nan)  # Comparison matrix
     for p in phase_sp.keys():
         if phase_sp[p]['ndT']:
             # Dimensionless temperature is used, convert input T to dimensionless
@@ -140,7 +168,7 @@ def whichphase(PTm, solute='water1', path=defpath):
                 PTm[iT] = np.log(PTm[iT] / phase_sp[p]['Tc'])
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (p,)  # slice for this phase
+            sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (p,)  # Slice for this phase
             sp = phase_sp[p]
             if p == 0:
                 phase_sp[p]['MW'] = phases[solute].MW
@@ -151,7 +179,7 @@ def whichphase(PTm, solute='water1', path=defpath):
             else:
                 phase_sp[p]['MW'] = phases[phasenum2phase[p]].MW
                 tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
-            # wipe out G for PTm values that fall outside the knot sequence
+            # Wipe out G for PTm values that fall outside the knot sequence
             if isscatter:
                 extrap = [(pt[iP] < sp['knots'][iP].min()) + (pt[iP] > sp['knots'][iP].max()) +
                           (pt[iT] < sp['knots'][iT].min()) + (pt[iT] > sp['knots'][iT].max()) for pt in PTm]
@@ -161,20 +189,20 @@ def whichphase(PTm, solute='water1', path=defpath):
                 extrap = np.logical_or(*np.meshgrid(pt, tt, indexing='ij'))
             tdvs[extrap] = np.nan
             comp[sl] = np.squeeze(tdvs)
-    # output for all-nan slices should be nan
-    all_nan_sl = np.all(np.isnan(comp), -1)  # find slices where all values are nan along the innermost axis
-    out = np.full(ptsh, np.nan)  # initialize output to nan
-    out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl], -1)  # find min values for other slices
+    # Output for all-nan slices should be nan
+    all_nan_sl = np.all(np.isnan(comp), -1)  # Find slices where all values are nan along the innermost axis
+    out = np.full(ptsh, np.nan)  # Initialize output to nan
+    out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl], -1)  # Find min values for other slices
     return out
 
 
 def _get_tdvs(sp, PTm, is_scatter, *tdvSpec):
-    """ peeks into PTm to see if the PTm data is for grid or scatter and calls the appropriate evalGibbs function
+    """ Peeks into PTm to see if the PTm data is for grid or scatter and calls the appropriate evalGibbs function
 
-    :param sp:          the Gibbs LBF
-    :param PTm:         the PTm data
+    :param sp:          The Gibbs LBF
+    :param PTm:         The PTm data
     :param is_scatter:  Boolean indicating whether the PTm data is scatter or not (if not, it is a grid)
-    :param tdvSpec:     optional list of thermodynamic variables to calculate (see lbftd documentation)
+    :param tdvSpec:     Optional list of thermodynamic variables to calculate (see lbftd documentation)
     :return:            tdv object (see lbftd documentation)
     """
     fn = eg.evalSolutionGibbsScatter if is_scatter else eg.evalSolutionGibbsGrid
@@ -229,8 +257,8 @@ phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15]
           "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273], 5, mH2O_kgmol),  # Journaux et al, 2019
           "VI": PhaseDesc("G_iceVI", [2.57, 0.0175, 0, -0.014, 1100, 273], 6, mH2O_kgmol),  # Journaux et al, 2019
           "VII_X_French": PhaseDesc("G_iceVII_X_French", [10, 0.0033, 0.000048, -0.014, 1300, 273], 7, mH2O_kgmol),  # French and Redmer, 2015
-          "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol),  # extends to 500 K and 2300 MPa; Bollengier et al 2019
-          "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol),  # extends to 100 GPa; Brown 2018
+          "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol),  # Extends to 500 K and 2300 MPa; Bollengier et al 2019
+          "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol),  # Extends to 100 GPa; Brown 2018
           "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol),  # LBF representation of IAPWS 95; Wagner and Pruß, 2002
           "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3),  # LBF representation of unpublished NH3 data from B Journaux and JM Brown
           "NaCl": PhaseDesc("NaCl_LBF_8000MPa", None, 0, 58.44e-3)  # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
