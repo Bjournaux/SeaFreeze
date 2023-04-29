@@ -6,15 +6,15 @@ The SeaFreeze package allows to compute the thermodynamic and elastic properties
 
 
 ## Installation
-This package will install [uw-highP-geophysics-tools](https://pypi.org/project/uw-highP-geophysics-tools/) and its dependencies.
+This package will install SeaFreeze, LBFTD, and MLBspline and their dependencies.
 
 Run the following command to install
 
-`pip3 install SeaFreeze`
+`pip install SeaFreeze`
 
 To upgrade to the latest version, use
 
-`pip3 install --upgrade SeaFreeze`
+`pip install --upgrade SeaFreeze`
 
 
 ## `seafreeze.seafreeze`: calculating thermodynamic and elastic properties of a phase of water
@@ -69,7 +69,7 @@ The output of the function is an object with properties corresponding to the fol
 
 ```python
 import numpy as np
-import seafreeze as sf
+import seafreeze.seafreeze as sf
 
 # list supported phases
 sf.phases.keys()
