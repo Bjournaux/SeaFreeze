@@ -1,20 +1,20 @@
 # SeaFreeze
 
-V0.9.2
+V0.9.3
 
 The SeaFreeze package allows computation of the thermodynamic and elastic properties of water and ice polymorphs Ih, II, III, V and VI in the 0-2300 MPa and 220-500 K range. It is based on the evaluation of Local Basis Functions for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parameterization by Bollengier, Brown, and Shaw (2019).
 
 
 ## Installation
-This package will install [uw-highP-geophysics-tools](https://pypi.org/project/uw-highP-geophysics-tools/) and its dependencies.
+This package will install SeaFreeze, LBFTD, and MLBspline and their dependencies.
 
 Run the following command to install
 
-`pip3 install SeaFreeze`
+`pip install SeaFreeze`
 
 To upgrade to the latest version, use
 
-`pip3 install --upgrade SeaFreeze`
+`pip install --upgrade SeaFreeze`
 
 
 ## `seafreeze.seafreeze`: calculating thermodynamic and elastic properties of a phase of water
@@ -68,7 +68,7 @@ The output of the function is an object with properties corresponding to the fol
 
 ```python
 import numpy as np
-import seafreeze as sf
+import seafreeze.seafreeze as sf
 
 # list supported phases
 sf.phases.keys()
