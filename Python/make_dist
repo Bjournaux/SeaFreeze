@@ -23,7 +23,8 @@ else
 fi
 
 # update tools then create src and wheel distributions
-python3 -m pip install --user --upgrade setuptools wheel
+python3 -m pip install --user --upgrade pip
+python3 -m pip install --user --upgrade setuptools wheel build
 python3 -m build
 
 # remove local license and spline files if copied just for the build
