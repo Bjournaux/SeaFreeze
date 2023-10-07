@@ -1,14 +1,11 @@
 # SeaFreeze
 
-[![License: MIT License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![License: GPL-3.0 License](https://img.shields.io/badge/License-GPL3-blue.svg?style=flat-square)](https://opensource.org/license/gpl-3-0/)
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-<<<<<<< HEAD
 V0.9.4
-=======
-V0.9.3
->>>>>>> master
+
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
@@ -166,7 +163,7 @@ out =
 
 ## Important remarks 
 ### Water representation
-The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parametrization wil lead to incorect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
+The ices' Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parametrization wil lead to incorect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
 
 ### Range of validity
 SeaFreeze stability prediction is currently considered valid down to 130K, which correspond to the ice VI - ice XV transition. The ice Ih - II transition is potentially valid down to 73.4 K (ice Ih - ice XI transition).
@@ -191,7 +188,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **Baptiste Journaux (Lead)** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Marshall Styczinski** - *Jet Propulsion Laboratory, California Institute of Technology, Pasadena, USA* 
+* **Marshall Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA* 
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
 
