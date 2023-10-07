@@ -28,15 +28,10 @@ def seafreeze(PTm, phase, path=defpath):
     Using other water parametrizations will lead to incorrect melting curves -- 'water2' and 'water_IAPWS95'
     parametrizations are provided for HP extension up to 100 GPa and comparison only.
 
-<<<<<<< HEAD
     :param PTm:     The pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
-=======
-    :param PT:      The pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
->>>>>>> master
                     calculated -- the specified units are required, as conversions are built into several calculations.
                     For solutes, molality (concentration in mol solute/kg solvent) is also required.
                     This parameter can have one of the following formats:
-<<<<<<< HEAD
                         - Scatter-type input: a 1-dimensional numpy array of tuples with one or more
                           (P,T) or (P,T,m) tuples, e.g.
                                 PTm = np.empty((3,), dtype=object)
@@ -69,25 +64,6 @@ def seafreeze(PTm, phase, path=defpath):
                     The default value assumes the spline distributed along with the project
     :return:        SF output class object containing the calculated thermodynamic quantities (as named attributes),
                     as well as a PTm property (a copy of PTm).
-=======
-                        - A 1-dimensional numpy array of tuples with one or more scattered (P,T) tuples, e.g.
-                                PT = np.empty((3,), np.object)
-                                PT[0] = (441.0858, 313.95)
-                                PT[1] = (478.7415, 313.96)
-                                PT[2] = (444.8285, 313.78)
-                        - A numpy array with 2 nested numpy arrays, the first with pressures and the second
-                          with temperatures -- each inner array must be sorted from low to high values
-                          A grid will be constructed from the P and T arrays such that each row of the output
-                          will correspond to a pressure and each column to a temperature, e.g.
-                                P = np.arange(0.1, 1000.2, 10)
-                                T = np.arange(240, 501, 2)
-                                PT = np.array([P, T])
-    :param phase:   One of the keys of the phases dict, indicating the phase of H2O to be evaluated
-    :param path:    An optional path to the SeaFreeze_Gibbs.mat file
-                    default value assumes the spline distributed along with the project
-    :return:        object containing the calculated thermodynamic quantities (as named properties), as well as
-                    A PTM property (a copy of PT)
->>>>>>> master
     """
     try:
         phasedesc = phases[phase]
