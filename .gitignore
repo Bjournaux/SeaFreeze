@@ -4,3 +4,4 @@
 Python/SeaFreeze.egg-info/*
 Python/build/*
 Python/dist/*
+.idea/*
