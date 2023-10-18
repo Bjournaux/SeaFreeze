@@ -68,7 +68,7 @@ The output of the function is an object with properties corresponding to the fol
 
 ```python
 import numpy as np
-import seafreeze as sf
+from seafreeze import seafreeze as sf
 
 # list supported phases
 sf.phases.keys()
