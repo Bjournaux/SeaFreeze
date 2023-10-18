@@ -16,7 +16,7 @@ else
   cp ../LICENSE.txt .
 fi
 
-if [ -e SeaFreeze_Gibbs.mat ]; then
+if [ -e seafreeze/SeaFreeze_Gibbs.mat ]; then
   DELSP=0
 else
   DELSP=1
