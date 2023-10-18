@@ -187,7 +187,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **Baptiste Journaux (Lead)** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Marshall Styczinski** - *Jet Propulsion Laboratory, California Institute of Technology, Pasadena, USA* 
+* **Marshall Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA* 
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 
 ## Change log
