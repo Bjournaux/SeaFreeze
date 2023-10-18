@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Run this script from the Python directory to create PyPI package for upload
+# Then, provide __token__ as username and upload key with: python -m twine upload dist/* --verbose
 
 # delete contents of dist folder
 if [ -d dist ]; then

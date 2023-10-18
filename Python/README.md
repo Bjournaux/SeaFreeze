@@ -107,8 +107,8 @@ out.shear   # shear modulus
 ### Usage
 Seafreeze also includes a function to determine which of the *supported* phases is stable
 under the given pressure and temperature conditions. 
-The function `seafreeze.whichphase` has a single parameter, `PT`, 
-which requires the same format as in the `seafreeze.seafreeze` function.
+The function `whichphase` has a single parameter, `PT`, 
+which requires the same format as in the `seafreeze` function.
 
 The output of the function is a [Numpy array](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
 with an integer indicating the phase number corresponding to the `PT` input.  The phase number 0 means 
@@ -124,10 +124,10 @@ Each item in this dictionary has the phase number as its key and the phase as th
 
 ```python
 import numpy as np
-import seafreeze as sf
+from seafreeze import seafreeze as sf
 
 # determine the phase of water at 900 MPa and 255 K
-PT = np.empty((1,), np.object)
+PT = np.empty((1,), dtype=object)
 PT[0] = (900, 255)
 out = sf.whichphase(PT)
 # map to a phase using phasenum2phase
@@ -135,7 +135,7 @@ sf.phasenum2phase[out[0]]
 
 
 # determine phase for three separate (P,T) conditions
-PT = np.empty((3,), np.object)
+PT = np.empty((3,), dtype=object)
 PT[0] = (100, 200)
 PT[1] = (400, 250)
 PT[2] = (1000, 300)
@@ -170,12 +170,14 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 * **Baptiste Journaux** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* **Marshall J. Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA*
 * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
 
 ## Change log
 
 ### Changes since 0.9.0
-- `0.9.3`: add ice VII and ice X from French and Redmer (2015).
+- `0.9.4`: Adjusted python readme syntax and package authorship info
+- `0.9.3`: add ice VII and ice X from French and Redmer (2015). LocalBasisFunction spline interpretation software integrated into SeaFreeze Python package. Adjusted packaging to work better with pip
 - `0.9.2.post2`: `whichphase` returns `numpy.nan` if PT is outside the regime of all phases
 - `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function

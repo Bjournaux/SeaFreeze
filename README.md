@@ -190,7 +190,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **Baptiste Journaux (Lead)** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Marshall Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA* 
+* **Marshall J. Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA* 
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
 
@@ -199,7 +199,8 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ### Changes since 0.9.0
 - `0.9.4`: add ice VII and ice X from French and Redmer (2015).
 - [SeaFreeze GUI](https://github.com/Bjournaux/SeaFreeze/tree/master/SeaFreezeGUI) available
-- `0.9.3`: LocalBasisFunction spline interpretation software integrated into SeaFreeze Python package.
+- `0.9.4`: Adjusted python readme syntax and package authorship info 
+- `0.9.3`: LocalBasisFunction spline interpretation software integrated into SeaFreeze Python package. Adjusted packaging to work better with pip
 - `0.9.2` patch1: added `SF_WPD`, `SF_PhaseLines` and `SeaFreeze_version` to the Matlab distribution.
 - `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
