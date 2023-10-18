@@ -4,7 +4,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-V0.9.3
+V0.9.4
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
@@ -187,14 +187,15 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **Baptiste Journaux (Lead)** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Marshall Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA* 
+* **Marshall J. Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA* 
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 
 ## Change log
 
 ### Changes since 0.9.0
 - [SeaFreeze GUI](https://github.com/Bjournaux/SeaFreeze/tree/master/SeaFreezeGUI) available
-- `0.9.3`: LocalBasisFunction spline interpretation software integrated into SeaFreeze Python package.
+- `0.9.4`: Adjusted python readme syntax and package authorship info 
+- `0.9.3`: LocalBasisFunction spline interpretation software integrated into SeaFreeze Python package. Adjusted packaging to work better with pip
 - `0.9.2` patch1: added `SF_WPD`, `SF_PhaseLines` and `SeaFreeze_version` to the Matlab distribution.
 - `0.9.2`: add ice II to the representation.
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
