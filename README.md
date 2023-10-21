@@ -4,8 +4,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-V0.9.4
-
+V0.9.6
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
@@ -191,7 +190,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Marshall J. Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA* 
-* **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA*  
 * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
 
 ## Change log
