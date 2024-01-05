@@ -153,7 +153,7 @@ def whichphase(PTm, solute='water1', path=defpath):
                 else:
                     tdvs = _get_tdvs(sp, PTm, isscatter, 'G', 'muw').muw
             else:
-                phase_sp[p]['MW'] = phases[phasenum2phase[p]].MW
+                phase_sp[p]['MW'] = phases[phasenum2phase(p)].MW
                 tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
             # Wipe out G for PTm values that fall outside the knot sequence
             if isscatter:
@@ -235,9 +235,26 @@ phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15]
           "VII_X_French": PhaseDesc("G_iceVII_X_French", [10, 0.0033, 0.000048, -0.014, 1300, 273], 7, mH2O_kgmol),  # French and Redmer, 2015
           "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol),  # Extends to 500 K and 2300 MPa; Bollengier et al 2019
           "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol),  # Extends to 100 GPa; Brown 2018
-          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol),  # LBF representation of IAPWS 95; Wagner and Pruß, 2002
+          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol),  # LBF representation of IAPWS 95; Wagner and Pruss, 2002
           "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3),  # LBF representation of unpublished NH3 data from B Journaux and JM Brown
           "NaCl": PhaseDesc("NaCl_LBF_8000MPa", None, 0, 58.44e-3)  # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
           }
 max_phase_num = max([p.phase_num for p in phases.values()])
-phasenum2phase = {v.phase_num: k for (k, v) in phases.items()}
+
+phasenum2phaseDict = {v.phase_num: k for (k, v) in phases.items()}
+def phasenum2phase(phaseInt, liqComp='water1'):
+    """
+    Convert an integer phase index to a string compatible with SeaFreeze functions.
+
+    :param phaseInt: Integer representing the desired ice phase or liquid. Options include those listed in the ``phases`` dict.
+    :param liqComp: String to return for the liquid phase in the event 0 is passed for ``phaseInt``.
+    :return: String representing the phase associated with ``phaseInt``.
+    """
+
+    if phaseInt == 0:
+        return liqComp
+    elif np.isnan(phaseInt):
+        log.warning('NaN input to phasenum2phase. Defaulting to liquid phase.')
+        return liqComp
+    else:
+        return phasenum2phaseDict[phaseInt]
