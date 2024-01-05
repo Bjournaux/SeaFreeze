@@ -124,14 +124,14 @@ Each item in this dictionary has the phase number as its key and the phase as th
 
 ```python
 import numpy as np
-from seafreeze import seafreeze as sf
+from seafreeze.seafreeze import seafreeze as sf
 
 # determine the phase of water at 900 MPa and 255 K
 PT = np.empty((1,), dtype=object)
 PT[0] = (900, 255)
 out = sf.whichphase(PT)
 # map to a phase using phasenum2phase
-sf.phasenum2phase[out[0]]
+sf.phasenum2phase(out[0])
 
 
 # determine phase for three separate (P,T) conditions
@@ -141,12 +141,12 @@ PT[1] = (400, 250)
 PT[2] = (1000, 300)
 out = sf.whichphase(PT)
 # show phase for each (P,T)
-[(PT, sf.phasenum2phase[pn]) for (PT, pn) in zip(PT, out)]
+[(PT, sf.phasenum2phase(pn)) for (PT, pn) in zip(PT, out)]
 
 # find the likely phases at pressures 0-5 MPa and temperatures 240-300 K
 P = np.arange(0, 5, 0.1)
 T = np.arange(240, 300)
-PT = np.array([P, T])
+PT = np.array([P, T], dtype=object)
 out = sf.whichphase(PT)
 ```
 
