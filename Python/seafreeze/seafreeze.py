@@ -13,8 +13,7 @@ stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[SeaFreeze %(levelname)s] %(message)s'))
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs.mat')
 
-
-def seafreeze(PTm, phase, path=defpath):
+def seafreeze(PTm, phase, nan_on_extrapolate=False, path=defpath):
     """ Calculates thermodynamic quantities for H2O water or ice polymorphs Ih, III, V, VI, VII and X for all phases
         (see lbftd documentation for full list)
         for solid phases only:
@@ -42,9 +41,9 @@ def seafreeze(PTm, phase, path=defpath):
                                 PTm = np.empty((3,), dtype=object)
                                 PTm[0] = (441.0858, 313.95, 24.9)
                                 PTm[1] = (478.7415, 313.96, 22.3)
-                                PTm[2] = (444.8285, 313.78, 23.7)                            
+                                PTm[2] = (444.8285, 313.78, 23.7)
                         - Grid-type input: a numpy array with 2 or 3 nested numpy arrays, the first with
-                          pressures, the second with temperatures, and the optional third with molality -- 
+                          pressures, the second with temperatures, and the optional third with molality --
                           each inner array must be sorted from low to high values. A grid will be constructed
                           from the P and T arrays such that each row of the output will correspond to a
                           pressure and each column to a temperature, e.g.
@@ -81,13 +80,25 @@ def seafreeze(PTm, phase, path=defpath):
         else:
             PTm[iT] = np.log(PTm[iT] / sp['Tc'])
     tdvs = _get_tdvs(sp, PTm, isscatter)
+    if nan_on_extrapolate:
+        _nan_extrap(PTm, tdvs, isscatter, sp)
     if phasedesc.shear_mod_parms:
         smg = _get_shear_mod_GPa(phasedesc.shear_mod_parms, tdvs.rho, _get_T(PTm, isscatter))
         tdvs.shear = 1e3 * smg  # Convert to MPa for consistency with other measures
         tdvs.Vp = _get_Vp(smg, tdvs.rho, tdvs.Ks)
         tdvs.Vs = _get_Vs(smg, tdvs.rho)
     return tdvs
-
+def _nan_extrap(PTm, tdvs, isscatter, sp):
+    if isscatter:
+        extrap = [(pt[iP] < sp['knots'][iP].min()) + (pt[iP] > sp['knots'][iP].max()) +
+                  (pt[iT] < sp['knots'][iT].min()) + (pt[iT] > sp['knots'][iT].max()) for pt in PTm]
+    else:
+        pt = np.logical_or(PTm[iP] < sp['knots'][iP].min(), PTm[iP] > sp['knots'][iP].max())
+        tt = np.logical_or(PTm[iT] < sp['knots'][iT].min(), PTm[iT] > sp['knots'][iT].max())
+        extrap = np.logical_or(*np.meshgrid(pt, tt, indexing='ij'))
+    for a, v in tdvs.__dict__.items():
+        v[extrap] = np.nan
+    return tdvs
 
 def whichphase(PTm, solute='water1', path=defpath):
     """ Determines the most likely phase of water at each pressure/temperature
@@ -106,9 +117,9 @@ def whichphase(PTm, solute='water1', path=defpath):
                                 PTm = np.empty((3,), dtype=object)
                                 PTm[0] = (441.0858, 313.95, 24.9)
                                 PTm[1] = (478.7415, 313.96, 22.3)
-                                PTm[2] = (444.8285, 313.78, 23.7)                            
+                                PTm[2] = (444.8285, 313.78, 23.7)
                         - Grid-type input: a numpy array with 2 or 3 nested numpy arrays, the first with
-                          pressures, the second with temperatures, and the optional third with molality -- 
+                          pressures, the second with temperatures, and the optional third with molality --
                           each inner array must be sorted from low to high values. A grid will be constructed
                           from the P and T arrays such that each row of the output will correspond to a
                           pressure and each column to a temperature, e.g.
@@ -199,7 +210,7 @@ def _get_Vs(smg, rho):
 
 def _is_scatter(PTm):
     return isinstance(PTm[0], tuple) or (PTm.shape == (1, 2) and np.isscalar(PTm[0]) and np.isscalar(PTm[1])) \
-           or (PTm.shape == (1, 3) and np.isscalar(PTm[0]) and np.isscalar(PTm[1]) and np.isscalar(PTm[2]))
+        or (PTm.shape == (1, 3) and np.isscalar(PTm[0]) and np.isscalar(PTm[1]) and np.isscalar(PTm[2]))
 
 
 def _get_T(PTm, is_scatter):
@@ -227,21 +238,29 @@ def _get_PT(PTm, is_scatter):
 #########################################
 mH2O_kgmol = 18.01528e-3
 PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod_parms phase_num MW')
-phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15], 1, mH2O_kgmol),  # Feistel and Wagner, 2006
+phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15], 1, mH2O_kgmol),
+          # Feistel and Wagner, 2006
           "II": PhaseDesc("G_iceII", [4.1, 0.0175, 0, -0.014, 1100, 273], 2, mH2O_kgmol),  # Journaux et al, 2019
           "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273], 3, mH2O_kgmol),  # Journaux et al, 2019
           "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273], 5, mH2O_kgmol),  # Journaux et al, 2019
           "VI": PhaseDesc("G_iceVI", [2.57, 0.0175, 0, -0.014, 1100, 273], 6, mH2O_kgmol),  # Journaux et al, 2019
-          "VII_X_French": PhaseDesc("G_iceVII_X_French", [10, 0.0033, 0.000048, -0.014, 1300, 273], 7, mH2O_kgmol),  # French and Redmer, 2015
-          "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol),  # Extends to 500 K and 2300 MPa; Bollengier et al 2019
+          "VII_X_French": PhaseDesc("G_iceVII_X_French", [10, 0.0033, 0.000048, -0.014, 1300, 273], 7, mH2O_kgmol),
+          # French and Redmer, 2015
+          "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol),
+          # Extends to 500 K and 2300 MPa; Bollengier et al 2019
           "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol),  # Extends to 100 GPa; Brown 2018
-          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol),  # LBF representation of IAPWS 95; Wagner and Pruss, 2002
-          "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3),  # LBF representation of unpublished NH3 data from B Journaux and JM Brown
-          "NaCl": PhaseDesc("NaCl_LBF_8000MPa", None, 0, 58.44e-3)  # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
+          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol),
+          # LBF representation of IAPWS 95; Wagner and Pruss, 2002
+          "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3),
+          # LBF representation of unpublished NH3 data from B Journaux and JM Brown
+          "NaCl": PhaseDesc("NaCl_LBF_8000MPa", None, 0, 58.44e-3)
+          # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
           }
 max_phase_num = max([p.phase_num for p in phases.values()])
 
 phasenum2phaseDict = {v.phase_num: k for (k, v) in phases.items()}
+
+
 def phasenum2phase(phaseInt, liqComp='water1'):
     """
     Convert an integer phase index to a string compatible with SeaFreeze functions.
@@ -258,3 +277,4 @@ def phasenum2phase(phaseInt, liqComp='water1'):
         return liqComp
     else:
         return phasenum2phaseDict[phaseInt]
+

@@ -21,11 +21,11 @@ class TestSeafreeze(ut.TestCase):
     #     PT = np.array([7, 8])
     #     self.assertFalse(sf._is_scatter(PT))
     def test_is_scatter_singlept_preallocated(self):
-        PT = np.empty((1,), np.object)
+        PT = np.empty((1,), object)
         PT[0] = (1, 2)
         self.assertTrue(sf._is_scatter(PT))
     def test_is_scatter_scatter(self):
-        PT = np.empty((3,), np.object)
+        PT = np.empty((3,), object)
         PT[0] = (1, 2)
         PT[1] = (3, 4)
         PT[2] = (5, 6)
@@ -39,11 +39,11 @@ class TestSeafreeze(ut.TestCase):
     ## _get_T
     #########################################
     def test_get_T_singlept(self):
-        PT = np.empty((1,), np.object)
+        PT = np.empty((1,), object)
         PT[0] = (1, 2)
         self.assertEqual(2, sf._get_T(PT, True))
     def test_get_T_multipt(self):
-        PT = np.empty((3,), np.object)
+        PT = np.empty((3,), object)
         PT[0] = (1, 2)
         PT[1] = (3, 4)
         PT[2] = (5, 6)
@@ -57,13 +57,13 @@ class TestSeafreeze(ut.TestCase):
     ## _get_shear_mod_GPa
     #########################################
     def test_get_shear_mod_GPa_singlept(self):
-        PT = np.empty((1,), np.object)
+        PT = np.empty((1,), object)
         PT[0] = (900, 255)
         rho = 1.356072490993616e+03
         sm = sf._get_shear_mod_GPa(sf.phases['VI'].shear_mod_parms, rho, sf._get_T(PT, True))
         self.assertAlmostEqual(7.303268592388283, sm[0], places=10)
     def test_get_shear_mod_GPa_multipt(self):
-        PT = np.empty((3,), np.object)
+        PT = np.empty((3,), object)
         PT[0] = (900, 255)
         PT[1] = (910, 265)
         PT[2] = (920, 275)
@@ -144,7 +144,7 @@ class TestSeafreeze(ut.TestCase):
     # ## seafreeze
     # #########################################
     def test_seafreeze_singlept(self):
-        PT = np.empty((1,), np.object)
+        PT = np.empty((1,), object)
         PT[0] = (900, 255)
         out = sf.seafreeze(PT, 'VI', '../../../Matlab/SeaFreeze_Gibbs.mat')
         self.assertAlmostEqual(1.356072490993616e+03, out.rho[0])
@@ -153,3 +153,9 @@ class TestSeafreeze(ut.TestCase):
         self.assertAlmostEqual(7.303268592388283e+03, out.shear[0])
         self.assertAlmostEqual(4.548954381485812e+03, out.Vp[0], places=1)
         self.assertAlmostEqual(2.320690281146717e+03, out.Vs[0])
+
+    def test_seafreeze_nan_extrap(self):
+        PT = np.empty((1,), object)
+        PT[0] = (1000, 250)
+        out = sf.seafreeze(PT, 'Ih')
+        self.assertEqual(np.nan, out.G[0])
