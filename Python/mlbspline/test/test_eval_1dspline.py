@@ -13,7 +13,7 @@ class TestEval1DSpline(ut.TestCase):
     def tearDown(self):
         pass
     def test1dsplineeval_grid(self):
-        x = np.empty(1, np.object)              # sadly, must do this so numpy won't nest or unnest against your will
+        x = np.empty(1, object)              # sadly, must do this so numpy won't nest or unnest against your will
         x[0] = np.arange(240, 501, 20)          # in Matlab, a = 240:20:500;
         out = eval.evalMultivarSpline(self.spline, x)
         self.assertEqual(out.shape, self.mlout.shape, 'shapes not equal')

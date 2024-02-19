@@ -1,4 +1,4 @@
-from scipy.io import loadmat
+from hdf5storage import loadmat
 import numpy as np
 import logging
 
@@ -17,8 +17,8 @@ def loadSpline(splineFile, splineVar=None):
     raw = _getRaw(splineFile, splineVar)
     spd = getSplineDict(_stripNestingToFields(raw))
     # Knots can sometimes be imported as object type, which cannot be automatically cast to float
-    if not np.issubdtype(spd['knots'][0].dtype, np.number) and not isinstance(spd['knots'][0][0], np.ndarray):
-        spd['knots'] = spd['knots'].astype(np.float_)
+    # if not np.issubdtype(spd['knots'][0].dtype, np.number) and not isinstance(spd['knots'][0][0], np.ndarray):
+    #     spd['knots'] = spd['knots'].astype(np.float_)
     validateSpline(spd)
     return spd
 
@@ -56,10 +56,12 @@ def _stripNestingToFields(src):
 
 
 def _stripNestingToValue(src):
-    # Numpy already automatically squeezes
-    while isinstance(src, np.ndarray) and src.shape[0] == 1:
-        src = src[0]
-    return src
+    out = np.squeeze(src)
+    # nested arrays may also be wrapped - recursive call
+    if isinstance(out, np.ndarray) and len(out.shape) > 0:
+        for i in range(0, out.shape[0]):
+            out[i] = _stripNestingToValue(out[i])
+    return out
 
 
 def getSplineDict(src):
@@ -70,17 +72,11 @@ def getSplineDict(src):
         'number':   _stripNestingToValue(src['number']).astype(int),
         'order':    _stripNestingToValue(src['order']).astype(int),
         'dim':      _stripNestingToValue(src['dim']).astype(int),
-        'coefs':    _stripNestingToValue(src['coefs']),
-        'ndT':      False
+        'coefs':    _stripNestingToValue(src['coefs'])
     }
 
-    # If dimensionless temperature is used, include the critical temperature in field ['Tc'] in the outputs to flag it
-    if 'Tc' in src.dtype.names:
-        out['Tc'] = _stripNestingToValue(src['Tc'])
-        out['ndT'] = True
-
     # If number is a scalar, this is a 1D spline and some stuff needs to be re-wrapped for later code to work
-    if not isinstance(out['number'], np.ndarray):
+    if not isinstance(out['number'], np.ndarray) or len(out['number'].shape) == 0:
         out['number'] = np.array([out['number']])
         out['order'] = np.array([out['order']])
         # We can't just reshape or nest in one step, sadly. Numpy tries to be smart and creates a 2D array.
@@ -88,6 +84,11 @@ def getSplineDict(src):
         knots = np.empty(1, object)
         knots[0] = out['knots']
         out['knots'] = knots
+
+    # store extra unrecognized values in the output dictionary
+    for n in src.dtype.names:
+        if n not in out.keys():
+            out[n] = _stripNestingToValue(src[n])
 
     return out
 
