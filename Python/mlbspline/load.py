@@ -1,3 +1,4 @@
+import numpy
 from hdf5storage import loadmat
 import numpy as np
 import logging
@@ -34,7 +35,7 @@ def _loadFile(f, v=None):
 
 
 def _getCheckVar(rawf, v=None):
-    contents = [k for k in rawf.keys() if not k.startswith('__')]
+    contents = [k for k in rawf.keys() if not k.startswith('__') and not k.startswith('#')]
     if v is None:
         if len(contents) == 1:
             v = contents[0]
@@ -57,10 +58,9 @@ def _stripNestingToFields(src):
 
 def _stripNestingToValue(src):
     out = np.squeeze(src)
-    # nested arrays may also be wrapped - recursive call
-    if isinstance(out, np.ndarray) and len(out.shape) > 0:
-        for i in range(0, out.shape[0]):
-            out[i] = _stripNestingToValue(out[i])
+    if len(out.shape) == 1:
+        for n in range(out.size):
+            out[n] = np.squeeze(out[n])
     return out
 
 
@@ -68,15 +68,16 @@ def getSplineDict(src):
     # All splines must contain the following fields
     out = {
         'form':     _stripNestingToValue(src['form']),
-        'knots':    np.array([_stripNestingToValue(kd) for kd in _stripNestingToValue(src['knots'])], dtype=object),
-        'number':   _stripNestingToValue(src['number']).astype(int),
-        'order':    _stripNestingToValue(src['order']).astype(int),
-        'dim':      _stripNestingToValue(src['dim']).astype(int),
+        'knots':    _stripNestingToValue(src['knots']),
+        'number':   _stripNestingToValue(src['number']),
+        'order':    _stripNestingToValue(src['order']),
+        'dim':      _stripNestingToValue(src['dim']),
         'coefs':    _stripNestingToValue(src['coefs'])
     }
 
-    # If number is a scalar, this is a 1D spline and some stuff needs to be re-wrapped for later code to work
-    if not isinstance(out['number'], np.ndarray) or len(out['number'].shape) == 0:
+    # If number is a scalar, this is a 1D spline and some stuff needs to be re-wrapped,
+    # so we don't have to branch some later code for 1D case
+    if out['number'].size == 1:
         out['number'] = np.array([out['number']])
         out['order'] = np.array([out['order']])
         # We can't just reshape or nest in one step, sadly. Numpy tries to be smart and creates a 2D array.
