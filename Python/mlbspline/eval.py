@@ -6,8 +6,6 @@ log = logging.getLogger('mlbspline')
 stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[MLBspline %(levelname)s] %(message)s'))
 
-iT = 1
-
 def evalMultivarSpline(spd, x, der=None):
     """ Performs recursive evaluation of b-spline for the given independent values
     For now, assumes 1-D spline (y for each n-D x is scalar)

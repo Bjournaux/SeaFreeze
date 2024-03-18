@@ -57,27 +57,26 @@ def _stripNestingToFields(src):
 
 
 def _stripNestingToValue(src):
-    out = np.squeeze(src)
-    if len(out.shape) == 1:
-        for n in range(out.size):
-            out[n] = np.squeeze(out[n])
-    return out
+    while isinstance(src, np.ndarray) and src.shape[0] == 1:
+        src = src[0]
+    return np.squeeze(src)
 
 
 def getSplineDict(src):
     # All splines must contain the following fields
     out = {
         'form':     _stripNestingToValue(src['form']),
-        'knots':    _stripNestingToValue(src['knots']),
-        'number':   _stripNestingToValue(src['number']),
-        'order':    _stripNestingToValue(src['order']),
-        'dim':      _stripNestingToValue(src['dim']),
+        # knots comes in double nested so we need an extra layer of stripping nesting
+        'knots':    np.array([_stripNestingToValue(kd) for kd in _stripNestingToValue(src['knots'])], dtype=object),
+        'number':   _stripNestingToValue(src['number']).astype(int),
+        'order':    _stripNestingToValue(src['order']).astype(int),
+        'dim':      _stripNestingToValue(src['dim']).astype(int),
         'coefs':    _stripNestingToValue(src['coefs'])
     }
 
     # If number is a scalar, this is a 1D spline and some stuff needs to be re-wrapped,
     # so we don't have to branch some later code for 1D case
-    if out['number'].size == 1:
+    if not isinstance(out['number'], np.ndarray):
         out['number'] = np.array([out['number']])
         out['order'] = np.array([out['order']])
         # We can't just reshape or nest in one step, sadly. Numpy tries to be smart and creates a 2D array.
@@ -89,7 +88,8 @@ def getSplineDict(src):
     # store extra unrecognized values in the output dictionary
     for n in src.dtype.names:
         if n not in out.keys():
-            out[n] = _stripNestingToValue(src[n])
+            valn = _stripNestingToValue(src[n])
+            out[n] = np.array([np.squeeze(v) for v in valn], dtype=object) if valn.dtype == np.dtype('O') else valn
 
     return out
 
@@ -107,7 +107,7 @@ def validateSpline(spd):
     if spd['dim'] != 1:
         raise ValueError('These functions currently only support 1-D values.')
     # Need to have same size for knots, number, order
-    if spd['number'].shape[0] != spd['knots'].shape[0] or spd['number'].shape != spd['order'].shape:
+    if spd['number'].shape != spd['knots'].shape or spd['number'].shape != spd['order'].shape:
         raise ValueError('The spline''s knots, number, and order are inconsistent.')
     # Number of dims in coefs should be same as size of number (also makes it match knots and order b/c of prev check)
     if spd['number'].size != spd['coefs'].ndim:
@@ -115,7 +115,7 @@ def validateSpline(spd):
     # Each dim of coefs should have as many members as indicated by number
     if not (np.array(spd['coefs'].shape) == spd['number']).all():
         raise ValueError('At least one of the spline''s coefficients doesn''t match the corresponding number.')
-    # Each dim of knots should have be of length dictated by corresponding number + order
+    # Each dim of knots should have length dictated by corresponding number + order
     if not np.array(spd['number'] + spd['order'] == [k.size for k in spd['knots']]).all():
         raise ValueError('The number of knots does not correspond to the number and order for at least one variable.')
     return
