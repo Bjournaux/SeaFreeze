@@ -12,7 +12,7 @@ minT = 250;     maxT = 350
 minP = 0;       maxP = 1000
 toP = lambda r: (maxP - minP)*r + minP
 toT = lambda r: (maxT - minT)*r + minT
-PT = np.empty(n, np.object)
+PT = np.empty(n, object)
 for i in np.arange(0, n):
     PT[i] = (toP(random()), toT(random()))
 

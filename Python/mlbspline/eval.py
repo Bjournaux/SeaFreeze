@@ -42,7 +42,7 @@ def evalMultivarSpline(spd, x, der=None):
         raise ValueError('At least one derivative directive is not a non-negative integer.')
     # Use chain rule to get multiplicative factor for non-dimensional temperatures in B spline
     ndT1, ndT2 = (1, 1)
-    if der[iT] > 0 and spd['ndT']:
+    if len(der) > 1 and der[iT] > 0 and spd['ndT']:
         T_K = np.exp(x[iT])*spd['Tc']
         ndT1 = 1/T_K
         if der[iT] > 1:
@@ -54,7 +54,7 @@ def evalMultivarSpline(spd, x, der=None):
         xi = x[di]  # Get x values for dimension being evaluated
         # Wrap xi if necessary
         if not isinstance(xi, np.ndarray):
-            xi = np.asarray([xi])
+            xi = np.asarray([xi], dtype=float) # deprecation fix
         tck = _getNextSpline(di, dimCt, spd, y)
         if di == iT and spd['ndT']:
             if der[iT] == 2 and spd['ndT']:
@@ -81,6 +81,6 @@ def _getNextSpline(dimIdx, dimCt, spd, coefs):
     li = dimCt - 1
     if li != dimIdx:
         coefs = np.moveaxis(coefs, li, 0)
-    t = spd['knots'][dimIdx]
+    t = np.array(spd['knots'][dimIdx], dtype=float) # deprecation fix
     k = spd['order'][dimIdx] - 1  # Scipy wants the degree, not the order (MatLab gives the orders)
     return [t, coefs, k]

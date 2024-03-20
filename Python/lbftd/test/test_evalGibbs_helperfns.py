@@ -32,28 +32,28 @@ class TestEvalGibbsHelperFns(ut.TestCase):
         with self.assertRaisesRegex(ValueError, 'You cannot calculate {\'mus\'} with a spline ' +
                          'that does not include concentration. Remove those statevars and all their dependencies, ' +
                          'or supply a spline that includes concentration.'):
-            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T]), 'mus', MWu=1)
+            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T], dtype = object), 'mus', MWu=1)
     def test_checkinputs_grid_2d_reqFandX(self):
         P = np.arange(0, 3001, 100)
         T = np.arange(0, 401, 50)
         with self.assertRaisesRegex(ValueError, 'You cannot calculate {\'muw\'} with a spline ' +
                          'that does not include concentration. Remove those statevars and all their dependencies, ' +
                          'or supply a spline that includes concentration.'):
-            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T]), 'muw', MWu=1)
+            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T], dtype = object), 'muw', MWu=1)
     def test_checkinputs_grid_2d_extrapPOnly(self):
         P = np.arange(0, 5001, 100)
         T = np.arange(0, 401, 50)
         with self.assertRaisesRegex(ValueError, 'Dimensions {\'P\'} ' +
                 'contain values that fall outside the knot sequence for the given spline, '+
                 'which will result in extrapolation, which may not produce meaningful values.'):
-            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T]), 'G', failOnExtrapolate=True)
+            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T], dtype = object), 'G', failOnExtrapolate=True)
     def test_checkinputs_grid_2d_extrapTOnly(self):
         P = np.arange(0, 3001, 100)
         T = np.arange(0, 601, 50)
         with self.assertRaisesRegex(ValueError, 'Dimensions {\'T\'} ' +
                 'contain values that fall outside the knot sequence for the given spline, '+
                 'which will result in extrapolation, which may not produce meaningful values.'):
-            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T]), 'G', failOnExtrapolate=True)
+            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T], dtype = object), 'G', failOnExtrapolate=True)
     def test_checkinputs_grid_2d_extrapAllDims(self):
         P = np.arange(0, 5001, 100)
         T = np.arange(0, 601, 50)
@@ -61,37 +61,37 @@ class TestEvalGibbsHelperFns(ut.TestCase):
         with self.assertRaisesRegex(ValueError, 'Dimensions {\'[PT]\', \'[PT]\'} ' +
                 'contain values that fall outside the knot sequence for the given spline, '+
                 'which will result in extrapolation, which may not produce meaningful values.'):
-            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T]), 'G', failOnExtrapolate=True)
+            eg.evalSolutionGibbsGrid(self.puresubstancespline['sp'], np.array([P, T], dtype = object), 'G', failOnExtrapolate=True)
     def test_checkinputs_scatter_2d_reqFOnly(self):
-        PTM = np.empty((1,), np.object)
+        PTM = np.empty((1,), object)
         PTM[0] = (15, 40)
         with self.assertRaisesRegex(ValueError, 'You cannot calculate {\'mus\'} with a spline ' +
                          'that does not include concentration. Remove those statevars and all their dependencies, ' +
                          'or supply a spline that includes concentration.'):
             eg.evalSolutionGibbsScatter(self.puresubstancespline['sp'], PTM, 'mus', MWu=1)
     def test_checkinputs_scatter_2d_reqFandX(self):
-        PTM = np.empty((1,), np.object)
+        PTM = np.empty((1,), object)
         PTM[0] = (15, 40)
         with self.assertRaisesRegex(ValueError, 'You cannot calculate {\'muw\'} with a spline ' +
                          'that does not include concentration. Remove those statevars and all their dependencies, ' +
                          'or supply a spline that includes concentration.'):
             eg.evalSolutionGibbsScatter(self.puresubstancespline['sp'], PTM, 'muw', MWu=1)
     def test_checkinputs_scatter_2d_extrapPOnly(self):
-        PTM = np.empty((1,), np.object)
+        PTM = np.empty((1,), object)
         PTM[0] = (5000, 400)
         with self.assertRaisesRegex(ValueError, 'Dimensions {\'P\'} ' +
                 'contain values that fall outside the knot sequence for the given spline, '+
                 'which will result in extrapolation, which may not produce meaningful values.'):
             eg.evalSolutionGibbsScatter(self.puresubstancespline['sp'], PTM, 'G', failOnExtrapolate=True)
     def test_checkinputs_grid_2d_extrapTOnly(self):
-        PTM = np.empty((1,), np.object)
+        PTM = np.empty((1,), object)
         PTM[0] = (3000, 600)
         with self.assertRaisesRegex(ValueError, 'Dimensions {\'T\'} ' +
                 'contain values that fall outside the knot sequence for the given spline, '+
                 'which will result in extrapolation, which may not produce meaningful values.'):
             eg.evalSolutionGibbsScatter(self.puresubstancespline['sp'], PTM, 'G', failOnExtrapolate=True)
     def test_checkinputs_scatter_2d_extrapAllDims(self):
-        PTM = np.empty((1,), np.object)
+        PTM = np.empty((1,), object)
         PTM[0] = (5000, 600)
         # no order imposed on list of failed dimensions so accommodate either order
         with self.assertRaisesRegex(ValueError, 'Dimensions {\'[PT]\', \'[PT]\'} ' +

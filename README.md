@@ -43,12 +43,13 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 - 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 - 'water2' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 - 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
+- 'NaCl' for NaCl(aq) from WIP NaCl(aq) EOS from JM Brown and B Journaux
 
 ### Outputs
 out is a structure containing all output quantities (SI units):
 
 
-| Quantity        |  Symbol in SeaFreeze  |  Unit (SI)  |
+| Quantity  (PT only)      |  Symbol in SeaFreeze  |  Unit (SI)  |
 | --------------- |:---------------------:| :----------:|
 | Gibbs Energy           | `G` | J/kg |
 | Entropy                | `S` | J/K/kg |
@@ -67,8 +68,23 @@ out is a structure containing all output quantities (SI units):
 | S wave velocity     |`Vs`| m/s |
 | Bulk sound speed     |`vel`| m/s |
 
- **NaN values returned when out of parametrization boundaries.**
 
+| Quantity  (requires PTM)      |  Symbol in SeaFreeze  |  Unit (SI)  |
+| --------------- |:---------------------:| :----------:|
+| Solute Chemical Potential           | `mus` | J/mol |
+| Solvent Chemical Potential                | `muw` | J/mol |
+| Partial Molar Volume        | `Vm` | m^3/mol |
+| Partial Molar Heat Capacity               | `Cpm` | J/kg/K/mol |
+| Apparent Heat Capacity  | `Cpa` | J/kg/K/mol |
+| Apparent Volume                |`Va`| m^3/mol |
+|Excess Volume|`Vex`| m^3/mol |
+|Osmotic Coefficient|`phi`| -|
+| Water Activity      |`aw`| - |
+|Activity Coefficient|`gam`| - |
+| Excess Gibbs Energy     |`Gex`| J/kg |
+
+
+ **NaN values returned when out of parametrization boundaries.**
 
 
 

@@ -12,7 +12,7 @@ class TestEval2DSpline(ut.TestCase):
     def tearDown(self):
         pass
     def test2dsplineeval(self):
-        x = np.empty(2, np.object)
+        x = np.empty(2, object)
         x[0] = np.logspace(-1, 3.7, 50)
         x[1] = np.linspace(250, 800, 20)
         out = eval.evalMultivarSpline(self.spline, x)

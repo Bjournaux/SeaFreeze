@@ -6,6 +6,7 @@ from numpy.lib.scimath import sqrt
 import logging
 
 from mlbspline.eval import evalMultivarSpline
+from mlbspline.load import getSplineDict
 
 log = logging.getLogger('lbftd')
 stream = logging.StreamHandler()
@@ -38,7 +39,8 @@ def evalIsobaricSpecificHeat(gibbsSp, gPTM, derivs):
         T = np.exp(gPTM[iT])*gibbsSp['Tc']
     else:
         T = gPTM[iT]
-    return -1 * derivs.d2T * T
+    out = -1 * derivs.d2T * T
+    return out
 
 
 def evalIsochoricSpecificHeat(tdv, gPTM, derivs):
@@ -157,24 +159,90 @@ def evalVolume(tdv):
     return np.power(tdv.rho, -1)
 
 
-def evalApparentSpecificHeat(f, gPTM, tdv):
+def evalApparentSpecificHeat(f, gPTM, tdv, PTM, gibbsSp):
     """
     :return: Cpa
     """
-    return (tdv.Cp * f - _get0MTdv(tdv, 'Cp')) / _getDividableBy(gPTM[iM])
+    return (tdv.Cp * f - _getCp0(PTM, gibbsSp)) / _getDividableBy(gPTM[iM])
 
-
-def evalApparentVolume(f, gPTM, tdv):
+def evalApparentVolume(f, gPTM, tdv, PTM, gibbsSp):
     """ Slope of a chord between pure solvent and a concentration on a V v. M graph
     :return: Va
     """
-    return 1e6 * (tdv.V * f - _get0MTdv(tdv, 'V')) / _getDividableBy(gPTM[iM]) # 1e6 for MPa conversion
+    return  1e6 * (tdv.V * f - _getV0(PTM, gibbsSp)) / _getDividableBy(gPTM[iM])
 
 
-def _get0MTdv(tdv, prop):
-    slc = [slice(None)] * (len(tdv.PTM))
-    slc[iM] = slice(0, 1)
-    return getattr(tdv, prop)[tuple(slc)]
+def evalExcessVolume(tdv, PTM, gibbsSp, MWu):
+    """
+    :return: Vex
+    """
+    return tdv.Va - _getVMo(PTM, gibbsSp, MWu)
+
+
+def evalOsmoticCoeff(gPTM, PTM, tdv, MWv, nu, gibbsSp):
+    """
+    :return: phi
+    """
+    return (1 / MWv) * (_get0MG(PTM, gibbsSp) / (1 / MWv) - tdv.muw)/_getDividableBy(gPTM[iM])/gPTM[iT]/8.3144/nu
+
+
+def evalWaterActivity(gPTM, tdv, MWv):
+    """
+    :return: aw
+    """
+    return np.exp(-2*gPTM[iM]*tdv.phi*MWv)
+
+
+def evalActivityCoeff(PTM, gibbsSp, MWu, gPTM, nu, tdv):
+    """
+    :return: gam
+    """
+    return np.exp(1/8.3144 * 1/nu * (tdv.mus - _getGss(PTM, gibbsSp, MWu)[:, :, np.newaxis]) / gPTM[iT] - np.log(gPTM[iM]))
+
+
+def evalExcessGibbsEnergy(gPTM, nu, tdv):
+    """
+    :return: Gex
+    """
+    return 8.3144*nu*gPTM[iT]*gPTM[iM]*(np.log(tdv.gam)+(1-tdv.phi))
+
+
+def _getCp0(PTM, gibbsSp):
+    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
+    d2T0 = evalMultivarSpline(gibbsSp, PTM, [0, 2, 0])
+    return -d2T0*PTM[iT]
+
+
+def _getV0(PTM, gibbsSp):
+    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
+    d1P0 = evalMultivarSpline(gibbsSp, PTM, [1, 0, 0])
+    return 1e-6*d1P0
+
+
+def _getVMo(PTM, gibbsSp, MWu):
+    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
+    d1P0 = evalMultivarSpline(gibbsSp, PTM, [1, 0, 0])
+    dPm0 = evalMultivarSpline(gibbsSp, PTM, [1, 0, 1])
+    return MWu * d1P0 + (1 + MWu * 2.2204e-16) * dPm0
+
+
+def _getGss(PTM, gibbsSp, MWu):
+    PTM[iM] = np.full(len(PTM[iM]), 1)
+    Go = getSplineDict(gibbsSp['Go'])
+    Gss = evalMultivarSpline(Go, np.reshape(PTM[iT], [1, len(PTM[iT])]))
+    PTM[iM] = np.full(len(PTM[iM]), 1e-3)
+    G2 = evalMultivarSpline(gibbsSp, PTM)
+    dGdm2 = evalMultivarSpline(gibbsSp, PTM, [0, 0, 1])
+    PTM[iP] = np.full(len(PTM[iM]), 0.1)
+    G1b = evalMultivarSpline(gibbsSp, PTM)
+    dGdm1 = evalMultivarSpline(gibbsSp, PTM, [0, 0, 1])
+    dGss = (MWu * G2[:, :, 0] + dGdm2[:, :, 0]) - (MWu * G1b[:, :, 0] + dGdm1[:, :, 0])
+    return Gss + dGss
+
+
+def _get0MG(PTM, gibbsSp):
+    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
+    return evalMultivarSpline(gibbsSp, PTM)
 
 
 def _getDividableBy(inp):
@@ -212,9 +280,9 @@ def _getSupportedDerivatives():
 #########################################
 
 def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=False, parmMWu='MWu',
-                reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f',
+                reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f', parmNu ='nu',
                 reqDerivs=None, parmderivs='derivs', reqTDV=None, parmtdv='tdv', reqSpline=False,
-                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', req0M=False):
+                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', req0M=False, reqNu=None):
     """ Builds a TDVSpec namedtuple indicating what is required to calculate this particular thermodynamic variable
     :param name:        the name / symbol of the tdv (e.g., G, rho, alpha, muw)
     :param calcFn:      the name of the function used to calculate the tdv
@@ -261,6 +329,7 @@ def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=Fa
     # Build properties of the TDVSpec dynamically
     flds = arginfo.args
     if not reqMWv:      flds.remove('parmMWv')
+    if not reqNu:       flds.remove('parmNu')
     if not reqMWu:      flds.remove('parmMWu')
     if not reqGrid:     flds.remove('parmgrid')
     if not reqDerivs:   flds.remove('parmderivs')
@@ -278,7 +347,7 @@ def _getSupportedThermodynamicVariables():
         dependencies are handled elsewhere
         See also the comments for _getTDVSpec and evalSolutionGibbs*
 
-    :return: immutable iterable with the the full set of specs for supported thermodynamic variables
+    :return: immutable iterable with the full set of specs for supported thermodynamic variables
     """
     out = tuple([
         _getTDVSpec('G', evalGibbsEnergy, reqSpline=True, reqPTM=True),
@@ -301,11 +370,19 @@ def _getSupportedThermodynamicVariables():
         _getTDVSpec('Vm', evalPartialMolarVolume, reqMWu=True, reqF=True, reqDerivs=['d1P', 'dPM']),
         _getTDVSpec('Cpm', evalPartialMolarHeatCapacity, reqMWu=True, reqGrid=True, reqF=True, reqDerivs=['d2T1M'],
                     reqTDV=['Cp']),
-        _getTDVSpec('Cpa', evalApparentSpecificHeat, reqM=True, reqGrid=True, reqF=True, reqTDV=['Cp'], req0M=True),
-        _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], req0M=True)
-            ])
+        _getTDVSpec('Cpa', evalApparentSpecificHeat, reqM=True, reqGrid=True, reqF=True, reqTDV=['Cp'], reqSpline=True, reqPTM=True),
+        _getTDVSpec('phi', evalOsmoticCoeff, reqM=True, reqMWv=True, reqGrid=True, reqTDV=['G', 'muw'], reqNu=True, reqSpline=True, reqPTM=True),
+        _getTDVSpec('aw', evalWaterActivity, reqM=True, reqGrid=True, reqMWv=True, reqTDV=['phi']),
+        _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqSpline=True, reqPTM=True),
+        _getTDVSpec('Vex', evalExcessVolume, reqM=True, reqMWu=True, reqTDV=['Va'], reqSpline=True,
+                    reqPTM=True),
+        _getTDVSpec('gam', evalActivityCoeff, reqM=True, reqMWu=True, reqGrid=True, reqTDV=['mus'], reqNu=True,
+                    reqSpline=True, reqPTM=True),
+        _getTDVSpec('Gex', evalExcessGibbsEnergy, reqM=True, reqGrid=True, reqTDV=['gam', 'phi'], reqNu=True)
+    ])
+
     # Check that all reqTDVs are represented in the list
-    outnames = frozenset([t.name for t in out])
+    outnames = frozenset([t.name for t in out]).union(frozenset(['Vp', 'Vs', 'shear']))
     unrecognizedDependencies = [(tdv.name, dep) for tdv in out for dep in tdv.reqTDV if dep not in outnames]
     if unrecognizedDependencies:
         raise ValueError('One or more statevars depend on an unrecognized TDV: '+pformat(unrecognizedDependencies))

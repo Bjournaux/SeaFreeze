@@ -12,7 +12,7 @@ class TestEval3DSpline(ut.TestCase):
     def tearDown(self):
         pass
     def test3dsplineeval(self):
-        x = np.empty(3, np.object)
+        x = np.empty(3, object)
         x[0] = np.arange(.1, 8001, 10)
         x[1] = np.arange(239, 502, 5)
         x[2] = np.arange(0, 8.1, .5)
@@ -36,7 +36,7 @@ class TestEval3DSpline(ut.TestCase):
             self.fail('Output has absolute differences as large as ' + str(np.max(absDiffs)) +
                       ' and relative differences as large as ' + str(np.max(relDiffs)) + '.\n')
     def test3dsplineeval_singlepoint_arrofarr(self):
-        x = np.empty(3, np.object)
+        x = np.empty(3, object)
         for i in np.arange(0, 3):
             x[i] = np.empty((1,), float)
         x[0][0] = 0.1
