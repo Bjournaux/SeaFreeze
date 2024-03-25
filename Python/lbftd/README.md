@@ -51,6 +51,8 @@ To add a new thermodynamic variable (TDV), all of the following should be done. 
     statevars._getTDVSpec.
     If you end up with an as-yet unused parameter, add it to statevars._getTDVSpec (defaulting to OFF)
     AND to the evaluation section of evalGibbs.evalSolutionGibbs.
+    Carefully review the options currently supported for these functions.  These are documented in detail
+    below.
 - Add the measure spec to statevars.getSupportedThermodynamicVariables.
     When the comments say DIRECTLY, they mean only consider something a requirement if it is used in
     the function built in the previous step.
@@ -60,4 +62,50 @@ To add a new thermodynamic variable (TDV), all of the following should be done. 
     Be sure to add it to the correct section of the comments (PT vs PTM spline, other parameters required, etc)
     or create a new section if one is warranted.
 - Add tests to make sure that the TDV spec still expands properly and that the values are calculated correctly.  
-    The latter may require recalculating a spline in MatLab and comparing it with the output from that platform. 
+    The latter may require recalculating a spline in MatLab and comparing it with the output from that platform.
+
+Function options currently supported are listed here.  Unless otherwise stated, are all Boolean values that 
+default to _False_.
+- _reqM_: if True, concentration (M) is required to calculate the TDV, and the function must include _gPTM_ as one of 
+    its input parameters.  See _statevars.evalApparentSpecificHeat_ for an example.
+- _reqMWv_: if True, the molecular weight of the solvent is required to calculate the TDV, and the function must include 
+    a parameter for the molecular weight of the solvent.  The default name for this parameter is _MWv_, but a different
+    parameter name for this value can be specified using  _parmMWv_ when defining the TDV spec in 
+    _getSupportedThermodynamicVariables.  See _statevars.evalSolventChemicalPotential_ for an example.
+- _reqMWu_: if True, the molecular weight of the solute is required to calculate the TDV, and the function must include  
+    a parameter for the molecular weight of the solute.  The default name for this parameter is _MWu_, but a different
+    parameter name for this value can be specified using  _parmMWu_ when defining the TDV spec in 
+    _getSupportedThermodynamicVariables. See _statevars.evalSoluteChemicalPotential_ for an example.
+- _reqGrid_: if True, the PT[M] values must be gridded to properly calculate the TDV, and the function must include a 
+    parameter for the gridded PT[M] values.  The default name for this parameter is _gPTM_, but a different parameter
+    name for this value can be specified using _parmgrid_ when defining the TDV spec in
+    _getSupportedThermodynamicVariables.  See _statevars.evalInternalEnergy_ for an example.
+- _reqF_: if True, the TDV requires a conversion factor that gives the volume of solvent in a unit volume of solution
+    (which is calculated by evalGibbs._getVolSolventInVolSlnConversion). The function must include a parameter for
+    this value, the default name of which is _f_.  A different parameter name can be designated using _parmf_ when 
+    defining the TDV spec in _getSupportedThermodynamicVariables.  See _statevars.evalPartialMolarHeatCapacity_ for an 
+    example.
+- _reqDerivs_: This parameter is not Boolean, but rather a list of derivatives needed to calculate the TDV.  See list of
+    supported derivatives in _statevars._getSupportedDerivatives_ (derivatives may be added if necessary). The default 
+    value is an empty list, in which case no associated parameter is required for the TDV's calculation function. If any
+    derivative is specified, the associated parameter name is _derivs_, unless a different parameter name is specified 
+    by the _parmderivs_ parameter when defining the TDV spec in _getSupportedThermodynamicVariables.  See 
+    _statevars.evalIsochoricSpecificHeat_ for an example.
+- _reqTDV_: This parameter is not Boolean, but rather a list of other TDVs (defined elsewhere in 
+    _getSupportedThermodynamicVariables) needed to calculate this TDV.  The default 
+    value is an empty list, in which case no associated parameter is required for the TDV's calculation function. If any
+    TDV is specified as a dependency, the associated parameter name is _tdv_, unless a different parameter name is 
+    specified by the _parmtdv_ parameter when defining the TDV spec in _getSupportedThermodynamicVariables.  See 
+    _statevars.evalHelmholtzEnergy_ for an example.  Note that a TDV cannot be dependent on itself.
+- _reqSpline_: If True, the spline definition includes additional information required to calculate the TDV.  The 
+    eval function must include a parameter to pass in the spline definition.  By default, this parameter should be named
+    _gibbsSp_, but a different parameter name can be specified using the _parmspline_ parameter when defining the TDV
+    spec in _getSupportedThermodynamicVariables.  See _statevars.evalGibbsEnergy_ for an example.
+- _reqPTM_: If True, the pressure/temperature[/concentration] is needed to calculate the TDV, and the eval function must
+    include a parameter for passing in the ndarray containing those values.  The default name of that parameter is _PTM_
+    but a different parameter name can be specified using the _parmptm_ parameter when defining the TDV spec in 
+    _getSupportedThermodynamicVariables_.  See _statevarsevalGibbsEnergy_ for an example.
+- _req0M: if True, a value for 0 molal concentration (pure solvent) is required; this is typically used when calculating 
+    apparent values. There is no parameter in the eval function associated with this.  Rather, the program will 
+    automatically calculate required values for the pure solvent and use them where required.  See 
+    _statevars.evalApparentVolume_ for an example.
