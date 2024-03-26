@@ -15,7 +15,7 @@ stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[LBFTD %(levelname)s] %(message)s'))
 
 
-def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, nu =2, verbose=False, failOnExtrapolate=False):
+def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None,  nu=None, cutoff=None, verbose=False, failOnExtrapolate=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
 
@@ -59,35 +59,37 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, nu 
     pt = np.logical_or(PTM[iP] < gibbsSp['knots'][iP].min(), PTM[iP] > gibbsSp['knots'][iP].max())
     ind = np.empty(PTM.size, object)  # valid indicies
     val = np.empty(PTM.size, object)  # valid PT values
-    vP = PTM[0][~pt]
+    vP = PTM[iP][~pt]
     sortP = np.argsort(PTM[0])
-    ind[0] = sortP[np.searchsorted(PTM[0], vP, sorter=sortP)]
-    val[0] = vP
+    ind[iP] = sortP[np.searchsorted(PTM[0], vP, sorter=sortP)]
+    val[iP] = vP
     if len(vP) == 0:
-        val[0] = np.array([np.nan])
-        ind[0] = sortP
+        val[iP] = np.array([np.nan])
+        ind[iP] = sortP
     if PTM.size > 1: # for univariant spline evaluation in Gex calculation
         tt = np.logical_or(PTM[iT] < gibbsSp['knots'][iT].min(), PTM[iT] > gibbsSp['knots'][iT].max())
-        vT = PTM[1][~tt]
+        vT = PTM[iT][~tt]
         sortT = np.argsort(PTM[1])
-        ind[1] = sortT[np.searchsorted(PTM[1], vT, sorter=sortT)]
-        val[1] = vT
+        ind[iT] = sortT[np.searchsorted(PTM[1], vT, sorter=sortT)]
+        val[iT] = vT
         if len(vT) == 0:
-            val[1] = np.array([np.nan])
-            ind[1] = sortT
+            val[iT] = np.array([np.nan])
+            ind[iT] = sortT
     if PTM.size > 2:
-        mm = np.logical_or(PTM[iM] < gibbsSp['knots'][iM].min(), PTM[iM] > gibbsSp['knots'][iM].max())
-        vM = PTM[2][~mm]
+        mm = PTM[iM] > gibbsSp['knots'][iM].max()
+        vM = PTM[iM][~mm]
         sortM = np.argsort(PTM[2])
-        ind[2] = sortM[np.searchsorted(PTM[2], vM, sorter=sortM)]
-        val[2] = vM
+        ind[iM] = sortM[np.searchsorted(PTM[2], vM, sorter=sortM)]
+        val[iM] = vM
         if len(vM) == 0:
-            val[2] = np.array([np.nan])
-            ind[2] = sortM
+            val[iM] = np.array([np.nan])
+            ind[iM] = sortM
+        if val[iM][0] == 0:
+            val[iM][0] = np.finfo(float).eps  # replace 0 M input with eps
     obj = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)
-    if _needs0M(dimCt, tdvSpec) and val[iM][0] != 0:
-        val[iM] = np.insert(val[iM], 0, 0)
-    valout = _evalInternal(gibbsSp, tdvSpec, val, MWu, MWv, nu, obj, dimCt, verbose)
+    # if _needs0M(dimCt, tdvSpec) and val[iM][0] != 0:
+    #     val[iM] = np.insert(val[iM], 0, 0)
+    valout = _evalInternal(gibbsSp, tdvSpec, val, MWu, MWv, nu, cutoff, obj, dimCt, verbose)
     tdvout = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)  # This has the original PTM, should be all NaN
     for n in range(len(getmembers(tdvout))):
         if getmembers(tdvout)[n][0] in statevarnames[1]:
@@ -103,7 +105,7 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, nu 
 
 
 
-def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, nu=2, failOnExtrapolate=False, verbose=False):
+def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, nu=None, cutoff=None, failOnExtrapolate=False, verbose=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
 
@@ -153,12 +155,18 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, 
         wPTM = _ptmTuple2NestedArrays(PTM[p], dimCt, needs0M)
         tempout = createThermodynamicStatesObj(tdvSpec, wPTM)
         # Prepend a 0 concentration if one is needed by any of the quantities being calculated
-        if needs0M and wPTM[iM] != 0:
-            wPTM[iM] = np.insert(wPTM[iM], 0, 0)
+        # if needs0M and wPTM[iM] != 0:
+        #     wPTM[iM] = np.insert(wPTM[iM], 0, 0)
         extrap = [(wPTM[0][0] < gibbsSp['knots'][iP].min()) + (wPTM[0][0] > gibbsSp['knots'][iP].max()) +
                   (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max())]
+        if wPTM.size > 2:
+            extrap = [(wPTM[0][0] < gibbsSp['knots'][iP].min()) + (wPTM[0][0] > gibbsSp['knots'][iP].max()) +
+                      (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max()) +
+                      (wPTM[2][0] > gibbsSp['knots'][iM].max())]
+            if wPTM[iM][0] == 0:
+                wPTM[iM][0] = np.finfo(float).eps  # replace 0 M input with eps
         if extrap == [False]:
-            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, MWu, MWv, nu, tempout, dimCt, verbose)
+            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, MWu, MWv, nu, cutoff, tempout, dimCt, verbose)
             for t in tdvSpec:
                 tolastpt = getattr(tdvout, t.name)
                 tolastpt[p] = getattr(tempout, t.name).flat[0]
@@ -168,7 +176,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, 
     return tdvout
 
 
-def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, nu, tdvout, dimCt, verbose=False):
+def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, nu, cutoff, tdvout, dimCt, verbose=False):
     derivs = getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose)
     gPTM = _getGriddedPTM(tdvSpec, PTM, verbose) if any([tdv.reqGrid for tdv in tdvSpec]) else None
     f = _getVolSolventInVolSlnConversion(MWu, PTM) if any([tdv.reqF for tdv in tdvSpec]) else None
@@ -181,7 +189,7 @@ def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, nu, tdvout, dimCt, verbose=Fa
         tdvsToEval = tuple(t for t in tdvSpec if
                            t.name not in completedTDVs and (not t.reqTDV or not t.reqTDV.difference(completedTDVs)))
         for t in tdvsToEval:
-            args = _buildEvalArgs(t, derivs, PTM, gPTM, MWv, MWu, nu, tdvout, gibbsSp, f)
+            args = _buildEvalArgs(t, derivs, PTM, gPTM, MWv, MWu, nu, cutoff, tdvout, gibbsSp, f)
             start = time()
             setattr(tdvout, t.name, t.calcFn(**args))  # Calculate the value and set it in the output
             end = time()
@@ -203,7 +211,7 @@ def _parseInput(gibbsSp, *tdvSpec):
     return dimCt, tdvSpec
 
 
-def _buildEvalArgs(tdv, derivs, PTM, gPTM, MWv, MWu, nu, tdvout, gibbsSp, f):
+def _buildEvalArgs(tdv, derivs, PTM, gPTM, MWv, MWu, nu, cutoff, tdvout, gibbsSp, f):
     args = dict()
     if tdv.reqDerivs: args[tdv.parmderivs] = derivs
     if tdv.reqGrid:   args[tdv.parmgrid] = gPTM
@@ -214,6 +222,7 @@ def _buildEvalArgs(tdv, derivs, PTM, gPTM, MWv, MWu, nu, tdvout, gibbsSp, f):
     if tdv.reqSpline: args[tdv.parmspline] = gibbsSp
     if tdv.reqPTM:    args[tdv.parmptm] = PTM
     if tdv.reqF:      args[tdv.parmf] = f
+    if tdv.reqCutoff: args[tdv.parmCutoff] = cutoff
     return args
 
 

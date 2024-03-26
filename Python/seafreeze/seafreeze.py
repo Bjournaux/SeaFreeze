@@ -74,6 +74,7 @@ def seafreeze(PTm, phase, path=defpath, *tdvSpec):
     sp = load.loadSpline(path, phasedesc.sp_name)
     sp['MW'] = phasedesc.MW
     sp['nu'] = phasedesc.nu
+    sp['cutoff'] = phasedesc.cutoff
     # Calc density and isentropic bulk modulus
     isscatter = _is_scatter(PTm)
     if sp['ndT']:
@@ -177,7 +178,7 @@ def _get_tdvs(sp, PTm, is_scatter, *tdvSpec):
     :return:            tdv object (see lbftd documentation)
     """
     fn = eg.evalSolutionGibbsScatter if is_scatter else eg.evalSolutionGibbsGrid
-    return fn(sp, PTm, *tdvSpec, MWu=sp['MW'])
+    return fn(sp, PTm, *tdvSpec, MWu=sp['MW'], nu=sp['nu'], cutoff=sp['cutoff'])
 
 def _get_shear_mod_GPa(sm, rho, T):
     return None if sm is None else sm[0] + sm[1] * (rho - sm[4]) + sm[2] * (rho - sm[4]) ** 2 + sm[3] * (T - sm[5])
@@ -224,23 +225,23 @@ def _get_PT(PTm, is_scatter):
 ## Constants
 #########################################
 mH2O_kgmol = 18.01528e-3
-PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod_parms phase_num MW nu')
-phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15], 1, mH2O_kgmol, None),
+PhaseDesc = namedtuple('PhaseDesc', 'sp_name shear_mod_parms phase_num MW nu cutoff')
+phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15], 1, mH2O_kgmol, None, None),
           # Feistel and Wagner, 2006
-          "II": PhaseDesc("G_iceII", [4.1, 0.0175, 0, -0.014, 1100, 273], 2, mH2O_kgmol, None),  # Journaux et al, 2019
-          "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273], 3, mH2O_kgmol, None),  # Journaux et al, 2019
-          "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273], 5, mH2O_kgmol, None),  # Journaux et al, 2019
-          "VI": PhaseDesc("G_iceVI", [2.57, 0.0175, 0, -0.014, 1100, 273], 6, mH2O_kgmol, None),  # Journaux et al, 2019
-          "VII_X_French": PhaseDesc("G_iceVII_X_French", [10, 0.0033, 0.000048, -0.014, 1300, 273], 7, mH2O_kgmol, None),
+          "II": PhaseDesc("G_iceII", [4.1, 0.0175, 0, -0.014, 1100, 273], 2, mH2O_kgmol, None, None),  # Journaux et al, 2019
+          "III": PhaseDesc("G_iceIII", [2.57, 0.0175, 0, -0.014, 1100, 273], 3, mH2O_kgmol, None, None),  # Journaux et al, 2019
+          "V": PhaseDesc("G_iceV", [2.57, 0.0175, 0, -0.014, 1100, 273], 5, mH2O_kgmol, None, None),  # Journaux et al, 2019
+          "VI": PhaseDesc("G_iceVI", [2.57, 0.0175, 0, -0.014, 1100, 273], 6, mH2O_kgmol, None, None),  # Journaux et al, 2019
+          "VII_X_French": PhaseDesc("G_iceVII_X_French", [10, 0.0033, 0.000048, -0.014, 1300, 273], 7, mH2O_kgmol, None, None),
           # French and Redmer, 2015
-          "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol, None),
+          "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol, None, None),
           # Extends to 500 K and 2300 MPa; Bollengier et al 2019
-          "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol, None),  # Extends to 100 GPa; Brown 2018
-          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol, None),
+          "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol, None, None),  # Extends to 100 GPa; Brown 2018
+          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol, None, None),
           # LBF representation of IAPWS 95; Wagner and Pruss, 2002
-           "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3, None),
+           "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3, None, None),
           # LBF representation of unpublished NH3 data from B Journaux and JM Brown
-          "NaCl": PhaseDesc("LBF_NaClaq", None, 0, 58.44e-3, 2)  # "NaCl_LBF_8000MPa"
+          "NaCl": PhaseDesc("LBF_NaClaq", None, 0, 58.44e-3, 2, 0.0002)  # "NaCl_LBF_8000MPa"
           # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
           }
 max_phase_num = max([p.phase_num for p in phases.values()])

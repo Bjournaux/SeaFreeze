@@ -80,7 +80,7 @@ def getSplineDict(src):
         out['ndT'] = True
 
     if 'Go' in src.dtype.names:
-        out['Go'] = _stripNestingToValue(src['Go'])
+        out['Go'] = _stripNestingToValue(src['Go']) # call get spline dict here instead
 
     # If number is a scalar, this is a 1D spline and some stuff needs to be re-wrapped for later code to work
     if not isinstance(out['number'], np.ndarray):

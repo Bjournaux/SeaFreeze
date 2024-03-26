@@ -67,3 +67,5 @@ To add a new thermodynamic variable (TDV), all of the following should be done. 
     or create a new section if one is warranted.
 - Add tests to make sure that the TDV spec still expands properly and that the values are calculated correctly.  
     The latter may require recalculating a spline in MatLab and comparing it with the output from that platform. 
+- The code currently includes a non-dimensional temperature (nDT) flag that will be used in later implementations to 
+  automatically recognize non-dimensional input temperatures and convert them to K (see evalMultivarSpline comments).

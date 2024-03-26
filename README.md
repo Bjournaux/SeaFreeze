@@ -22,7 +22,7 @@ Report to the README file for each version (Python or Matlab) for installing Sea
 
 ## Running SeaFreeze
 
-This section provide basic example on how to run SeaFreeze. It is using pseudo code, so synthax will change depdending on the version used. 
+This section provides basic examples on how to run SeaFreeze. It is using pseudo code, so synthax will change depdending on the version used. 
 
 ### Inputs
 To run the SeaFreeze function you need to provide pressure (MPa) and temperature (K) coordinates and a material input:
@@ -30,10 +30,14 @@ To run the SeaFreeze function you need to provide pressure (MPa) and temperature
 ```
 out=SeaFreeze(PT,'material')
 ```
+To improve computational efficiency, a list of specified thermodynamic variables can be calculated by specifying them as inputs to the SeaFreeze function:
 
+```
+out=SeaFreeze(PT,'material', 'G', 'rho')
+```
 PT is a structure (gridded output) or array (scatter output) containing pressure-temperature points (MPa and Kelvin).
 
-'material' defines which ice or water to use.  Possibilities:
+'material' defines which ice, water, or solution to use.  Possibilities:
 - 'Ih' for ice Ih (Feistel and Wagner, 2006)
 - 'II' for ice II (Journaux et al. 2020)
 - 'III' for ice III (Journaux et al. 2020)
@@ -43,7 +47,8 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 - 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 - 'water2' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 - 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
-- 'NaCl' for NaCl(aq) from WIP NaCl(aq) EOS from JM Brown and B Journaux
+- 'NaCl' for NaCl(aq) from WIP NaCl(aq) EOS from JM Brown and B Journaux ... 
+
 
 ### Outputs
 out is a structure containing all output quantities (SI units):
@@ -63,9 +68,9 @@ out is a structure containing all output quantities (SI units):
 |Pressure derivative of the Isothermal bulk modulus|`Kp`| - |
 | Isoentropic bulk modulus     |`Ks`| MPa |
 | Thermal expansivity     |`alpha`| /K |
-| Shear modulus     |`shear`| MPa |
-| P wave velocity     |`Vp`| m/s |
-| S wave velocity     |`Vs`| m/s |
+| Shear modulus (only for solids)    |`shear`| MPa |
+| P wave velocity (only for solids)     |`Vp`| m/s |
+| S wave velocity (only for solids)     |`Vs`| m/s |
 | Bulk sound speed     |`vel`| m/s |
 
 
@@ -73,11 +78,11 @@ out is a structure containing all output quantities (SI units):
 | --------------- |:---------------------:| :----------:|
 | Solute Chemical Potential           | `mus` | J/mol |
 | Solvent Chemical Potential                | `muw` | J/mol |
-| Partial Molar Volume        | `Vm` | m^3/mol |
+| Partial Molar Volume        | `Vm` | cc/mol |
 | Partial Molar Heat Capacity               | `Cpm` | J/kg/K/mol |
 | Apparent Heat Capacity  | `Cpa` | J/kg/K/mol |
-| Apparent Volume                |`Va`| m^3/mol |
-|Excess Volume|`Vex`| m^3/mol |
+| Apparent Volume                |`Va`| cc/mol |
+|Excess Volume|`Vex`| cc/mol |
 |Osmotic Coefficient|`phi`| -|
 | Water Activity      |`aw`| - |
 |Activity Coefficient|`gam`| - |
@@ -177,6 +182,95 @@ out =
         H: [3×1 double]
     alpha: [3×1 double]
 ```
+## Solutions
+
+Thermodynamic properties can be calculated for solutions of varying molality as well, where the input provides pressure (MPa), temperature (K), and molality (mol/kg) coordinates over a grid or list, or for a single point. 
+
+### Single point input
+
+Single point for NaCl(aq) of 0.5 M at 900 MPa and 280 K:
+```Matlab
+PTM = {900, 280, 0.5};
+out=SeaFreeze(PTM,'NaCl')
+```
+Output :
+```Matlab
+out = 
+
+  struct with fields:
+
+           G: 7.7725e+05
+           S: -143.0425
+           U: 1.7738e+04
+           H: 7.3720e+05
+           A: 5.7790e+04
+           F: 5.7790e+04
+         rho: 1.2509e+03
+          Cp: 3.7630e+03
+          Cv: 3.3825e+03
+          Kt: 7.7225e+03
+          Ks: 8.5913e+03
+          Kp: 5.7676
+       alpha: 4.6921e-04
+         vel: 2.6207e+03
+          Va: 24.7939
+         Cpa: 124.5329
+         mus: 1.7721e+04
+         muw: 1.4252e+04
+          Vm: 24.3212
+          Vw: 14.6032
+         Cpm: 149.3719
+         gam: 0.7631
+         phi: 0.8174
+         Vex: 0.2598
+         Gex: -204.1910
+          aw: 0.9854
+```
+### Grid input
+
+Grid of points every 10 MPa from 0.1 to 1000 MPa, every 2 K from 240 to 501 K, and every 0.5 M from 1 to 6 M:
+```Matlab
+PTm = {0.1:10:1000.2,240:2:501,1:0.5:6}; 
+out=SeaFreeze(PTm,'NaCl')
+```
+Output :
+```Matlab
+out = 
+
+  struct with fields:
+
+      out = 
+
+  struct with fields:
+
+           G: [101×131×11 double]
+           S: [101×131×11 double]
+           U: [101×131×11 double]
+           H: [101×131×11 double]
+           A: [101×131×11 double]
+           F: [101×131×11 double]
+         rho: [101×131×11 double]
+          Cp: [101×131×11 double]
+          Cv: [101×131×11 double]
+          Kt: [101×131×11 double]
+          Ks: [101×131×11 double]
+          Kp: [101×131×11 double]
+       alpha: [101×131×11 double]
+         vel: [101×131×11 double]
+          Va: [101×131×11 double]
+         Cpa: [101×131×11 double]
+         mus: [101×131×11 double]
+         muw: [101×131×11 double]
+          Vm: [101×131×11 double]
+          Vw: [101×131×11 double]
+         Cpm: [101×131×11 double]
+         gam: [101×131×11 double]
+         phi: [101×131×11 double]
+         Vex: [101×131×11 double]
+         Gex: [101×131×11 double]
+          aw: [101×131×11 double]
+
+```
 
 ## Important remarks 
 ### Water representation
@@ -212,6 +306,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ## Change log
 
 ### Changes since 0.9.0
+- `1.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.
 - `0.9.4`: add ice VII and ice X from French and Redmer (2015).
 - [SeaFreeze GUI](https://github.com/Bjournaux/SeaFreeze/tree/master/SeaFreezeGUI) available
 - `0.9.4`: Adjusted python readme syntax and package authorship info 

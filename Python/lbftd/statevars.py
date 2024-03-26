@@ -159,31 +159,31 @@ def evalVolume(tdv):
     return np.power(tdv.rho, -1)
 
 
-def evalApparentSpecificHeat(f, gPTM, tdv, PTM, gibbsSp):
+def evalApparentSpecificHeat(f, gPTM, tdv, PTM, gibbsSp, cutoff):
     """
     :return: Cpa
     """
-    return (tdv.Cp * f - _getCp0(PTM, gibbsSp)) / _getDividableBy(gPTM[iM])
+    return (tdv.Cp * f - _getCp0(PTM, gibbsSp, cutoff)) / _getDividableBy(gPTM[iM])
 
-def evalApparentVolume(f, gPTM, tdv, PTM, gibbsSp):
+def evalApparentVolume(f, gPTM, tdv, PTM, gibbsSp, cutoff):
     """ Slope of a chord between pure solvent and a concentration on a V v. M graph
     :return: Va
     """
-    return  1e6 * (tdv.V * f - _getV0(PTM, gibbsSp)) / _getDividableBy(gPTM[iM])
+    return  1e6 * (tdv.V * f - _getV0(PTM, gibbsSp, cutoff)) / _getDividableBy(gPTM[iM])
 
 
-def evalExcessVolume(tdv, PTM, gibbsSp, MWu):
+def evalExcessVolume(tdv, PTM, gibbsSp, MWu, cutoff):
     """
     :return: Vex
     """
-    return tdv.Va - _getVMo(PTM, gibbsSp, MWu)
+    return tdv.Va - _getVMo(PTM, gibbsSp, MWu, cutoff)
 
 
 def evalOsmoticCoeff(gPTM, PTM, tdv, MWv, nu, gibbsSp):
     """
     :return: phi
     """
-    return (1 / MWv) * (_get0MG(PTM, gibbsSp) / (1 / MWv) - tdv.muw)/_getDividableBy(gPTM[iM])/gPTM[iT]/8.3144/nu
+    return (1 / MWv) * (_get0MG(PTM, gibbsSp) / (1 / MWv) - tdv.muw)/_getDividableBy(gPTM[iM])/gPTM[iT]/R/nu
 
 
 def evalWaterActivity(gPTM, tdv, MWv):
@@ -197,45 +197,60 @@ def evalActivityCoeff(PTM, gibbsSp, MWu, gPTM, nu, tdv):
     """
     :return: gam
     """
-    return np.exp(1/8.3144 * 1/nu * (tdv.mus - _getGss(PTM, gibbsSp, MWu)[:, :, np.newaxis]) / gPTM[iT] - np.log(gPTM[iM]))
+    return np.exp(1/R * 1/nu * (tdv.mus - _getGss(PTM, gibbsSp, MWu)[:, :, np.newaxis]) / gPTM[iT] - np.log(gPTM[iM]))
 
 
 def evalExcessGibbsEnergy(gPTM, nu, tdv):
     """
     :return: Gex
     """
-    return 8.3144*nu*gPTM[iT]*gPTM[iM]*(np.log(tdv.gam)+(1-tdv.phi))
+    return R*nu*gPTM[iT]*gPTM[iM]*(np.log(tdv.gam)+(1-tdv.phi))
 
 
-def _getCp0(PTM, gibbsSp):
-    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
-    d2T0 = evalMultivarSpline(gibbsSp, PTM, [0, 2, 0])
-    return -d2T0*PTM[iT]
+def _getCp0(PTM, gibbsSp, cutoff):
+    PTM_ss = PTM
+    PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
+    d2T0 = evalMultivarSpline(gibbsSp, PTM_ss, [0, 2, 0])
+    return -d2T0*np.reshape(PTM[iT], [len(PTM[iT]), 1])[np.newaxis]
 
 
-def _getV0(PTM, gibbsSp):
-    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
-    d1P0 = evalMultivarSpline(gibbsSp, PTM, [1, 0, 0])
+def _getV0(PTM, gibbsSp, cutoff):
+    PTM_ss = PTM
+    PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
+    d1P0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 0])
     return 1e-6*d1P0
 
 
-def _getVMo(PTM, gibbsSp, MWu):
-    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
-    d1P0 = evalMultivarSpline(gibbsSp, PTM, [1, 0, 0])
-    dPm0 = evalMultivarSpline(gibbsSp, PTM, [1, 0, 1])
-    return MWu * d1P0 + (1 + MWu * 2.2204e-16) * dPm0
+def _getVMo(PTM, gibbsSp, MWu, cutoff):
+    PTM_ss = PTM
+    PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
+    d1P0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 0])
+    dPm0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 1])
+    return MWu * d1P0 + (1 + MWu * eps) * dPm0
 
 
 def _getGss(PTM, gibbsSp, MWu):
     PTM[iM] = np.full(len(PTM[iM]), 1)
     Go = getSplineDict(gibbsSp['Go'])
     Gss = evalMultivarSpline(Go, np.reshape(PTM[iT], [1, len(PTM[iT])]))
-    PTM[iM] = np.full(len(PTM[iM]), 1e-3)
-    G2 = evalMultivarSpline(gibbsSp, PTM)
-    dGdm2 = evalMultivarSpline(gibbsSp, PTM, [0, 0, 1])
-    PTM[iP] = np.full(len(PTM[iM]), 0.1)
-    G1b = evalMultivarSpline(gibbsSp, PTM)
-    dGdm1 = evalMultivarSpline(gibbsSp, PTM, [0, 0, 1])
+    # G2 = evalMultivarSpline(gibbsSp, np.array([PTM[iP], PTM[iT], np.full(len(PTM[iM]), 1e-3, float)], dtype=object))
+    # dGdm2 = evalMultivarSpline(gibbsSp, np.array([PTM[iP], PTM[iT], np.full(len(PTM[iM]), 1e-3, float)], dtype=object), [0, 0, 1])
+    # G1b = evalMultivarSpline(gibbsSp, np.array([np.full(len(PTM[iP]), 0.1, float), PTM[iT], np.full(len(PTM[iM]), 1e-3, float)], dtype=object))
+    # dGdm1 = evalMultivarSpline(gibbsSp, np.array([np.full(len(PTM[iP]), 0.1, float), PTM[iT], np.full(len(PTM[iM]), 1e-3, float)], dtype=object), [0, 0, 1])
+
+    # G2 = evalMultivarSpline(gibbsSp, np.array([PTM[iP], PTM[iT], np.array([1e-3], dtype=float)], dtype=object))
+    # dGdm2 = evalMultivarSpline(gibbsSp, np.array([PTM[iP], PTM[iT], np.array([1e-3], dtype=float)], dtype=object), [0, 0, 1])
+    # G1b = evalMultivarSpline(gibbsSp, np.array([np.array([0.1], dtype=int), PTM[iT], np.array([1e-3], dtype=float)], dtype=object))
+    # dGdm1 = evalMultivarSpline(gibbsSp, np.array([np.array([0.1], dtype=float), PTM[iT], np.array([1e-3], dtype=float)], dtype=object), [0, 0, 1])
+    PTM_ss = PTM;
+    PTM_ss[iM] = np.full(len(PTM[iM]), 1e-3) # cc to L; ss for solute is 1 M
+    G2 = evalMultivarSpline(gibbsSp, PTM_ss)
+    dGdm2 = evalMultivarSpline(gibbsSp, PTM_ss, [0, 0, 1])
+    PTM_ss_1_bar = PTM_ss
+    PTM_ss_1_bar[iP] = np.full(len(PTM[iP]), 0.1) # why iM in matlab?
+    G1b = evalMultivarSpline(gibbsSp, PTM_ss_1_bar)
+    dGdm1 = evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1])
+
     dGss = (MWu * G2[:, :, 0] + dGdm2[:, :, 0]) - (MWu * G1b[:, :, 0] + dGdm1[:, :, 0])
     return Gss + dGss
 
@@ -244,10 +259,14 @@ def _get0MG(PTM, gibbsSp):
     PTM[iM] = np.full(len(PTM[iM]), 0.0002)
     return evalMultivarSpline(gibbsSp, PTM)
 
+def _getAmbientP(PTM, gibbsSp):
+    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
+    return evalMultivarSpline(gibbsSp, PTM)
+
 
 def _getDividableBy(inp):
-    eps = np.finfo(inp.dtype).eps
-    return np.where(inp != 0, inp, eps)
+    Eps = np.finfo(inp.dtype).eps
+    return np.where(inp != 0, inp, Eps)
 
 
 #########################################
@@ -282,7 +301,7 @@ def _getSupportedDerivatives():
 def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=False, parmMWu='MWu',
                 reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f', parmNu ='nu',
                 reqDerivs=None, parmderivs='derivs', reqTDV=None, parmtdv='tdv', reqSpline=False,
-                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', req0M=False, reqNu=None):
+                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', req0M=False, reqNu=None, reqCutoff=None, parmCutoff='cutoff'):
     """ Builds a TDVSpec namedtuple indicating what is required to calculate this particular thermodynamic variable
     :param name:        the name / symbol of the tdv (e.g., G, rho, alpha, muw)
     :param calcFn:      the name of the function used to calculate the tdv
@@ -370,12 +389,12 @@ def _getSupportedThermodynamicVariables():
         _getTDVSpec('Vm', evalPartialMolarVolume, reqMWu=True, reqF=True, reqDerivs=['d1P', 'dPM']),
         _getTDVSpec('Cpm', evalPartialMolarHeatCapacity, reqMWu=True, reqGrid=True, reqF=True, reqDerivs=['d2T1M'],
                     reqTDV=['Cp']),
-        _getTDVSpec('Cpa', evalApparentSpecificHeat, reqM=True, reqGrid=True, reqF=True, reqTDV=['Cp'], reqSpline=True, reqPTM=True),
+        _getTDVSpec('Cpa', evalApparentSpecificHeat, reqM=True, reqGrid=True, reqF=True, reqTDV=['Cp'], reqSpline=True, reqPTM=True, reqCutoff=True),
         _getTDVSpec('phi', evalOsmoticCoeff, reqM=True, reqMWv=True, reqGrid=True, reqTDV=['G', 'muw'], reqNu=True, reqSpline=True, reqPTM=True),
         _getTDVSpec('aw', evalWaterActivity, reqM=True, reqGrid=True, reqMWv=True, reqTDV=['phi']),
-        _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqSpline=True, reqPTM=True),
+        _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqSpline=True, reqPTM=True, reqCutoff=True),
         _getTDVSpec('Vex', evalExcessVolume, reqM=True, reqMWu=True, reqTDV=['Va'], reqSpline=True,
-                    reqPTM=True),
+                    reqPTM=True, reqCutoff=True),
         _getTDVSpec('gam', evalActivityCoeff, reqM=True, reqMWu=True, reqGrid=True, reqTDV=['mus'], reqNu=True,
                     reqSpline=True, reqPTM=True),
         _getTDVSpec('Gex', evalExcessGibbsEnergy, reqM=True, reqGrid=True, reqTDV=['gam', 'phi'], reqNu=True)
@@ -456,6 +475,8 @@ def expandTDVSpec(tdvSpec, dimCt):
 #########################################
 iP = 0; iT = 1; iM = 2  # Dimension indices
 defDer = 0              # Default derivative
+R = 8.3144
+eps = np.finfo(float).eps
 
 derivSpec = namedtuple('DerivativeSpec', ['name', 'wrtP', 'wrtT', 'wrtM'])
 derivatives = _getSupportedDerivatives()

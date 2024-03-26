@@ -34,8 +34,9 @@ def loadGibbsSpline(splineFile, splineVar=None):
         'sp': sp,
         'MW': MW
     }
-    if MW.size > 1:  # Only add nu if dealing with a solution rather than a pure substance
+    if MW.size > 1:  # Only add nu and cutoff value if dealing with a solution rather than a pure substance
         out['nu'] = _getnu(raw)
+        out['cutoff'] = _getcutoff(raw)
     return out
 
 def _getMW(raw):
@@ -59,3 +60,6 @@ def _getnu(raw):
         raise ValueError('At least one value in nu is not an integer.')
     return int(nu)
 
+def _getcutoff(raw):
+    cutoff = load._stripNestingToValue(raw['cutoff'])
+    return int(cutoff)
