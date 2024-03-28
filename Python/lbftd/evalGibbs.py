@@ -15,7 +15,7 @@ stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[LBFTD %(levelname)s] %(message)s'))
 
 
-def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None,  nu=None, cutoff=None, verbose=False, failOnExtrapolate=False):
+def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  nu=2, cutoff=0.0002, verbose=False, failOnExtrapolate=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
 
@@ -105,7 +105,7 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None,  nu
 
 
 
-def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, nu=None, cutoff=None, failOnExtrapolate=False, verbose=False):
+def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  nu=2, cutoff=0.0002, failOnExtrapolate=False, verbose=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
 
@@ -127,6 +127,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=None, 
     :param MWv:     float with molecular weight of solvent (kg/mol).
                     Defaults to molecular weight of water (7 sig figs)
     :param MWu:     float with molecular weight of solute (kg/mol).
+    :param nu:      float with number of ions in solution (dimensionless)
     :param failOnExtrapolate:   True if you want an error to appear if PTM includes values that fall outside the knot
                     sequence of gibbsSp.  If False, throws a warning rather than an error, and
                     proceeds with the calculation.
@@ -266,7 +267,7 @@ def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, failOnExtrapolate):
     # Make sure that solute molecular weight is provided if any tdvs that require MWu or f are requested
     reqMWu = [t for t in tdvSpec if t.reqMWu]
     if (MWu == 0 or not MWu) and (reqMWu or reqF):
-        raise ValueError('You cannot calculate ' + pformat([t.name for t in set(reqMWu + reqF)]) + ' without ' +
+        raise ValueError('You cannot calculate ' + pformat([t.name for t in reqMWu] + [t.name for t in reqMWu]) + ' without ' +
                          'providing solute molecular weight.  Remove those statevars and all their dependencies, or ' +
                          'provide a valid value for the MWu parameter.')
     reqNu = [t for t in tdvSpec if t.reqNu]

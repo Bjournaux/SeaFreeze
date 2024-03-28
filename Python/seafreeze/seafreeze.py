@@ -140,22 +140,16 @@ def whichphase(PTm, solute='water1', path=defpath): # make sure solute arg works
     ptsh = (PTm.size,) if isscatter else (PTm[iP].size, PTm[iT].size)  # Reference shape based on PTm
     comp = np.full(ptsh + (max_phase_num + 1,), np.nan)  # Comparison matrix
     for p in phase_sp.keys():
-        if phase_sp[p]['ndT']:
-            # Dimensionless temperature is used, convert input T to dimensionless
-            if isscatter:
-                PTm[:, iT] = np.log(PTm[:, iT] / phase_sp[p]['Tc'])
-            else:
-                PTm[iT] = np.log(PTm[iT] / phase_sp[p]['Tc'])
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (p,)  # Slice for this phase
             sp = phase_sp[p]
             if p == 0:
-                phase_sp[p]['MW'] = phases[solute].MW
-                phase_sp[p]['nu'] = phases[phasenum2phase(p)].nu
                 if 'water1' in solute:
+                    phase_sp[p]['MW'] = phases[solute].MW
                     tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
                 else:
+                    phase_sp[p]['nu'] = phases[phasenum2phase(p)].nu
                     tdvs = _get_tdvs(sp, PTm, isscatter, 'G', 'muw').muw
             else:
                 phase_sp[p]['MW'] = phases[phasenum2phase(p)].MW
@@ -178,7 +172,7 @@ def _get_tdvs(sp, PTm, is_scatter, *tdvSpec):
     :return:            tdv object (see lbftd documentation)
     """
     fn = eg.evalSolutionGibbsScatter if is_scatter else eg.evalSolutionGibbsGrid
-    return fn(sp, PTm, *tdvSpec, MWu=sp['MW'], nu=sp['nu'], cutoff=sp['cutoff'])
+    return fn(sp, PTm, *tdvSpec)
 
 def _get_shear_mod_GPa(sm, rho, T):
     return None if sm is None else sm[0] + sm[1] * (rho - sm[4]) + sm[2] * (rho - sm[4]) ** 2 + sm[3] * (T - sm[5])

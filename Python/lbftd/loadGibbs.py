@@ -62,4 +62,4 @@ def _getnu(raw):
 
 def _getcutoff(raw):
     cutoff = load._stripNestingToValue(raw['cutoff'])
-    return int(cutoff)
+    return float(cutoff)
