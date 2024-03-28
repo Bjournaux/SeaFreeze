@@ -4,11 +4,11 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-V0.9.6
+V1.0 (beta)
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
-The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, II, III, V VI and ice VII/ice X) the 0-100 GPa and 220 - 10000K range. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase, constructed to reproduce thermodynamic measurments. The formalism is described in more details in [Journaux et al. (2020)](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2019JE006176), and in the liquid water Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). 
+The SeaFreeze package allows to compute the thermodynamic and elastic properties of pure water, ice polymorphs (Ih, II, III, V VI and ice VII/ice X) up to 100 GPa and 10,000K and aqueous NaCl solution up to 8GPa and 2,000K. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase, constructed to reproduce thermodynamic measurments. The formalism is described in more details in [Journaux et al. (2020)](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2019JE006176), and in the liquid water Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). 
 
 Contact: bjournau (at) uw (dot) edu
 
@@ -47,7 +47,7 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 - 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 - 'water2' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 - 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
-- 'NaCl' for NaCl(aq) from WIP NaCl(aq) EOS from JM Brown and B Journaux ... 
+- 'NaCl' for NaCl(aq) from JM Brown and B Journaux et al. (in prep.) 
 
 
 ### Outputs
@@ -298,7 +298,8 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 
 * **Baptiste Journaux (Lead)** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
+* **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA*
+* **Ula Jones** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Marshall J. Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA* 
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA*  
 * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
@@ -316,8 +317,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
 
 ### Planned updates
-- ice VII and X 
-- NaCl and MgSO4 aqueous solutions 
+- [MgSO4 and Na2SO4 aqueous solutions](https://github.com/Bjournaux/SeaFreeze/tree/new_tdvs/Matlab/SourceData)
 - NH_3 aqueous solutions
 - NaCl bearing solids (Halite and hydrohalite)
 
@@ -351,7 +351,7 @@ ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
 
 ## Acknowledgments
 
-As of V0.9.3, SeaFreeze incorporates the mlbspline and lbftd packages originally developed by J. Michael Brown. Historical versions of these packages are no longer being updated and are available at https://github.com/jmichaelb/LocalBasisFunction. 
+As of V1.0, SeaFreeze incorporates the mlbspline and lbftd packages originally developed by J. Michael Brown. Historical versions of these packages are no longer being updated and are available at https://github.com/jmichaelb/LocalBasisFunction. 
 
 This work was produced with the financial support provided by the NASA Postdoctoral Program fellowship, by the NASA Solar System Workings Grant 80NSSC17K0775 and by the Icy Worlds node of NASA's Astrobiology Institute (08-NAI5-0021).
 
