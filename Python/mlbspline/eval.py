@@ -6,8 +6,6 @@ log = logging.getLogger('mlbspline')
 stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[MLBspline %(levelname)s] %(message)s'))
 
-iT = 1
-
 def evalMultivarSpline(spd, x, der=None):
     """ Performs recursive evaluation of b-spline for the given independent values
     For now, assumes 1-D spline (y for each n-D x is scalar)
@@ -42,7 +40,7 @@ def evalMultivarSpline(spd, x, der=None):
         raise ValueError('At least one derivative directive is not a non-negative integer.')
     # Use chain rule to get multiplicative factor for non-dimensional temperatures in B spline
     ndT1, ndT2 = (1, 1)
-    if len(der) > 1 and der[iT] > 0 and spd['ndT']:
+    if der[iT] > 0 and spd['ndT']:
         T_K = np.exp(x[iT])*spd['Tc']
         ndT1 = 1/T_K
         if der[iT] > 1:
@@ -54,7 +52,7 @@ def evalMultivarSpline(spd, x, der=None):
         xi = x[di]  # Get x values for dimension being evaluated
         # Wrap xi if necessary
         if not isinstance(xi, np.ndarray):
-            xi = np.asarray([xi], dtype=float) # deprecation fix
+            xi = np.asarray([xi])
         tck = _getNextSpline(di, dimCt, spd, y)
         if di == iT and spd['ndT']:
             if der[iT] == 2 and spd['ndT']:
@@ -81,6 +79,6 @@ def _getNextSpline(dimIdx, dimCt, spd, coefs):
     li = dimCt - 1
     if li != dimIdx:
         coefs = np.moveaxis(coefs, li, 0)
-    t = np.array(spd['knots'][dimIdx], dtype=float) # deprecation fix
+    t = spd['knots'][dimIdx]
     k = spd['order'][dimIdx] - 1  # Scipy wants the degree, not the order (MatLab gives the orders)
     return [t, coefs, k]

@@ -1,4 +1,5 @@
-from hdf5storage import loadmat # from scipy.io
+import numpy
+from hdf5storage import loadmat
 import numpy as np
 import logging
 
@@ -17,8 +18,8 @@ def loadSpline(splineFile, splineVar=None):
     raw = _getRaw(splineFile, splineVar)
     spd = getSplineDict(_stripNestingToFields(raw))
     # Knots can sometimes be imported as object type, which cannot be automatically cast to float
-    if not np.issubdtype(spd['knots'][0].dtype, np.number) and not isinstance(spd['knots'][0][0], np.ndarray):
-        spd['knots'] = spd['knots'].astype(np.object_)
+    # if not np.issubdtype(spd['knots'][0].dtype, np.number) and not isinstance(spd['knots'][0][0], np.ndarray):
+    #     spd['knots'] = spd['knots'].astype(np.float_)
     validateSpline(spd)
     return spd
 
@@ -34,7 +35,7 @@ def _loadFile(f, v=None):
 
 
 def _getCheckVar(rawf, v=None):
-    contents = [k for k in rawf.keys() if not k.startswith('__')]
+    contents = [k for k in rawf.keys() if not k.startswith('__') and not k.startswith('#')]
     if v is None:
         if len(contents) == 1:
             v = contents[0]
@@ -56,33 +57,25 @@ def _stripNestingToFields(src):
 
 
 def _stripNestingToValue(src):
-    # Numpy already automatically squeezes
     while isinstance(src, np.ndarray) and src.shape[0] == 1:
         src = src[0]
-    return src
+    return np.squeeze(src)
 
 
 def getSplineDict(src):
     # All splines must contain the following fields
     out = {
         'form':     _stripNestingToValue(src['form']),
+        # knots comes in double nested so we need an extra layer of stripping nesting
         'knots':    np.array([_stripNestingToValue(kd) for kd in _stripNestingToValue(src['knots'])], dtype=object),
         'number':   _stripNestingToValue(src['number']).astype(int),
         'order':    _stripNestingToValue(src['order']).astype(int),
         'dim':      _stripNestingToValue(src['dim']).astype(int),
-        'coefs':    _stripNestingToValue(src['coefs']),
-        'ndT':      False
+        'coefs':    _stripNestingToValue(src['coefs'])
     }
 
-    # If dimensionless temperature is used, include the critical temperature in field ['Tc'] in the outputs to flag it
-    if 'Tc' in src.dtype.names:
-        out['Tc'] = _stripNestingToValue(src['Tc'])
-        out['ndT'] = True
-
-    if 'Go' in src.dtype.names:
-        out['Go'] = _stripNestingToValue(src['Go']) # call get spline dict here instead
-
-    # If number is a scalar, this is a 1D spline and some stuff needs to be re-wrapped for later code to work
+    # If number is a scalar, this is a 1D spline and some stuff needs to be re-wrapped,
+    # so we don't have to branch some later code for 1D case
     if not isinstance(out['number'], np.ndarray):
         out['number'] = np.array([out['number']])
         out['order'] = np.array([out['order']])
@@ -91,6 +84,12 @@ def getSplineDict(src):
         knots = np.empty(1, object)
         knots[0] = out['knots']
         out['knots'] = knots
+
+    # store extra unrecognized values in the output dictionary
+    for n in src.dtype.names:
+        if n not in out.keys():
+            valn = _stripNestingToValue(src[n])
+            out[n] = np.array([np.squeeze(v) for v in valn], dtype=object) if valn.dtype == np.dtype('O') else valn
 
     return out
 
@@ -108,7 +107,7 @@ def validateSpline(spd):
     if spd['dim'] != 1:
         raise ValueError('These functions currently only support 1-D values.')
     # Need to have same size for knots, number, order
-    if spd['number'].shape[0] != spd['knots'].shape[0] or spd['number'].shape != spd['order'].shape:
+    if spd['number'].shape != spd['knots'].shape or spd['number'].shape != spd['order'].shape:
         raise ValueError('The spline''s knots, number, and order are inconsistent.')
     # Number of dims in coefs should be same as size of number (also makes it match knots and order b/c of prev check)
     if spd['number'].size != spd['coefs'].ndim:
@@ -116,7 +115,7 @@ def validateSpline(spd):
     # Each dim of coefs should have as many members as indicated by number
     if not (np.array(spd['coefs'].shape) == spd['number']).all():
         raise ValueError('At least one of the spline''s coefficients doesn''t match the corresponding number.')
-    # Each dim of knots should have be of length dictated by corresponding number + order
+    # Each dim of knots should have length dictated by corresponding number + order
     if not np.array(spd['number'] + spd['order'] == [k.size for k in spd['knots']]).all():
         raise ValueError('The number of knots does not correspond to the number and order for at least one variable.')
     return
