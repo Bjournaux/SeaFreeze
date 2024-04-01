@@ -7,7 +7,7 @@ import numpy as np
 from psutil import virtual_memory
 from mlbspline.eval import evalMultivarSpline
 from lbftd import statevars
-from lbftd.statevars import iT, iP, iM, _getSupportedThermodynamicVariables
+from lbftd.statevars import iT, iP, iM, _getSupportedThermodynamicVariables, eps
 from inspect import getmembers
 
 log = logging.getLogger('lbftd')
@@ -85,8 +85,8 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
             val[iM] = np.array([np.nan])
             ind[iM] = sortM
         if val[iM][0] == 0:
-            val[iM][0] = np.finfo(float).eps  # replace 0 M input with eps
-    if _needs0M(dimCt, tdvSpec):
+            val[iM][0] = eps  # replace 0 M input with eps
+    if _needsCutoff(dimCt, tdvSpec):
         val[iM] = np.insert(val[iM], 0, cutoff)
     obj = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)
     valout = _evalInternal(gibbsSp, tdvSpec, val, MWu, MWv, nu, cutoff, obj, dimCt, verbose)
@@ -145,16 +145,17 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
     """
 
     [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
-    needs0M = _needs0M(dimCt, tdvSpec)
+    needsCutoff = _needsCutoff(dimCt, tdvSpec)
     fakePTM = _makeFakePTMGrid(dimCt, PTM)  # Fakes grid-style input to do all input checks before processing
     _checkInputs(gibbsSp, dimCt, tdvSpec, fakePTM, MWv, MWu, nu, cutoff, failOnExtrapolate)
     tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True)
     # Point by point
     for p in range(PTM.size):
-        wPTM = _ptmTuple2NestedArrays(PTM[p], dimCt, needs0M)
+        # this function will always replace 0 with eps
+        wPTM = _ptmTuple2NestedArrays(PTM[p], dimCt, needsCutoff)
         tempout = createThermodynamicStatesObj(tdvSpec, wPTM)
         # Prepend a "cutoff" concentration if one is needed by any of the quantities being calculated
-        if needs0M:
+        if needsCutoff:
             wPTM[iM] = np.insert(wPTM[iM], 0, cutoff)
         extrap = [(wPTM[0][0] < gibbsSp['knots'][iP].min()) + (wPTM[0][0] > gibbsSp['knots'][iP].max()) +
                   (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max())]
@@ -163,7 +164,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
                       (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max()) +
                       (wPTM[2][0] > gibbsSp['knots'][iM].max())]
             if wPTM[iM][0] == 0:
-                wPTM[iM][0] = np.finfo(float).eps  # replace 0 M input with eps
+                wPTM[iM][0] = eps  # replace 0 M input with eps
         if extrap == [False]:
             tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, MWu, MWv, nu, cutoff, tempout, dimCt, verbose)
             for t in tdvSpec:
@@ -350,18 +351,20 @@ def _ptmTuple2NestedArrays(PTM, dimCt, needs0M):
     out = np.empty(dimCt, object)
     for i in np.arange(0, dimCt):
         out[i] = np.empty((1,), float)
-        out[i][0] = PTM[i]
+        # If a 0 concentration is used in PTM, replace with eps.
+        out[i][0] = eps if i == iM and PTM[i] == 0 else PTM[i]
     return out
 
 
-def _needs0M(dimCt, tdvSpec):
+def _needsCutoff(dimCt, tdvSpec):
     """ Determines whether any tdvs require 0 concentration to be properly evaluated
     """
     return dimCt == 3 and any([t.reqCutoff for t in tdvSpec])
 
 
 def _removeCutoff(tdvout):
-    """ If a "cutoff" concentration was added, take it back out.
+    """ If a "cutoff" concentration was added, take the values out. A cutoff concentration will always be prepended
+
     NOTE: This method changes the value of tdvout without returning it.
 
     :param tdvout:      The object with calculated thermodynamic properties
