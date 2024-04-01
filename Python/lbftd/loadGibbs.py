@@ -29,19 +29,19 @@ def loadGibbsSpline(splineFile, splineVar=None):
     raw = load._stripNestingToFields(load._getRaw(splineFile, splineVar))
     sp = load.getSplineDict(load._stripNestingToValue(raw['sp']))
     load.validateSpline(sp)
-    MW = _getMW(raw)
+    MW = _getMW(sp)
     out = {
         'sp': sp,
         'MW': MW
     }
     if MW.size > 1:  # Only add nu and cutoff value if dealing with a solution rather than a pure substance
-        out['nu'] = _getnu(raw)
-        out['cutoff'] = _getcutoff(raw)
+        out['nu'] = _getnu(sp)
+        out['cutoff'] = _getcutoff(sp)
     return out
 
-def _getMW(raw):
+def _getMW(src):
     try:
-        MW = load._stripNestingToValue(raw['MW'])
+        MW = src['MW']
     except KeyError:
         log.warning('Could not load MW - defaulting to empty value - will not be able to calculate some thermodynamic values')
         MW = np.empty(0)
@@ -53,13 +53,13 @@ def _getMW(raw):
     return MW
 
 
-def _getnu(raw):
+def _getnu(src):
     # Currently only supports a single solute solution so this is just an integer
-    nu = load._stripNestingToValue(raw['nu'])
+    nu = src['nu']
     if not isinstance(nu, Number) or nu != int(nu):
         raise ValueError('At least one value in nu is not an integer.')
     return int(nu)
 
-def _getcutoff(raw):
-    cutoff = load._stripNestingToValue(raw['cutoff'])
+def _getcutoff(src):
+    cutoff = src['cutoff']
     return float(cutoff)
