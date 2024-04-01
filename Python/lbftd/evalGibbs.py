@@ -56,9 +56,6 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
     statevarnames = _getSupportedThermodynamicVariables()
     [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
     _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, cutoff, failOnExtrapolate)
-    oPTM = PTM # original PTM for _remove0M function
-    if _needs0M(dimCt, tdvSpec) and PTM[iM][0] != 0:
-        PTM[iM] = np.insert(PTM[iM], 0, 0)
     pt = np.logical_or(PTM[iP] < gibbsSp['knots'][iP].min(), PTM[iP] > gibbsSp['knots'][iP].max())
     ind = np.empty(PTM.size, object)  # valid indicies
     val = np.empty(PTM.size, object)  # valid PT values
@@ -89,8 +86,10 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
             ind[iM] = sortM
         if val[iM][0] == 0:
             val[iM][0] = np.finfo(float).eps  # replace 0 M input with eps
+    if _needs0M(dimCt, tdvSpec):
+        val[iM] = np.insert(val[iM], 0, cutoff)
     obj = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)
-    valout = _evalInternal(gibbsSp, tdvSpec, val, oPTM, MWu, MWv, nu, cutoff, obj, dimCt, verbose)
+    valout = _evalInternal(gibbsSp, tdvSpec, val, MWu, MWv, nu, cutoff, obj, dimCt, verbose)
     tdvout = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)  # Should be all NaN
     for n in range(len(getmembers(tdvout))):
         if getmembers(tdvout)[n][0] in statevarnames[1]:
@@ -149,14 +148,13 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
     needs0M = _needs0M(dimCt, tdvSpec)
     fakePTM = _makeFakePTMGrid(dimCt, PTM)  # Fakes grid-style input to do all input checks before processing
     _checkInputs(gibbsSp, dimCt, tdvSpec, fakePTM, MWv, MWu, nu, cutoff, failOnExtrapolate)
-    oPTM = PTM # original PTM for _remove0M function
     tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True)
     # Point by point
     for p in range(PTM.size):
         wPTM = _ptmTuple2NestedArrays(PTM[p], dimCt, needs0M)
         tempout = createThermodynamicStatesObj(tdvSpec, wPTM)
-        # Prepend a 0 concentration if one is needed by any of the quantities being calculated
-        if needs0M and wPTM[iM] != cutoff:
+        # Prepend a "cutoff" concentration if one is needed by any of the quantities being calculated
+        if needs0M:
             wPTM[iM] = np.insert(wPTM[iM], 0, cutoff)
         extrap = [(wPTM[0][0] < gibbsSp['knots'][iP].min()) + (wPTM[0][0] > gibbsSp['knots'][iP].max()) +
                   (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max())]
@@ -167,7 +165,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
             if wPTM[iM][0] == 0:
                 wPTM[iM][0] = np.finfo(float).eps  # replace 0 M input with eps
         if extrap == [False]:
-            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, oPTM, MWu, MWv, nu, cutoff, tempout, dimCt, verbose)
+            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, MWu, MWv, nu, cutoff, tempout, dimCt, verbose)
             for t in tdvSpec:
                 tolastpt = getattr(tdvout, t.name)
                 tolastpt[p] = getattr(tempout, t.name).flat[0]
@@ -177,10 +175,11 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
     return tdvout
 
 
-def _evalInternal(gibbsSp, tdvSpec, PTM, oPTM, MWu, MWv, nu, cutoff, tdvout, dimCt, verbose=False):
+def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, nu, cutoff, tdvout, dimCt, verbose=False):
     derivs = getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose)
     gPTM = _getGriddedPTM(tdvSpec, PTM, verbose) if any([tdv.reqGrid for tdv in tdvSpec]) else None
     f = _getVolSolventInVolSlnConversion(MWu, PTM) if any([tdv.reqF for tdv in tdvSpec]) else None
+    strip_cutoff = False
 
     # Calculate thermodynamic variables and store in appropriate fields in tdvout
     completedTDVs = set()  # list of completed tdvs
@@ -190,13 +189,16 @@ def _evalInternal(gibbsSp, tdvSpec, PTM, oPTM, MWu, MWv, nu, cutoff, tdvout, dim
         tdvsToEval = tuple(t for t in tdvSpec if
                            t.name not in completedTDVs and (not t.reqTDV or not t.reqTDV.difference(completedTDVs)))
         for t in tdvsToEval:
+            if t.reqCutoff:
+                strip_cutoff = True
             args = _buildEvalArgs(t, derivs, PTM, gPTM, MWv, MWu, nu, cutoff, tdvout, gibbsSp, f)
             start = time()
             setattr(tdvout, t.name, t.calcFn(**args))  # Calculate the value and set it in the output
             end = time()
             if verbose: _printTiming('tdv ' + t.name, start, end)
             completedTDVs.add(t.name)
-    _remove0M(tdvout, PTM, oPTM, cutoff)
+    if strip_cutoff:
+        _removeCutoff(tdvout)
     return tdvout
 
 
@@ -358,26 +360,20 @@ def _needs0M(dimCt, tdvSpec):
     return dimCt == 3 and any([t.reqCutoff for t in tdvSpec])
 
 
-def _remove0M(tdvout, wrappedPTM, oPTM, cutoff):
-    """ If a 0 concentration was added, take it back out.
+def _removeCutoff(tdvout):
+    """ If a "cutoff" concentration was added, take it back out.
     NOTE: This method changes the value of tdvout without returning it.
 
     :param tdvout:      The object with calculated thermodynamic properties
                         tdvout.PTM is the original PTM input provided by the caller
-    :param wrappedPTM:  The wrapped PTM which may include
     """
-    if wrappedPTM.size == 3 and wrappedPTM[iM][0] == cutoff:
-        try:  # oPTM is either a tuple or another set of nested arrays
-            firstM = oPTM[0][0]
-        except IndexError:
-            firstM = oPTM[0]
-        if firstM != cutoff:  # This means the wrapped PTM had a "cutoff" concentration prepended
-            # Go through all calculated values and remove the first item from the M dimension
-            # TODO: figure out why PTM doesn't show up in vars
-            for p, v in vars(tdvout).items():
-                slc = [slice(None)] * len(v.shape)
-                slc[iM] = slice(1, None)
-                setattr(tdvout, p, v[tuple(slc)])
+    # Go through all calculated values and remove the first item from the M dimension
+    # TODO: figure out why PTM doesn't show up in vars
+    for p, v in vars(tdvout).items():
+        if p != 'PTM':
+            slc = [slice(None)] * len(v.shape)
+            slc[iM] = slice(1, None)
+            setattr(tdvout, p, v[tuple(slc)])
 
 
 def _createGibbsDerivativesClass(tdvSpec):

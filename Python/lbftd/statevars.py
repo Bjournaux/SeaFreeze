@@ -317,7 +317,7 @@ def _getSupportedDerivatives():
 def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=False, parmMWu='MWu',
                 reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f', parmNu ='nu',
                 reqDerivs=None, parmderivs='derivs', reqTDV=None, parmtdv='tdv', reqSpline=False,
-                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', req0M=False, reqNu=None,
+                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', reqNu=None,
                 reqCutoff=None, parmCutoff='cutoff', isInternalOnly=False):
     """ Builds a TDVSpec namedtuple indicating what is required to calculate this particular thermodynamic variable
     :param name:        the name / symbol of the tdv (e.g., G, rho, alpha, muw)
