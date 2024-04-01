@@ -77,12 +77,6 @@ def seafreeze(PTm, phase, path=defpath, *tdvSpec):
     sp['cutoff'] = phasedesc.cutoff
     # Calc density and isentropic bulk modulus
     isscatter = _is_scatter(PTm)
-    if sp['ndT']:
-        # Dimensionless temperature is used, convert input T to dimensionless
-        if isscatter:
-            PTm[:, iT] = np.log(PTm[:, iT] / sp['Tc'])
-        else:
-            PTm[iT] = np.log(PTm[iT] / sp['Tc'])
     tdvs = _get_tdvs(sp, PTm, isscatter, *tdvSpec)
     if phasedesc.shear_mod_parms:
         Ks = _get_tdvs(sp, PTm, isscatter, 'Ks').Ks

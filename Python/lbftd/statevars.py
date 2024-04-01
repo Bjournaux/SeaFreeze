@@ -155,31 +155,31 @@ def evalVolume(tdv):
     return np.power(tdv.rho, -1)
 
 
-def evalApparentSpecificHeat(f, gPTM, tdv, PTM, gibbsSp, cutoff):
+def evalApparentSpecificHeat(f, gPTM, tdv, cutoff):
     """
     :return: Cpa
     """
-    return (tdv.Cp * f - _getCp0(PTM, gibbsSp, cutoff)) / _getDividableBy(gPTM[iM])
+    return (tdv.Cp * f - _getCutoffMTdv(tdv, 'Cp', cutoff)) / _getDividableBy(gPTM[iM])
 
-def evalApparentVolume(f, gPTM, tdv, PTM, gibbsSp, cutoff):
+def evalApparentVolume(f, gPTM, tdv, cutoff):
     """ Slope of a chord between pure solvent and a concentration on a V v. M graph
     :return: Va
     """
-    return  1e6 * (tdv.V * f - _getV0(PTM, gibbsSp, cutoff)) / _getDividableBy(gPTM[iM])
+    return 1e6 * (tdv.V * f - _getCutoffMTdv(tdv, 'V', cutoff)) / _getDividableBy(gPTM[iM])
 
 
-def evalExcessVolume(tdv, PTM, gibbsSp, MWu, cutoff):
+def evalExcessVolume(tdv, cutoff):
     """
     :return: Vex
     """
-    return tdv.Va - _getVMo(PTM, gibbsSp, MWu, cutoff)
+    return tdv.Va - (_getCutoffMTdv(tdv, 'Vm', cutoff))  #_getVMo(PTM, gibbsSp, MWu, cutoff)
 
 
-def evalOsmoticCoeff(gPTM, PTM, tdv, MWv, nu, gibbsSp):
+def evalOsmoticCoeff(gPTM, tdv, MWv, nu, cutoff):
     """
-    :return: phi
+    :return: phi # _getGw(PTM, gibbsSp, cutoff)
     """
-    return (1 / MWv) * (_get0MG(PTM, gibbsSp) / (1 / MWv) - tdv.muw)/_getDividableBy(gPTM[iM])/gPTM[iT]/R/nu
+    return (1 / MWv) * (_getCutoffMTdv(tdv, 'G', cutoff)/ (1 / MWv) - tdv.muw)/_getDividableBy(gPTM[iM])/gPTM[iT]/R/nu
 
 
 def evalWaterActivity(gPTM, tdv, MWv):
@@ -203,32 +203,55 @@ def evalExcessGibbsEnergy(gPTM, nu, tdv):
     return R*nu*gPTM[iT]*gPTM[iM]*(np.log(tdv.gam)+(1-tdv.phi))
 
 
-def _getCp0(PTM, gibbsSp, cutoff):
-    PTM_ss = PTM
-    PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
-    d2T0 = evalMultivarSpline(gibbsSp, PTM_ss, [0, 2, 0])
-    return -d2T0*np.reshape(PTM[iT], [len(PTM[iT]), 1])[np.newaxis]
+# def evalWaterSSCp(derivs, PTM):
+#     """
+#     :return: Cp0
+#     """
+#     return -derivs.d2T*PTM[iT]
+#
+# def evalWaterSSV(derivs):
+#     """
+#     :return: V0
+#     """
+#     return 1e-6*derivs.d1P
 
 
-def _getV0(PTM, gibbsSp, cutoff):
-    PTM_ss = PTM
-    PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
-    d1P0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 0])
-    return 1e-6*d1P0
+# def evalInfDilSolutePMV(derivs, MWu):
+#     """
+#     :return: Vm0
+#     """
+#     return MWu * derivs.d1P + (1 + MWu * eps) * derivs.dPm
 
 
-def _getVMo(PTM, gibbsSp, MWu, cutoff):
-    PTM_ss = PTM
-    PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
-    d1P0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 0])
-    dPm0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 1])
-    return MWu * d1P0 + (1 + MWu * eps) * dPm0
+# def _getCp0(PTM, gibbsSp, cutoff): # standard state heat capacity of water
+#     PTM_ss = PTM
+#     PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
+#     d2T0 = evalMultivarSpline(gibbsSp, PTM_ss, [0, 2, 0])
+#     return -d2T0*np.reshape(PTM[iT], [len(PTM[iT]), 1])[np.newaxis]
+#
+#
+# def _getV0(PTM, gibbsSp, cutoff): # standard state specific volume of water
+#     PTM_ss = PTM
+#     PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
+#     d1P0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 0])
+#     return 1e-6*d1P0
 
 
-def _getGss(PTM, gibbsSp, MWu):
+# def _getVMo(PTM, gibbsSp, MWu, cutoff): # partial molal volume of solute at infinite dilution
+#     PTM_ss = PTM
+#     PTM_ss[iM] = np.full(len(PTM[iM]), cutoff)
+#     d1P0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 0])
+#     dPm0 = evalMultivarSpline(gibbsSp, PTM_ss, [1, 0, 1])
+#     return MWu * d1P0 + (1 + MWu * eps) * dPm0
+
+# def _getGw(PTM, gibbsSp, cutoff):
+#     PTM[iM] = np.full(len(PTM[iM]), cutoff)
+#     return evalMultivarSpline(gibbsSp, PTM)
+
+def _getGss(PTM, gibbsSp, MWu): # standard state Gibbs energy of solution -- needed for Gex
     PTM[iM] = np.full(len(PTM[iM]), 1)
     Go = getSplineDict(gibbsSp['Go'])
-    Gss = evalMultivarSpline(Go, np.reshape(PTM[iT], [1, len(PTM[iT])]))
+    Gss = evalMultivarSpline(Go, np.reshape(PTM[iT], [1, len(PTM[iT])], float))
     # G2 = evalMultivarSpline(gibbsSp, np.array([PTM[iP], PTM[iT], np.full(len(PTM[iM]), 1e-3, float)], dtype=object))
     # dGdm2 = evalMultivarSpline(gibbsSp, np.array([PTM[iP], PTM[iT], np.full(len(PTM[iM]), 1e-3, float)], dtype=object), [0, 0, 1])
     # G1b = evalMultivarSpline(gibbsSp, np.array([np.full(len(PTM[iP]), 0.1, float), PTM[iT], np.full(len(PTM[iM]), 1e-3, float)], dtype=object))
@@ -239,11 +262,11 @@ def _getGss(PTM, gibbsSp, MWu):
     # G1b = evalMultivarSpline(gibbsSp, np.array([np.array([0.1], dtype=int), PTM[iT], np.array([1e-3], dtype=float)], dtype=object))
     # dGdm1 = evalMultivarSpline(gibbsSp, np.array([np.array([0.1], dtype=float), PTM[iT], np.array([1e-3], dtype=float)], dtype=object), [0, 0, 1])
     PTM_ss = PTM;
-    PTM_ss[iM] = np.full(len(PTM[iM]), 1e-3) # cc to L; ss for solute is 1 M
+    PTM_ss[iM] = np.full(len(PTM[iM]), ssM) # cc to L; ss for solute is 1 M
     G2 = evalMultivarSpline(gibbsSp, PTM_ss)
     dGdm2 = evalMultivarSpline(gibbsSp, PTM_ss, [0, 0, 1])
     PTM_ss_1_bar = PTM_ss
-    PTM_ss_1_bar[iP] = np.full(len(PTM[iP]), 0.1) # why iM in matlab?
+    PTM_ss_1_bar[iP] = np.full(len(PTM[iP]), stP) # why iM in matlab?
     G1b = evalMultivarSpline(gibbsSp, PTM_ss_1_bar)
     dGdm1 = evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1])
 
@@ -251,13 +274,12 @@ def _getGss(PTM, gibbsSp, MWu):
     return Gss + dGss
 
 
-def _get0MG(PTM, gibbsSp):
-    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
-    return evalMultivarSpline(gibbsSp, PTM)
-
-def _getAmbientP(PTM, gibbsSp):
-    PTM[iM] = np.full(len(PTM[iM]), 0.0002)
-    return evalMultivarSpline(gibbsSp, PTM)
+def _getCutoffMTdv(tdv, prop, cutoff):
+    slc = [slice(None)] * (len(tdv.PTM))
+    slc[iM] = slice(0, 1) # right now i am just preprending and then removing the cutoff value
+    # like 0 M was being prepended. Or we could search the array for the value if we figure that out
+    # (is that necessary though?)
+    return getattr(tdv, prop)[tuple(slc)]
 
 
 def _getDividableBy(inp):
@@ -297,7 +319,7 @@ def _getSupportedDerivatives():
 def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=False, parmMWu='MWu',
                 reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f', parmNu ='nu',
                 reqDerivs=None, parmderivs='derivs', reqTDV=None, parmtdv='tdv', reqSpline=False,
-                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', req0M=False, reqNu=None, reqCutoff=None, parmCutoff='cutoff'):
+                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', reqNu=None, reqCutoff=None, parmCutoff='cutoff'):
     """ Builds a TDVSpec namedtuple indicating what is required to calculate this particular thermodynamic variable
     :param name:        the name / symbol of the tdv (e.g., G, rho, alpha, muw)
     :param calcFn:      the name of the function used to calculate the tdv
@@ -326,7 +348,7 @@ def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=Fa
     :param parmspline:  the name of the parameter of calcFn used to pass in the spline def if reqSpline
     :param reqPTM:      If True, calcFn needs the original dimension input (parm PTM in evalSolutionGibbs*) to run
     :param parmptm:     the name of the parameter of calcFn used to pass in the original input if reqPTM
-    :param req0M:       if True, calcFn needs the 0 concentration for calculating apparent values
+    :param reqCutoff:   If True, calcFn needs the concentration at the "cutoff" value for calculating apparent values
     :return:            a namedtuple giving the spec for the tdv
     """
     if reqDerivs is None:
@@ -385,15 +407,17 @@ def _getSupportedThermodynamicVariables():
         _getTDVSpec('Vm', evalPartialMolarVolume, reqMWu=True, reqF=True, reqDerivs=['d1P', 'dPM']),
         _getTDVSpec('Cpm', evalPartialMolarHeatCapacity, reqMWu=True, reqGrid=True, reqF=True, reqDerivs=['d2T1M'],
                     reqTDV=['Cp']),
-        _getTDVSpec('Cpa', evalApparentSpecificHeat, reqM=True, reqGrid=True, reqF=True, reqTDV=['Cp'], reqSpline=True, reqPTM=True, reqCutoff=True),
-        _getTDVSpec('phi', evalOsmoticCoeff, reqM=True, reqMWv=True, reqGrid=True, reqTDV=['G', 'muw'], reqNu=True, reqSpline=True, reqPTM=True),
+        _getTDVSpec('Cpa', evalApparentSpecificHeat, reqM=True, reqGrid=True, reqF=True, reqTDV=['Cp'], reqCutoff=True),
+        _getTDVSpec('phi', evalOsmoticCoeff, reqM=True, reqMWv=True, reqGrid=True, reqTDV=['G', 'muw'], reqNu=True, reqCutoff=True),
         _getTDVSpec('aw', evalWaterActivity, reqM=True, reqGrid=True, reqMWv=True, reqTDV=['phi']),
-        _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqSpline=True, reqPTM=True, reqCutoff=True),
-        _getTDVSpec('Vex', evalExcessVolume, reqM=True, reqMWu=True, reqTDV=['Va'], reqSpline=True,
-                    reqPTM=True, reqCutoff=True),
+        _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqCutoff=True),
+        _getTDVSpec('Vex', evalExcessVolume, reqM=True, reqTDV=['Va', 'Vm'], reqCutoff=True),
         _getTDVSpec('gam', evalActivityCoeff, reqM=True, reqMWu=True, reqGrid=True, reqTDV=['mus'], reqNu=True,
                     reqSpline=True, reqPTM=True),
-        _getTDVSpec('Gex', evalExcessGibbsEnergy, reqM=True, reqGrid=True, reqTDV=['gam', 'phi'], reqNu=True)
+        _getTDVSpec('Gex', evalExcessGibbsEnergy, reqM=True, reqGrid=True, reqTDV=['gam', 'phi'], reqNu=True),
+        # _getTDVSpec('Cp0', evalWaterSSCp, reqDerivs=['d2T'], reqPTM=True),
+        # _getTDVSpec('V0', evalWaterSSV, reqDerivs=['d1P']),
+        # _getTDVSpec('Vmo', evalInfDilSolutePMV, reqMWu=True, reqDerivs=['d1P', 'dPM'], reqCutoff=True),
     ])
 
     # Check that all reqTDVs are represented in the list
@@ -473,6 +497,8 @@ iP = 0; iT = 1; iM = 2  # Dimension indices
 defDer = 0              # Default derivative
 R = 8.3144
 eps = np.finfo(float).eps
+ssM = 1e-3  # standard state solution concentration (1 mol/Kg = 0.001 mol/cc)
+stP = 0.1  # STP pressure (1 bar = 0.1 MPa)
 
 derivSpec = namedtuple('DerivativeSpec', ['name', 'wrtP', 'wrtT', 'wrtM'])
 derivatives = _getSupportedDerivatives()

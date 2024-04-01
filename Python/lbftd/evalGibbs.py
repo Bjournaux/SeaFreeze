@@ -55,7 +55,10 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
     """
     statevarnames = _getSupportedThermodynamicVariables()
     [dimCt, tdvSpec] = _parseInput(gibbsSp, *tdvSpec)
-    _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, failOnExtrapolate)
+    _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, cutoff, failOnExtrapolate)
+    oPTM = PTM # original PTM for _remove0M function
+    if _needs0M(dimCt, tdvSpec) and PTM[iM][0] != 0:
+        PTM[iM] = np.insert(PTM[iM], 0, 0)
     pt = np.logical_or(PTM[iP] < gibbsSp['knots'][iP].min(), PTM[iP] > gibbsSp['knots'][iP].max())
     ind = np.empty(PTM.size, object)  # valid indicies
     val = np.empty(PTM.size, object)  # valid PT values
@@ -87,10 +90,8 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
         if val[iM][0] == 0:
             val[iM][0] = np.finfo(float).eps  # replace 0 M input with eps
     obj = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)
-    # if _needs0M(dimCt, tdvSpec) and val[iM][0] != 0:
-    #     val[iM] = np.insert(val[iM], 0, 0)
-    valout = _evalInternal(gibbsSp, tdvSpec, val, MWu, MWv, nu, cutoff, obj, dimCt, verbose)
-    tdvout = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)  # This has the original PTM, should be all NaN
+    valout = _evalInternal(gibbsSp, tdvSpec, val, oPTM, MWu, MWv, nu, cutoff, obj, dimCt, verbose)
+    tdvout = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)  # Should be all NaN
     for n in range(len(getmembers(tdvout))):
         if getmembers(tdvout)[n][0] in statevarnames[1]:
             v = getmembers(tdvout)[n][1]
@@ -148,16 +149,16 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
     [dimCt, tdvSpec] = _parseInput(gibbsSp, *tdvSpec)
     needs0M = _needs0M(dimCt, tdvSpec)
     fakePTM = _makeFakePTMGrid(dimCt, PTM)  # Fakes grid-style input to do all input checks before processing
-    _checkInputs(gibbsSp, dimCt, tdvSpec, fakePTM, MWv, MWu, nu, failOnExtrapolate)
-
+    _checkInputs(gibbsSp, dimCt, tdvSpec, fakePTM, MWv, MWu, nu, cutoff, failOnExtrapolate)
+    oPTM = PTM # original PTM for _remove0M function
     tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True)
     # Point by point
     for p in range(PTM.size):
         wPTM = _ptmTuple2NestedArrays(PTM[p], dimCt, needs0M)
         tempout = createThermodynamicStatesObj(tdvSpec, wPTM)
         # Prepend a 0 concentration if one is needed by any of the quantities being calculated
-        # if needs0M and wPTM[iM] != 0:
-        #     wPTM[iM] = np.insert(wPTM[iM], 0, 0)
+        if needs0M and wPTM[iM] != cutoff:
+            wPTM[iM] = np.insert(wPTM[iM], 0, cutoff)
         extrap = [(wPTM[0][0] < gibbsSp['knots'][iP].min()) + (wPTM[0][0] > gibbsSp['knots'][iP].max()) +
                   (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max())]
         if wPTM.size > 2:
@@ -167,7 +168,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
             if wPTM[iM][0] == 0:
                 wPTM[iM][0] = np.finfo(float).eps  # replace 0 M input with eps
         if extrap == [False]:
-            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, MWu, MWv, nu, cutoff, tempout, dimCt, verbose)
+            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, oPTM, MWu, MWv, nu, cutoff, tempout, dimCt, verbose)
             for t in tdvSpec:
                 tolastpt = getattr(tdvout, t.name)
                 tolastpt[p] = getattr(tempout, t.name).flat[0]
@@ -177,7 +178,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
     return tdvout
 
 
-def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, nu, cutoff, tdvout, dimCt, verbose=False):
+def _evalInternal(gibbsSp, tdvSpec, PTM, oPTM, MWu, MWv, nu, cutoff, tdvout, dimCt, verbose=False):
     derivs = getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose)
     gPTM = _getGriddedPTM(tdvSpec, PTM, verbose) if any([tdv.reqGrid for tdv in tdvSpec]) else None
     f = _getVolSolventInVolSlnConversion(MWu, PTM) if any([tdv.reqF for tdv in tdvSpec]) else None
@@ -196,7 +197,7 @@ def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, nu, cutoff, tdvout, dimCt, ve
             end = time()
             if verbose: _printTiming('tdv ' + t.name, start, end)
             completedTDVs.add(t.name)
-    _remove0M(tdvout, PTM)
+    _remove0M(tdvout, PTM, oPTM, cutoff)
     return tdvout
 
 
@@ -218,7 +219,7 @@ def _buildEvalArgs(tdv, derivs, PTM, gPTM, MWv, MWu, nu, cutoff, tdvout, gibbsSp
     if tdv.reqGrid:   args[tdv.parmgrid] = gPTM
     if tdv.reqMWv:    args[tdv.parmMWv] = MWv
     if tdv.reqMWu:    args[tdv.parmMWu] = MWu
-    if tdv.reqNu:    args[tdv.parmNu] = nu
+    if tdv.reqNu:     args[tdv.parmNu] = nu
     if tdv.reqTDV:    args[tdv.parmtdv] = tdvout
     if tdv.reqSpline: args[tdv.parmspline] = gibbsSp
     if tdv.reqPTM:    args[tdv.parmptm] = PTM
@@ -235,7 +236,7 @@ def _makeFakePTMGrid(dimCt, PTM):
     return out
 
 
-def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, failOnExtrapolate):
+def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, cutoff, failOnExtrapolate):
     """ Checks error conditions before performing any calculations, throwing an error if anything doesn't match up
       - Ensures necessary data is available for requested statevars (check req parameters for statevars)
       - Throws a warning (or error if failOnExtrapolate=True) if spline is being evaluated on values
@@ -246,11 +247,11 @@ def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, failOnExtrapolate):
     knotranges = [(k[0], k[-1]) for k in gibbsSp['knots']]
     # If a PTM spline, make sure the spline's concentration dimension starts with 0 if any tdv has req0M=True
     # Note that the evalGibbs functions elsewhere handle the case where PTM does not include 0 concentration.
-    req0M = [t for t in tdvSpec if t.req0M]
-    if dimCt == 3 and req0M and knotranges[iM][0] != 0:
+    req0M = [t for t in tdvSpec if t.reqCutoff]
+    if dimCt == 3 and req0M and knotranges[iM][0] > cutoff: # 1st knot in concentration will no longer be 0
         raise ValueError('You cannot calculate ' + pformat([t.name for t in req0M]) + ' with a spline that does ' +
-                         'not include 0 concentration. Remove those statevars and all their dependencies, or ' +
-                         'supply a spline that includes 0 concentration.')
+                         'not include a concentration of ' + str(cutoff) + '. Remove those statevars and all their dependencies, or ' +
+                         'supply a spline that includes ' + str(cutoff))
     # Make sure that spline has 3 dims if tdvs using concentration or f are requested
     reqF = [t for t in tdvSpec if t.reqF]
     reqM = [t for t in tdvSpec if t.reqM]
@@ -352,10 +353,10 @@ def _ptmTuple2NestedArrays(PTM, dimCt, needs0M):
 def _needs0M(dimCt, tdvSpec):
     """ Determines whether any tdvs require 0 concentration to be properly evaluated
     """
-    return dimCt == 3 and any([t.req0M for t in tdvSpec])
+    return dimCt == 3 and any([t.reqCutoff for t in tdvSpec])
 
 
-def _remove0M(tdvout, wrappedPTM):
+def _remove0M(tdvout, wrappedPTM, oPTM, cutoff):
     """ If a 0 concentration was added, take it back out.
     NOTE: This method changes the value of tdvout without returning it.
 
@@ -363,12 +364,12 @@ def _remove0M(tdvout, wrappedPTM):
                         tdvout.PTM is the original PTM input provided by the caller
     :param wrappedPTM:  The wrapped PTM which may include
     """
-    if wrappedPTM.size == 3 and wrappedPTM[iM][0] == 0:
-        try:  # tdvout.PTM is either a tuple or another set of nested arrays
-            firstM = tdvout.PTM[iM][0]
+    if wrappedPTM.size == 3 and wrappedPTM[iM][0] == cutoff:
+        try:  # oPTM is either a tuple or another set of nested arrays
+            firstM = oPTM[0][0]
         except IndexError:
-            firstM = tdvout.PTM[iM]
-        if firstM != 0:  # This means the wrapped PTM had a 0 concentration prepended
+            firstM = oPTM[0]
+        if firstM != cutoff:  # This means the wrapped PTM had a "cutoff" concentration prepended
             # Go through all calculated values and remove the first item from the M dimension
             # TODO: figure out why PTM doesn't show up in vars
             for p, v in vars(tdvout).items():

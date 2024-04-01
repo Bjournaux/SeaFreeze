@@ -6,6 +6,8 @@ log = logging.getLogger('mlbspline')
 stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[MLBspline %(levelname)s] %(message)s'))
 
+iT = 1
+
 def evalMultivarSpline(spd, x, der=None):
     """ Performs recursive evaluation of b-spline for the given independent values
     For now, assumes 1-D spline (y for each n-D x is scalar)
@@ -38,14 +40,6 @@ def evalMultivarSpline(spd, x, der=None):
         raise ValueError('The dimensions of the derivative directives do not match the dimensions of the spline.')
     if not all((isinstance(i, int) and i >= 0) for i in der):
         raise ValueError('At least one derivative directive is not a non-negative integer.')
-    # Use chain rule to get multiplicative factor for non-dimensional temperatures in B spline
-    ndT1, ndT2 = (1, 1)
-    if der[iT] > 0 and spd['ndT']:
-        T_K = np.exp(x[iT])*spd['Tc']
-        ndT1 = 1/T_K
-        if der[iT] > 1:
-            ndT2 = -1/T_K**2
-
     y = spd['coefs']
     # Start at the last index and work downward to the first
     for di in range(dimCt - 1, -1, -1):
@@ -54,14 +48,7 @@ def evalMultivarSpline(spd, x, der=None):
         if not isinstance(xi, np.ndarray):
             xi = np.asarray([xi])
         tck = _getNextSpline(di, dimCt, spd, y)
-        if di == iT and spd['ndT']:
-            if der[iT] == 2 and spd['ndT']:
-                # Use product rule to combine derivates in terms of non-dimensional T
-                y = np.array(splev(xi, tck, der=2))*ndT1**2 + np.array(splev(xi, tck, der=1))*ndT2
-            else:
-                y = np.array(splev(xi, tck, der=der[di]))*ndT1
-        else:
-            y = np.array(splev(xi, tck, der=der[di]))
+        y = np.array(splev(xi, tck, der=der[di]))
     # Need to rearrange back to original order and shape
     return _getNextSpline(-1, dimCt, spd, y)[1]
 
