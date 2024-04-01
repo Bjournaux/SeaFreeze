@@ -28,10 +28,16 @@ These rely only on P and T:
 These rely on P,T, and M, and some also require non-zero molecular weights (for solvent and solute) to calculate.
 - _mus_: solute chemical potential in J mol<sup>-1</sup>
 - _muw_: solvent chemical potential in J mol<sup>-1</sup>
-- _Vm_: partial molar volume in m<sup>3</sup> mol<sup>-1</sup>
+- _Vm_: partial molar volume in cc mol<sup>-1</sup>
 - _Cpm_: partial molar heat capacity in J kg<sup>-1</sup> K<sup>-1</sup> mol<sup>-1</sup>
-- _Cpa_: apparent heat capacity J kg<sup>-1</sup> K<sup>-1</sup> mol<sup>-1</sup>
-- _Va_: apparent volume m<sup>3</sup> mol<sup>-1</sup>
+- _Cpa_: apparent heat capacity in J kg<sup>-1</sup> K<sup>-1</sup> mol<sup>-1</sup>
+- _Va_: apparent volume in cc mol<sup>-1</sup>
+- _Vex_: excess volume in  cc mol<sup>-1</sup>
+- _phi_: osmotic coefficient (dimensionless)
+- _aw_: water activity (dimensionless)
+- _gam_: activity coefficient (dimensionless)
+- _Gex_: excess Gibbs energy in J kg<sup>-1</sup>
+
 
 
 See demo folder for example usage.  
@@ -109,3 +115,4 @@ default to _False_.
     apparent values. There is no parameter in the eval function associated with this.  Rather, the program will 
     automatically calculate required values for the pure solvent and use them where required.  See 
     _statevars.evalApparentVolume_ for an example.
+

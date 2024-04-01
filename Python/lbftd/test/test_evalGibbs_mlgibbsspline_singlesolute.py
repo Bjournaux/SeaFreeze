@@ -18,7 +18,8 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         pass
     def test_evalgibbs_singlesolute_grid_allmeasures(self):
         out = eg.evalSolutionGibbsGrid(self.spline['sp'], np.array([self.P, self.T, self.M], dtype=object),
-                                       MWv=self.spline['MW'][0], MWu=self.spline['MW'][1])
+                                       MWv=self.spline['MW'][0], MWu=self.spline['MW'][1], nu=self.spline['nu'], cutoff=self.spline['cutoff'])
+
         valErrs = ''
         # check all values and output just one error for all of them
         for tdv in vars(out).keys():
@@ -37,8 +38,10 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         if valErrs:
             self.fail(valErrs)
     def test_evalgibbs_singlesolute_grid_Cpa_no0M(self):
-        out = eg.evalSolutionGibbsGrid(self.spline['sp'], np.array([self.P, self.T, self.M[1:]], dtype=object), 'Cpa',
-                                       MWv=self.spline['MW'][0], MWu=self.spline['MW'][1])
+        PTM = np.array([self.P, self.T, self.M[1:]], dtype=object)
+        out = eg.evalSolutionGibbsGrid(self.spline['sp'], PTM, 'Cpa',
+                                       MWv=self.spline['MW'][0], MWu=self.spline['MW'][1], nu=self.spline['nu'], cutoff=self.spline['cutoff'])
+
         valErrs = ''
         for tdv in vars(out).keys():
             outfield = getattr(out, tdv)
@@ -58,7 +61,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         pidx = 0; tidx = 0; midx = 0;
         PTM = np.empty((1,), object)
         PTM[0] = (self.P[pidx], self.T[tidx], self.M[midx])
-        out = eg.evalSolutionGibbsScatter(self.spline['sp'], PTM, MWv=self.spline['MW'][0], MWu=self.spline['MW'][1])
+        out = eg.evalSolutionGibbsScatter(self.spline['sp'], PTM, MWv=self.spline['MW'][0], MWu=self.spline['MW'][1], nu=self.spline['nu'], cutoff=self.spline['cutoff'])
         valErrs = ''
         # check all values and output just one error for all of them
         for tdv in vars(out).keys():
@@ -83,7 +86,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         pidx = 1; tidx = 2; midx = 3;
         PTM = np.empty((1,), object)
         PTM[0] = (self.P[pidx], self.T[tidx], self.M[midx])
-        out = eg.evalSolutionGibbsScatter(self.spline['sp'], PTM, 'Va', MWv=self.spline['MW'][0], MWu=self.spline['MW'][1])
+        out = eg.evalSolutionGibbsScatter(self.spline['sp'], PTM, 'Va', MWv=self.spline['MW'][0], MWu=self.spline['MW'][1], nu=self.spline['nu'], cutoff=self.spline['cutoff'])
         valErrs = ''
         for tdv in vars(out).keys():
             outfield = getattr(out, tdv)
@@ -109,7 +112,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             midx = randint(0, len(self.M)-1)
             ptindices[i] = (pidx, tidx, midx)
             PTM[i] = (self.P[pidx], self.T[tidx], self.M[midx])
-        out = eg.evalSolutionGibbsScatter(self.spline['sp'], PTM, MWv=self.spline['MW'][0], MWu=self.spline['MW'][1])
+        out = eg.evalSolutionGibbsScatter(self.spline['sp'], PTM, MWv=self.spline['MW'][0], MWu=self.spline['MW'][1], nu=self.spline['nu'], cutoff=self.spline['cutoff'])
         valErrs = ''
         # check all values and output just one error for all of them
         for tdv in vars(out).keys():

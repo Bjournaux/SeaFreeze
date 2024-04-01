@@ -1,7 +1,7 @@
 function out=SeaFreeze(PT,material)
-% Version 0.9.2 ; Journaux et al. 2020
+% Version 0.9.3 ; Journaux et al. 2023
 % Calculate thermodynamic quantities for water or ices polymorphs 
-% (Ih, II, III, V and VI). Needs the SeaFreeze_Gibbs.mat library containing the
+% (Ih, II, III, V, VI, VII and X). Needs the SeaFreeze_Gibbs.mat library containing the
 % Gibbs Local Basis Function parametrization to run
 % Reference publication : Journaux et al., (2020)
 % usage:
@@ -33,6 +33,7 @@ function out=SeaFreeze(PT,material)
 %         III for ice III (Journaux et al. 2020)
 %         V for ice V (Journaux et al. 2020)
 %         VI for ice VI (Journaux et al. 2020)
+%         VII and X (French et al. 2015)
 %         water1 for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 %         water2 for the modified EOS in Brown 2018 extending to 100 GPa
 %         water_IAPWS95 for IAPWS95 water (Wagner and Pruß, 2002)
@@ -62,6 +63,7 @@ function out=SeaFreeze(PT,material)
 %   Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047
 %   Journaux et al., (2020) JGR: Planets, 125, e2019JE006176.
 %   Wagner and Pruß (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535
+%   French and Redmer (2015), Physical Review B, 91, 014308
 
 test_toolbox = license('test','curve_fitting_toolbox');
 
@@ -96,6 +98,10 @@ if test_toolbox == 1;
             load('SeaFreeze_Gibbs.mat', 'G_iceVI');
              out=fnGval(G_iceVI,PT);
             shear_mod=[2.57 0.0175 0 -0.014 1100 273];
+        case 'VII_X_French'
+            load('SeaFreeze_Gibbs.mat', 'G_iceVII_X_French');
+             out=OpenGval(G_iceVII_X_French,PT);
+            shear_mod=[10 0.0033 0.000048 -0.014 1300 273];
 
         case 'water1'
             load('SeaFreeze_Gibbs.mat', 'G_H2O_2GPa_500K');
@@ -131,6 +137,10 @@ else
             load('SeaFreeze_Gibbs.mat', 'G_iceVI');
              out=OpenGval(G_iceVI,PT);
             shear_mod=[2.57 0.0175 0 -0.014 1100 273];
+        case 'VII_X_French'
+            load('SeaFreeze_Gibbs.mat', 'G_iceVII_X_French');
+             out=OpenGval(G_iceVII_X_French,PT);
+            shear_mod=[10 0.0033 0.000048 -0.014 1300 273];
 
         case 'water1'
             load('SeaFreeze_Gibbs.mat', 'G_H2O_2GPa_500K');

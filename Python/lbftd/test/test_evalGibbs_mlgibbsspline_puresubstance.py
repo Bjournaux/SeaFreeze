@@ -17,6 +17,7 @@ class TestEvalGibbsPureSubstance(ut.TestCase):
         pass
     def test_evalgibbs_puresubstance_grid_allmeasures(self):
         out = eg.evalSolutionGibbsGrid(self.spline['sp'], np.array([self.P, self.T], dtype=object), MWv=self.spline['MW'][0])
+
         valErrs = ''
         # check all values and output just one error for all of them
         for tdv in vars(out).keys():

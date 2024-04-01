@@ -5,3 +5,5 @@ Python/SeaFreeze.egg-info/*
 Python/build/*
 Python/dist/*
 .idea/*
+__pycache__*
+.ipynb_checkpoints*

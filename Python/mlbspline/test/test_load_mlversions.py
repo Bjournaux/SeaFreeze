@@ -62,8 +62,8 @@ class TestLoadSplineWithMatlabVersions(ut.TestCase):
     def check3dspline(self, sp):
         self.assertEqual(sp['form'], 'B-', 'form not properly loaded')
         self.assertEqual(sp['dim'], 1, 'dim not properly loaded')
-        self.assertTrue(np.array_equal(sp['number'], np.array([29, 30, 14])), 'number not properly loaded')
-        self.assertTrue(np.array_equal(sp['order'], np.array([6, 6, 4])), 'order not properly loaded')
+        self.assertTrue(np.array_equal(sp['number'], np.array([29, 30, 14], dtype=object)), 'number not properly loaded')
+        self.assertTrue(np.array_equal(sp['order'], np.array([6, 6, 4], dtype=object)), 'order not properly loaded')
         self.assertEqual(sp['knots'].size, 3, 'knots not properly loaded')
         self.assertEqual(sp['knots'][0].shape, (35, ), 'knots first dim size incorrect')
         self.assertEqual(sp['knots'][1].shape, (36, ), 'knots second dim size incorrect')

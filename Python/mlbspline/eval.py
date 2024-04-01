@@ -45,7 +45,7 @@ def evalMultivarSpline(spd, x, der=None):
         xi = x[di]  # Get x values for dimension being evaluated
         # Wrap xi if necessary
         if not isinstance(xi, np.ndarray):
-            xi = np.asarray([xi])
+            xi = np.asarray([xi], dtype=float) # deprecation fix
         tck = _getNextSpline(di, dimCt, spd, y)
         y = np.array(splev(xi, tck, der=der[di]))
     # Need to rearrange back to original order and shape
@@ -65,6 +65,6 @@ def _getNextSpline(dimIdx, dimCt, spd, coefs):
     li = dimCt - 1
     if li != dimIdx:
         coefs = np.moveaxis(coefs, li, 0)
-    t = spd['knots'][dimIdx]
+    t = np.array(spd['knots'][dimIdx], dtype=float) # deprecation fix
     k = spd['order'][dimIdx] - 1  # Scipy wants the degree, not the order (MatLab gives the orders)
     return [t, coefs, k]
