@@ -54,7 +54,7 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
                     the output will also include P, T, and M (if provided) properties
     """
     statevarnames = _getSupportedThermodynamicVariables()
-    [dimCt, tdvSpec] = _parseInput(gibbsSp, *tdvSpec)
+    [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
     _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, failOnExtrapolate)
     pt = np.logical_or(PTM[iP] < gibbsSp['knots'][iP].min(), PTM[iP] > gibbsSp['knots'][iP].max())
     ind = np.empty(PTM.size, object)  # valid indicies
@@ -104,7 +104,6 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
     return tdvout
 
 
-
 def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  nu=2, cutoff=0.0002, failOnExtrapolate=False, verbose=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
@@ -145,7 +144,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
                     The output also contains a PTM property for convenience.
     """
 
-    [dimCt, tdvSpec] = _parseInput(gibbsSp, *tdvSpec)
+    [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
     needs0M = _needs0M(dimCt, tdvSpec)
     fakePTM = _makeFakePTMGrid(dimCt, PTM)  # Fakes grid-style input to do all input checks before processing
     _checkInputs(gibbsSp, dimCt, tdvSpec, fakePTM, MWv, MWu, nu, failOnExtrapolate)
@@ -209,7 +208,7 @@ def _parseInput(gibbsSp, *tdvSpec):
     if origSpec and addedTDVs:  # The original spec was not empty and more tdvs were added
         print('NOTE: The requested thermodynamic variables depend on the following variables, which will be ' +
               'included as properties of the output object: ' + pformat(addedTDVs))
-    return dimCt, tdvSpec
+    return dimCt, tdvSpec, addedTDVs
 
 
 def _buildEvalArgs(tdv, derivs, PTM, gPTM, MWv, MWu, nu, cutoff, tdvout, gibbsSp, f):
@@ -319,6 +318,7 @@ def createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=False):
     out = TDS()
     return out
 
+
 def createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=False):
     """
 
@@ -330,12 +330,14 @@ def createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=False):
     """
     flds = {t.name for t in tdvSpec} | {'PTM'}
     try:
-        TDS = type('ThermodynamicStates', (object,), {fld: (np.copy(PTM) if fld == 'PTM' else np.full((PTM[iP].size, PTM[iT].size, PTM[iM].size), np.nan, float) if initializetdvs else None) for fld in flds})
+        emptyGridShape = (PTM[iP].size, PTM[iT].size, PTM[iM].size)
     # size of grid now matches PTM input; initialized with NaN values
     except:
-        TDS = type('ThermodynamicStates', (object,), {fld: (np.copy(PTM) if fld == 'PTM' else np.full((PTM[iP].size, PTM[iT].size), np.nan, float) if initializetdvs else None) for fld in flds})
+        emptyGridShape = (PTM[iP].size, PTM[iT].size)
+    TDS = type('ThermodynamicStates', (object,), {fld: (np.copy(PTM) if fld == 'PTM' else np.full(emptyGridShape, np.nan, float) if initializetdvs else None) for fld in flds})
     out = TDS()
     return out
+
 
 def _ptmTuple2NestedArrays(PTM, dimCt, needs0M):
     """ Converts a PTM tuple to numpy ndarrays
