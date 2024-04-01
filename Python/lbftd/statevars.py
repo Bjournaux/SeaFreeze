@@ -35,9 +35,7 @@ def evalIsobaricSpecificHeat(gPTM, derivs):
     """
     :return: Cp
     """
-
     return -1 * derivs.d2T * gPTM[iT]
-
 
 def evalIsochoricSpecificHeat(tdv, gPTM, derivs):
     """
@@ -319,7 +317,8 @@ def _getSupportedDerivatives():
 def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=False, parmMWu='MWu',
                 reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f', parmNu ='nu',
                 reqDerivs=None, parmderivs='derivs', reqTDV=None, parmtdv='tdv', reqSpline=False,
-                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', reqNu=None, reqCutoff=None, parmCutoff='cutoff'):
+                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', req0M=False, reqNu=None,
+                reqCutoff=None, parmCutoff='cutoff', isInternalOnly=False):
     """ Builds a TDVSpec namedtuple indicating what is required to calculate this particular thermodynamic variable
     :param name:        the name / symbol of the tdv (e.g., G, rho, alpha, muw)
     :param calcFn:      the name of the function used to calculate the tdv
@@ -349,6 +348,9 @@ def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=Fa
     :param reqPTM:      If True, calcFn needs the original dimension input (parm PTM in evalSolutionGibbs*) to run
     :param parmptm:     the name of the parameter of calcFn used to pass in the original input if reqPTM
     :param reqCutoff:   If True, calcFn needs the concentration at the "cutoff" value for calculating apparent values
+    :param req0M:       if True, calcFn needs the 0 concentration for calculating apparent values
+    :param isInternalOnly: If True, the tdv is calculated internally only.  Such TDVs cannot be directly requested by
+                        the end user and will not be returned in final output
     :return:            a namedtuple giving the spec for the tdv
     """
     if reqDerivs is None:

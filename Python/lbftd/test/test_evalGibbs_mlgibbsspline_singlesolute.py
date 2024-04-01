@@ -40,6 +40,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         PTM = np.array([self.P, self.T, self.M[1:]], dtype=object)
         out = eg.evalSolutionGibbsGrid(self.spline['sp'], PTM, 'Cpa',
                                        MWv=self.spline['MW'][0], MWu=self.spline['MW'][1], nu=self.spline['nu'], cutoff=self.spline['cutoff'])
+
         valErrs = ''
         for tdv in vars(out).keys():
             outfield = getattr(out, tdv)

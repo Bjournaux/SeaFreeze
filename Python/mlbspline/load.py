@@ -1,4 +1,3 @@
-import numpy
 from hdf5storage import loadmat
 import numpy as np
 import logging
@@ -20,6 +19,7 @@ def loadSpline(splineFile, splineVar=None):
     # Knots can sometimes be imported as object type, which cannot be automatically cast to float
     # if not np.issubdtype(spd['knots'][0].dtype, np.number) and not isinstance(spd['knots'][0][0], np.ndarray):
     #     spd['knots'] = spd['knots'].astype(np.float_)
+
     validateSpline(spd)
     return spd
 
