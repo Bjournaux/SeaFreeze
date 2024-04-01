@@ -29,15 +29,11 @@ def loadGibbsSpline(splineFile, splineVar=None):
     raw = load._stripNestingToFields(load._getRaw(splineFile, splineVar))
     sp = load.getSplineDict(load._stripNestingToValue(raw['sp']))
     load.validateSpline(sp)
-    MW = _getMW(sp)
-    out = {
-        'sp': sp,
-        'MW': MW
-    }
-    if MW.size > 1:  # Only add nu and cutoff value if dealing with a solution rather than a pure substance
-        out['nu'] = _getnu(sp)
-        out['cutoff'] = _getcutoff(sp)
-    return out
+    sp['MW'] = _getMW(sp)
+    if sp['MW'].size > 1:  # Only add nu and cutoff value if dealing with a solution rather than a pure substance
+        sp['nu'] = _getnu(sp)
+        sp['cutoff'] = _getcutoff(sp)
+    return {'sp': sp} # TODO: this is for legacy reasons, clean it up
 
 def _getMW(src):
     try:
