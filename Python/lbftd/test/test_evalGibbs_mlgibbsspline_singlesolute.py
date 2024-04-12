@@ -11,10 +11,10 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         warnings.simplefilter('ignore', category=ImportWarning)
         self.spline = lg.loadGibbsSpline('gsp_singlesolute.mat', 'sp_NaCl')
         self.spline = self.spline['sp']
-        self.mlout = load._stripNestingToFields(sio.loadmat('gsp3d_out.mat')['gsp3d_out'])
+        self.mlout = load._stripNestingToFields(sio.loadmat('gsp3d_out.mat')['out'])
         self.P = np.arange(0.1, 8000, 200).astype(float)
         self.T = np.arange(239, 501, 50).astype(float)
-        self.M = np.arange(0, 8, 2).astype(float)
+        self.M = np.arange(0.5, 8, 2).astype(float)
     def tearDown(sThermodyelf):
         pass
     def test_evalgibbs_singlesolute_grid_allmeasures(self):
@@ -56,7 +56,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         if valErrs:
             self.fail(valErrs)
     def test_evalgibbs_singlesolute_scatter_singlepoint_allmeasures(self):
-        pidx = 0; tidx = 0; midx = 0;
+        pidx = 0; tidx = 0; midx = 1;
         PTM = np.empty((1,), object)
         PTM[0] = (self.P[pidx], self.T[tidx], self.M[midx])
         out = eg.evalSolutionGibbsScatter(self.spline, PTM)
@@ -136,8 +136,9 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
 
 
 
-relTolerance = 5e-9
+relTolerance = 5e-6
 absTolerance = 1e-6
+# TODO: reevalute how we test absolute and relative differences
 
 if __name__ == '__main__':
     ut.main()

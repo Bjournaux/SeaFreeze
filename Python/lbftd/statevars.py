@@ -165,6 +165,9 @@ def evalApparentVolume(f, gPTM, tdv):
 """
     return 1e6 * (tdv.V * f - _getCutoffMTdv(tdv, 'V')) / _getDividableBy(gPTM[iM]) # do i need to reshape _getCutoffMTdv(tdv, 'V') to be 40x6x5 instead of 40x6x1 (only grabbing 1 molality, duh...need to have the same matrix repeated len(gPTM[iM] times in the third (concentration) dimension for this calc to work. something like: test =np.repeat(CP0, len(gPTM[iM]), 2), but figure out axis !!!
 
+
+
+
 #return 1e6 * (tdv.V * f - np.reshape(np.repeat(_getCutoffMTdv(tdv, 'V'), len(tdv.PTM[iM])+1), [len(tdv.PTM[iP]), len(tdv.PTM[iT]), len(tdv.PTM[iM])])) / _getDividableBy(gPTM[iM]) # need to reshape _getCutoffMTdv(tdv, 'V') to be 40x6x5 instead of 40x6x1 (only grabbing 1 molality, duh...need to have the same matrix repeated len(gPTM[iM] times in the third (concentration) dimension for this calc to work. something like: test =np.repeat(CP0, len(gPTM[iM]), 2), but figure out axis !!!
 
 #    return 1e6 * (tdv.V * f - _getCutoffMTdv(tdv, 'V')) / _getDividableBy(gPTM[iM]) # need to reshape _getCutoffMTdv(tdv, 'V') to be 40x6x5 instead of 40x6x1 (only grabbing 1 molality, duh...need to have the same matrix repeated len(gPTM[iM] times in the third (concentration) dimension for this calc to work. something like: test =np.repeat(CP0, len(gPTM[iM]), 2), but figure out axis !!!
