@@ -17,7 +17,7 @@ for i in np.arange(0, n):
     PT[i] = (toP(random()), toT(random()))
 
 water_spline = lg.loadGibbsSpline('water_demo_spline.mat')
-tdstate = eg.evalSolutionGibbsScatter(water_spline['sp'], PT, 'rho', 'Cp', 'Kt', 'alpha')
+tdstate = eg.evalSolutionGibbsScatter(water_spline['sp'], PT, 'alpha')
 
 # graph the output
 rcParams['axes.labelpad'] = 10 # add some padding to prevents axis labels from covering ticks

@@ -15,7 +15,7 @@ stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[LBFTD %(levelname)s] %(message)s'))
 
 
-def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  nu=2, cutoff=0.0002, verbose=False, failOnExtrapolate=False):
+def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapolate=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
 
@@ -34,10 +34,6 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
                     each of the inner ndarrays represents one of pressure (P), temperature (T), or molality (M)
                     and must be in the same order and units described in the notes for the gibbsSp parameter
                     Additionally, each dimension must be sorted from low to high values.
-    :param MWv:     float with molecular weight of solvent (kg/mol).
-                    Defaults to molecular weight of water (7 sig figs)
-    :param MWu:     float with molecular weight of solute (kg/mol).
-    :param nu:      number of ions in solution (dimensionless).
     :param failOnExtrapolate:   True if you want an error to appear if PTM includes values that fall outside the knot
                     sequence of gibbsSp.  If False, throws a warning rather than an error, and
                     proceeds with the calculation.
@@ -55,7 +51,7 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
     """
     statevarnames = _getSupportedThermodynamicVariables()
     [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
-    _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, cutoff, failOnExtrapolate)
+    _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, failOnExtrapolate)
     pt = np.logical_or(PTM[iP] < gibbsSp['knots'][iP].min(), PTM[iP] > gibbsSp['knots'][iP].max())
     ind = np.empty(PTM.size, object)  # valid indicies
     val = np.empty(PTM.size, object)  # valid PT values
@@ -87,9 +83,9 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
         if val[iM][0] == 0:
             val[iM][0] = eps  # replace 0 M input with eps
     if _needsCutoff(dimCt, tdvSpec):
-        val[iM] = np.insert(val[iM], 0, cutoff)
+        val[iM] = np.insert(val[iM], 0, gibbsSp['cutoff'])
     obj = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)
-    valout = _evalInternal(gibbsSp, tdvSpec, val, MWu, MWv, nu, cutoff, obj, dimCt, verbose)
+    valout = _evalInternal(gibbsSp, tdvSpec, val, obj, dimCt, verbose)
     tdvout = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)  # Should be all NaN
     for n in range(len(getmembers(tdvout))):
         if getmembers(tdvout)[n][0] in statevarnames[1]:
@@ -104,7 +100,7 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  
     return tdvout
 
 
-def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584,  nu=2, cutoff=0.0002, failOnExtrapolate=False, verbose=False):
+def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False, verbose=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
 
@@ -147,7 +143,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
     [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
     needsCutoff = _needsCutoff(dimCt, tdvSpec)
     fakePTM = _makeFakePTMGrid(dimCt, PTM)  # Fakes grid-style input to do all input checks before processing
-    _checkInputs(gibbsSp, dimCt, tdvSpec, fakePTM, MWv, MWu, nu, cutoff, failOnExtrapolate)
+    _checkInputs(gibbsSp, dimCt, tdvSpec, fakePTM, failOnExtrapolate)
     tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True)
     # Point by point
     for p in range(PTM.size):
@@ -155,8 +151,9 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
         wPTM = _ptmTuple2NestedArrays(PTM[p], dimCt, needsCutoff)
         tempout = createThermodynamicStatesObj(tdvSpec, wPTM)
         # Prepend a "cutoff" concentration if one is needed by any of the quantities being calculated
+        # This is slow, but we expect scatter to only be called for a limited number of points
         if needsCutoff:
-            wPTM[iM] = np.insert(wPTM[iM], 0, cutoff)
+            wPTM[iM] = np.insert(wPTM[iM], 0, gibbsSp['cutoff'])
         extrap = [(wPTM[0][0] < gibbsSp['knots'][iP].min()) + (wPTM[0][0] > gibbsSp['knots'][iP].max()) +
                   (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max())]
         if wPTM.size > 2:
@@ -166,7 +163,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
             if wPTM[iM][0] == 0:
                 wPTM[iM][0] = eps  # replace 0 M input with eps
         if extrap == [False]:
-            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, MWu, MWv, nu, cutoff, tempout, dimCt, verbose)
+            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, tempout, dimCt, verbose)
             for t in tdvSpec:
                 tolastpt = getattr(tdvout, t.name)
                 tolastpt[p] = getattr(tempout, t.name).flat[0]
@@ -176,10 +173,10 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, MWv=18.01528e-3, MWu=0.0584
     return tdvout
 
 
-def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, nu, cutoff, tdvout, dimCt, verbose=False):
+def _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, verbose=False):
     derivs = getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose)
     gPTM = _getGriddedPTM(tdvSpec, PTM, verbose) if any([tdv.reqGrid for tdv in tdvSpec]) else None
-    f = _getVolSolventInVolSlnConversion(MWu, PTM) if any([tdv.reqF for tdv in tdvSpec]) else None
+    f = _getVolSolventInVolSlnConversion(gibbsSp['MW'][1], PTM) if any([tdv.reqF for tdv in tdvSpec]) else None
     strip_cutoff = False
 
     # Calculate thermodynamic variables and store in appropriate fields in tdvout
@@ -192,7 +189,7 @@ def _evalInternal(gibbsSp, tdvSpec, PTM, MWu, MWv, nu, cutoff, tdvout, dimCt, ve
         for t in tdvsToEval:
             if t.reqCutoff:
                 strip_cutoff = True
-            args = _buildEvalArgs(t, derivs, PTM, gPTM, MWv, MWu, nu, cutoff, tdvout, gibbsSp, f)
+            args = _buildEvalArgs(t, derivs, PTM, gPTM, tdvout, gibbsSp, f)
             start = time()
             setattr(tdvout, t.name, t.calcFn(**args))  # Calculate the value and set it in the output
             end = time()
@@ -215,18 +212,18 @@ def _parseInput(gibbsSp, *tdvSpec):
     return dimCt, tdvSpec, addedTDVs
 
 
-def _buildEvalArgs(tdv, derivs, PTM, gPTM, MWv, MWu, nu, cutoff, tdvout, gibbsSp, f):
+def _buildEvalArgs(tdv, derivs, PTM, gPTM, tdvout, gibbsSp, f):
+    # check inputs should have found any bad inputs before this is called
     args = dict()
     if tdv.reqDerivs: args[tdv.parmderivs] = derivs
     if tdv.reqGrid:   args[tdv.parmgrid] = gPTM
-    if tdv.reqMWv:    args[tdv.parmMWv] = MWv
-    if tdv.reqMWu:    args[tdv.parmMWu] = MWu
-    if tdv.reqNu:     args[tdv.parmNu] = nu
+    if tdv.reqMWv:    args[tdv.parmMWv] = H20_MWv if 'MW' not in gibbsSp else gibbsSp['MW'][0]  # loadgibbs always wraps this in an array
+    if tdv.reqMWu:    args[tdv.parmMWu] = gibbsSp['MW'][1] # currently only single solute solutions are supported
+    if tdv.reqNu:     args[tdv.parmNu] = gibbsSp['nu']
     if tdv.reqTDV:    args[tdv.parmtdv] = tdvout
     if tdv.reqSpline: args[tdv.parmspline] = gibbsSp
     if tdv.reqPTM:    args[tdv.parmptm] = PTM
     if tdv.reqF:      args[tdv.parmf] = f
-    if tdv.reqCutoff: args[tdv.parmCutoff] = cutoff
     return args
 
 
@@ -238,7 +235,7 @@ def _makeFakePTMGrid(dimCt, PTM):
     return out
 
 
-def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, cutoff, failOnExtrapolate):
+def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, failOnExtrapolate):
     """ Checks error conditions before performing any calculations, throwing an error if anything doesn't match up
       - Ensures necessary data is available for requested statevars (check req parameters for statevars)
       - Throws a warning (or error if failOnExtrapolate=True) if spline is being evaluated on values
@@ -249,9 +246,10 @@ def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, cutoff, failOnExtra
     knotranges = [(k[0], k[-1]) for k in gibbsSp['knots']]
     # If a PTM spline, make sure the spline's concentration dimension starts with 0 if any tdv has req0M=True
     # Note that the evalGibbs functions elsewhere handle the case where PTM does not include 0 concentration.
-    req0M = [t for t in tdvSpec if t.reqCutoff]
-    if dimCt == 3 and req0M and knotranges[iM][0] > cutoff: # 1st knot in concentration will no longer be 0
-        raise ValueError('You cannot calculate ' + pformat([t.name for t in req0M]) + ' with a spline that does ' +
+    reqCutoff = [t for t in tdvSpec if t.reqCutoff]
+    cutoff = None if 'cutoff' not in gibbsSp else gibbsSp['cutoff']
+    if dimCt == 3 and reqCutoff and knotranges[iM][0] > cutoff: # 1st knot in concentration will no longer be 0
+        raise ValueError('You cannot calculate ' + pformat([t.name for t in reqCutoff]) + ' with a spline that does ' +
                          'not include a concentration of ' + str(cutoff) + '. Remove those statevars and all their dependencies, or ' +
                          'supply a spline that includes ' + str(cutoff))
     # Make sure that spline has 3 dims if tdvs using concentration or f are requested
@@ -263,18 +261,19 @@ def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, MWv, MWu, nu, cutoff, failOnExtra
                          'or supply a spline that includes concentration.')
     # Make sure that solvent molecular weight is provided if any tdvs that require MWv are requested
     reqMWv = [t for t in tdvSpec if t.reqMWv]
-    if (MWv == 0 or not MWv) and reqMWv:
-        raise ValueError('You cannot calculate ' + pformat([t.name for t in reqMWv]) + ' without ' +
-                         'providing solvent molecular weight.  Remove those statevars and all their dependencies, or ' +
-                         'provide a valid value for the MWv parameter.')
+    if reqMWv and 'MW' not in gibbsSp:
+        log.warning('When calculating ' + pformat([t.name for t in reqMWv]) +
+                         ', solvent molecular weight defaults to the molecular weight of water.')
     # Make sure that solute molecular weight is provided if any tdvs that require MWu or f are requested
     reqMWu = [t for t in tdvSpec if t.reqMWu]
-    if (MWu == 0 or not MWu) and (reqMWu or reqF):
+    MWu = None if 'MW' not in gibbsSp else np.array(gibbsSp['MW']) if isinstance(gibbsSp['MW'], float) else gibbsSp['MW']
+    if (MWu is None or MWu.size != 2 or MWu[1] == 0) and (reqMWu or reqF): # currently only supporting single solute solutions
         raise ValueError('You cannot calculate ' + pformat([t.name for t in reqMWu] + [t.name for t in reqMWu]) + ' without ' +
                          'providing solute molecular weight.  Remove those statevars and all their dependencies, or ' +
                          'provide a valid value for the MWu parameter.')
     reqNu = [t for t in tdvSpec if t.reqNu]
-    if (nu == 0 or not nu) and reqNu:
+    nu = None if 'nu' not in gibbsSp else gibbsSp['nu']
+    if (nu == 0 or not nu) and reqNu:  # currently only supporting single solute solutions
         raise ValueError('You cannot calculate ' + pformat([t.name for t in reqNu]) + ' without ' +
                          'providing the number of ions in solution. ' + 'Remove those statevars and their dependencies, '
                          + 'or provide a valid value for the nu parameter.')
@@ -450,3 +449,4 @@ def _printTiming(calcdesc, start, end):
 #########################################
 vmWarningFactor = 2  # Warn the user when size of output would exceed vmWarningFactor times total virtual memory
 floatSizeBytes = int(np.finfo(float).bits / 8)
+H20_MWv = 18.01528e-3

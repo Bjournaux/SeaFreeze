@@ -72,9 +72,9 @@ def seafreeze(PTm, phase, path=defpath, *tdvSpec):
         raise ValueError('The specified phase is not recognized.  Supported phases are ' +
                          ', '.join(phases.keys()) + '.')
     sp = load.loadSpline(path, phasedesc.sp_name)
-    sp['MW'] = phasedesc.MW
-    sp['nu'] = phasedesc.nu
-    sp['cutoff'] = phasedesc.cutoff
+    #sp['MW'] = phasedesc.MW
+    #sp['nu'] = phasedesc.nu
+    #sp['cutoff'] = phasedesc.cutoff
     # Calc density and isentropic bulk modulus
     isscatter = _is_scatter(PTm)
     tdvs = _get_tdvs(sp, PTm, isscatter, *tdvSpec)

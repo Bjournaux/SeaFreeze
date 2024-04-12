@@ -16,7 +16,7 @@ class TestEvalGibbsPureSubstance(ut.TestCase):
     def tearDown(sThermodyelf):
         pass
     def test_evalgibbs_puresubstance_grid_allmeasures(self):
-        out = eg.evalSolutionGibbsGrid(self.spline, np.array([self.P, self.T], dtype = object), MWv=self.spline['MW'][0])
+        out = eg.evalSolutionGibbsGrid(self.spline, np.array([self.P, self.T], dtype=object))
         valErrs = ''
         # check all values and output just one error for all of them
         for tdv in vars(out).keys():
@@ -38,7 +38,7 @@ class TestEvalGibbsPureSubstance(ut.TestCase):
         pidx = 0; tidx = 0
         PTM = np.empty((1,), object)
         PTM[0] = (self.P[pidx], self.T[tidx])
-        out = eg.evalSolutionGibbsScatter(self.spline, PTM, MWv=self.spline['MW'][0])
+        out = eg.evalSolutionGibbsScatter(self.spline, PTM)
         valErrs = ''
         # check all values and output just one error for all of them
         for tdv in vars(out).keys():
@@ -67,7 +67,7 @@ class TestEvalGibbsPureSubstance(ut.TestCase):
             tidx = randint(0, len(self.T)-1)
             ptindices[i] = (pidx, tidx)
             PTM[i] = (self.P[pidx], self.T[tidx])
-        out = eg.evalSolutionGibbsScatter(self.spline, PTM, MWv=self.spline['MW'][0])
+        out = eg.evalSolutionGibbsScatter(self.spline, PTM)
         valErrs = ''
         # check all values and output just one error for all of them
         for tdv in vars(out).keys():
