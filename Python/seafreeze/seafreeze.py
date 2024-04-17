@@ -13,7 +13,6 @@ stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[SeaFreeze %(levelname)s] %(message)s'))
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs_VII_NaCl.mat')
 
-
 def seafreeze(PTm, phase, path=defpath, *tdvSpec):
     """ Calculates thermodynamic quantities for H2O water or ice polymorphs Ih, III, V, VI, VII and X for all phases
         (see lbftd documentation for full list)
@@ -229,7 +228,7 @@ phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15]
           # LBF representation of IAPWS 95; Wagner and Pruss, 2002
            "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3, None, None),
           # LBF representation of unpublished NH3 data from B Journaux and JM Brown
-          "NaCl": PhaseDesc("LBF_NaClaq", None, 0, 58.44e-3, 2, 0.0002)  # "NaCl_LBF_8000MPa"
+          "NaClaq": PhaseDesc("LBF_NaClaq", None, 0, 58.44e-3, 2, 0.0002)  # "NaCl_LBF_8000MPa"
           # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
           }
 max_phase_num = max([p.phase_num for p in phases.values()])

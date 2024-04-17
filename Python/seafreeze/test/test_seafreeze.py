@@ -167,8 +167,8 @@ class TestSeafreeze(ut.TestCase):
         T = np.arange(240, 501, 2)
         m = np.arange(0, 9, 0.5)
         PTm = np.array([P, T, m], dtype=object)
-        out = sf.seafreeze(PTm, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'Cpa')
-        out2 = sf.seafreeze(PTm, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'phi')
+        out = sf.seafreeze(PTm, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'Cpa')
+        out2 = sf.seafreeze(PTm, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'phi')
 
     def test_sf_III_pt(self):
         PT = np.empty((1,), dtype=object)
@@ -185,7 +185,7 @@ class TestSeafreeze(ut.TestCase):
     def test_sf_phi_pt(self):
         PT = np.empty((1,), dtype=object)
         PT[0] = (227, 280, 3)
-        out = sf.seafreeze(PT, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'phi')
+        out = sf.seafreeze(PT, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'phi')
         self.assertAlmostEqual(1.0981, out.phi[0], places=1)
 
     # def test_sf_gex_pt(self):
@@ -211,7 +211,7 @@ class TestSeafreeze(ut.TestCase):
     def test_new_vars(self):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (900, 285, 3)
-        out = sf.seafreeze(PTm, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'aw', 'Va', 'Vex', 'Cpa')
+        out = sf.seafreeze(PTm, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'aw', 'Va', 'Vex', 'Cpa')
         # self.assertAlmostEqual(1.3988e+04, out.muw[0], places=0)
         self.assertAlmostEqual(1.2206, out.Vex[0],  places=1)
         self.assertAlmostEqual(26.0166, out.Va[0],  places=1)
@@ -238,6 +238,6 @@ class TestSeafreeze(ut.TestCase):
         T = np.arange(240, 501, 2)
         m = np.arange(0.0002, 9, 0.5)
         PTm = np.array([P, T, m], dtype=object)
-        out = sf.seafreeze(PTm, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'aw')
+        out = sf.seafreeze(PTm, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'aw')
         self.assertAlmostEqual(0.9716, out.aw[0][0][0], places=1)
 
