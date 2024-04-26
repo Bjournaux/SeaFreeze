@@ -28,12 +28,10 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             else:
                 mloutfield = self.mlout[tdv]
                 self.assertEqual(outfield.shape, mloutfield.shape, tdv+' output not the same shape as MatLab output')
-                if not (np.allclose(outfield, mloutfield, rtol=relTolerance, atol=0)  # check both abs and rel differences
-                        and np.allclose(outfield, mloutfield, rtol=0, atol=absTolerance)):
+                if not np.allclose(outfield, mloutfield, rtol=relTolerance, atol=0):
                     absDiffs = np.absolute(outfield - mloutfield)
                     relDiffs = absDiffs / np.absolute(mloutfield)
-                    valErrs = valErrs + 'Output for '+tdv+' has absolute differences as large as '+str(np.max(absDiffs)) +\
-                              ' and relative differences as large as '+str(np.max(relDiffs))+'.\n'
+                    valErrs = valErrs + 'Output for '+tdv+' has relative differences as large as '+str(np.max(relDiffs))+'.\n'
         if valErrs:
             self.fail(valErrs)
     def test_evalgibbs_singlesolute_grid_Cpa_no0M(self):
@@ -46,13 +44,10 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             if tdv in self.mlout.dtype.fields:
                 mloutfield = self.mlout[tdv][:, :, 1:]   # get everything but the 0 concentration in the original output
                 self.assertEqual(outfield.shape, mloutfield.shape, tdv + ' output not the same shape as MatLab output')
-                if not (np.allclose(outfield, mloutfield, rtol=relTolerance, atol=0)  # check both abs & rel differences
-                        and np.allclose(outfield, mloutfield, rtol=0, atol=absTolerance)):
+                if not np.allclose(outfield, mloutfield, rtol=relTolerance, atol=0):
                     absDiffs = np.absolute(outfield - mloutfield)
                     relDiffs = absDiffs / np.absolute(mloutfield)
-                    valErrs = valErrs + 'Output for ' + tdv + ' has absolute differences as large as ' + str(
-                        np.max(absDiffs)) + \
-                              ' and relative differences as large as ' + str(np.max(relDiffs)) + '.\n'
+                    valErrs = valErrs + 'Output for ' + tdv + ' has relative differences as large as ' + str(np.max(relDiffs)) + '.\n'
         if valErrs:
             self.fail(valErrs)
     def test_evalgibbs_singlesolute_scatter_singlepoint_allmeasures(self):
@@ -70,14 +65,10 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             else:
                 mloutfield = self.mlout[tdv][pidx][tidx][midx]
                 self.assertEqual(1, outfield.size, tdv + ' output not the same shape as MatLab output')
-                if not (np.allclose(outfield, mloutfield, rtol=relTolerance,
-                                    atol=0)  # check both abs and rel differences
-                        and np.allclose(outfield, mloutfield, rtol=0, atol=absTolerance)):
+                if not np.allclose(outfield, mloutfield, rtol=relTolerance, atol=0):
                     absDiffs = np.absolute(outfield - mloutfield)
                     relDiffs = absDiffs / np.absolute(mloutfield)
-                    valErrs = valErrs + 'Output for ' + tdv + ' has absolute differences as large as ' + str(
-                        np.max(absDiffs)) + \
-                              ' and relative differences as large as ' + str(np.max(relDiffs)) + '.\n'
+                    valErrs = valErrs + 'Output for ' + tdv + ' has relative differences as large as ' + str(np.max(relDiffs)) + '.\n'
         if valErrs:
             self.fail(valErrs)
     def test_evalgibbs_singlesolute_scatter_singlepoint_Va_no0M(self):
@@ -91,13 +82,10 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             self.assertEqual(1, outfield.size, 'Output for ' + tdv + ' has too many values')
             if tdv in self.mlout.dtype.fields:
                 mloutfield = self.mlout[tdv][pidx][tidx][midx]
-                if not (np.allclose(outfield, mloutfield, rtol=relTolerance, atol=0)  # check both abs & rel differences
-                        and np.allclose(outfield, mloutfield, rtol=0, atol=absTolerance)):
+                if not np.allclose(outfield, mloutfield, rtol=relTolerance, atol=0):
                     absDiffs = np.absolute(outfield - mloutfield)
                     relDiffs = absDiffs / np.absolute(mloutfield)
-                    valErrs = valErrs + 'Output for ' + tdv + ' has absolute differences as large as ' + str(
-                        np.max(absDiffs)) + \
-                              ' and relative differences as large as ' + str(np.max(relDiffs)) + '.\n'
+                    valErrs = valErrs + 'Output for ' + tdv + ' has relative differences as large as ' + str(np.max(relDiffs)) + '.\n'
         if valErrs:
             self.fail(valErrs)
     def test_evalgibbs_singlesolute_scatter_multipoint_allmeasures(self):
@@ -123,21 +111,16 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
                 mlout = np.empty((numpts,), float)
                 for i in np.arange(0, numpts):
                     mlout[i] = self.mlout[tdv][ptindices[i]]
-                if not (np.allclose(outfield, mlout, rtol=relTolerance,
-                                    atol=0)  # check both abs and rel differences
-                        and np.allclose(outfield, mlout, rtol=0, atol=absTolerance)):
+                if not np.allclose(outfield, mlout, rtol=relTolerance, atol=0):
                     absDiffs = np.absolute(outfield - mlout)
                     relDiffs = absDiffs / np.absolute(mlout)
-                    valErrs = valErrs + 'Output for ' + tdv + ' has absolute differences as large as ' + str(
-                        np.max(absDiffs)) + \
-                              ' and relative differences as large as ' + str(np.max(relDiffs)) + '.\n'
+                    valErrs = valErrs + 'Output for ' + tdv + ' has relative differences as large as ' + str(np.max(relDiffs)) + '.\n'
         if valErrs:
             self.fail(valErrs)
 
 
 
 relTolerance = 5e-6
-absTolerance = 1e-6
 # TODO: reevalute how we test absolute and relative differences
 
 if __name__ == '__main__':

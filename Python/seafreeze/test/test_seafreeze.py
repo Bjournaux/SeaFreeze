@@ -188,25 +188,25 @@ class TestSeafreeze(ut.TestCase):
         out = sf.seafreeze(PT, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'phi')
         self.assertAlmostEqual(1.0981, out.phi[0], places=1)
 
-    # def test_sf_gex_pt(self):
-    #     PT = np.empty((1,), dtype=object)
-    #     PT[0] = (200, 280, 0.5)
-    #     out = sf.seafreeze(PT, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'Vex', 'Gex')
-    #     self.assertAlmostEqual(1.2619e+03, out.Gex[0], places=1)
-    #     self.assertAlmostEqual(-0.9897, out.Vex[0], places=1)
+    def test_sf_gex_pt(self):
+        PT = np.empty((1,), dtype=object)
+        PT[0] = (200, 280, 0.5)
+        out = sf.seafreeze(PT, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'Vex', 'Gex')
+        self.assertAlmostEqual(1.2619e+03, out.Gex[0], places=1)
+        self.assertAlmostEqual(-0.9897, out.Vex[0], places=1)
 
-    # def test_sf_NaCl_Gex(self):
-    #     PTm = np.empty((1,), dtype=object)
-    #     PTm[0] = (50.1, 250, 3.5)
-    #     out1 = sf.seafreeze(PTm, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
-    #     P = np.arange(0.1, 1000.2, 10)
-    #     T = np.arange(240, 501, 2)
-    #     m = np.arange(1, 9, 0.5)
-    #     PTM = np.array([P, T, m], dtype=object)
-    #     out2 = sf.seafreeze(PTM, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
-    #     self.assertAlmostEqual(out2.G[5][5][5], out1.G[0], places=1)
-    #     self.assertAlmostEqual(out2.gam[5][5][5], out1.gam[0], places=1)
-    #     self.assertAlmostEqual(out2.Gex[5][5][5], out1.Gex[0], places=0)
+    def test_sf_NaCl_Gex(self):
+        PTm = np.empty((1,), dtype=object)
+        PTm[0] = (50.1, 250, 3.5)
+        out1 = sf.seafreeze(PTm, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
+        P = np.arange(0.1, 1000.2, 10)
+        T = np.arange(240, 501, 2)
+        m = np.arange(1, 9, 0.5)
+        PTM = np.array([P, T, m], dtype=object)
+        out2 = sf.seafreeze(PTM, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
+        self.assertAlmostEqual(out2.G[5][5][5], out1.G[0], places=1)
+        self.assertAlmostEqual(out2.gam[5][5][5], out1.gam[0], places=1)
+        self.assertAlmostEqual(out2.Gex[5][5][5], out1.Gex[0], places=0)
 
     def test_new_vars(self):
         PTm = np.empty((1,), dtype=object)
@@ -220,18 +220,18 @@ class TestSeafreeze(ut.TestCase):
         self.assertAlmostEqual(1.2250, out.phi[0], places=1)
         self.assertAlmostEqual(0.8760, out.aw[0], places=1)
 
-    # def test_sf_NaCl_Gex(self):
-    #     P = np.arange(0.1, 1000.2, 10)
-    #     T = np.arange(240, 501, 2)
-    #     m = np.arange(1, 9, 0.5)
-    #     PTm = np.array([P, T, m], dtype = object)
-    #     PTM = np.empty((1,), dtype=object)
-    #     PTM[0] = (140.1, 500, 6.5)
-    #     out2 = sf.seafreeze(PTM, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'Cp', 'Va', 'Vex', 'aw', 'rho', 'gam', 'Gex')
-    #     out1 = sf.seafreeze(PTm, 'NaCl', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'Cp', 'Va', 'Vex', 'aw', 'rho', 'gam', 'Gex')
-    #     self.assertAlmostEqual(out2.G[0], out1.G[14][-1][11], places=0)
-    #     self.assertAlmostEqual(out2.gam[0], out1.gam[14][-1][11], places=0)
-    #     self.assertAlmostEqual(out2.Gex[0], out1.Gex[14][-1][11], places=0)
+    def test_sf_NaCl_Gex(self):
+        P = np.arange(0.1, 1000.2, 10)
+        T = np.arange(240, 501, 2)
+        m = np.arange(1, 9, 0.5)
+        PTm = np.array([P, T, m], dtype = object)
+        PTM = np.empty((1,), dtype=object)
+        PTM[0] = (140.1, 500, 6.5)
+        out2 = sf.seafreeze(PTM, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'Cp', 'Va', 'Vex', 'aw', 'rho', 'gam', 'Gex')
+        out1 = sf.seafreeze(PTm, 'NaClaq', '../../../Python/seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat', 'Cp', 'Va', 'Vex', 'aw', 'rho', 'gam', 'Gex')
+        self.assertAlmostEqual(out2.G[0], out1.G[14][-1][11], places=0)
+        self.assertAlmostEqual(out2.gam[0], out1.gam[14][-1][11], places=0)
+        self.assertAlmostEqual(out2.Gex[0], out1.Gex[14][-1][11], places=0)
 
     def test_sf_aw_grid(self):
         P = np.arange(0.1, 1000.2, 10)

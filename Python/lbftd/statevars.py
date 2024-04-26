@@ -200,7 +200,7 @@ def evalActivityCoeff(PTM, gibbsSp, MWu, gPTM, nu, tdv):
     """
     :return: gam
     """
-    return np.exp(1/R * 1/nu * (tdv.mus - _getGss(PTM, gibbsSp, MWu)[:, :, np.newaxis]) / gPTM[iT] - np.log(gPTM[iM]))
+    return np.exp(1/R * 1/nu * (tdv.mus - _getGss(PTM, gibbsSp, MWu)) / gPTM[iT] - np.log(gPTM[iM]))
 
 
 def evalExcessGibbsEnergy(gPTM, nu, tdv):
@@ -213,17 +213,17 @@ def evalExcessGibbsEnergy(gPTM, nu, tdv):
 def _getGss(PTM, gibbsSp, MWu): # standard state Gibbs energy of solution -- needed for Gex
     Go = getSplineDict(gibbsSp['Go'])
     Gss = evalMultivarSpline(Go, np.reshape(PTM[iT], [1, len(PTM[iT])]))
-    PTM_ss = PTM;
-    PTM_ss[iM] = np.full(len(PTM[iM]), ssM) # cc to L; ss for solute is 1 M
+    #np.full(len(PTM[iM]), ssM)
+    PTM_ss = np.array([PTM[iP], PTM[iT], ssM], dtype=object)
     G2 = evalMultivarSpline(gibbsSp, PTM_ss)
     dGdm2 = evalMultivarSpline(gibbsSp, PTM_ss, [0, 0, 1])
-    PTM_ss_1_bar = PTM_ss
-    PTM_ss_1_bar[iP] = np.full(len(PTM[iP]), stP) # why iM in matlab?
+    PTM_ss_1_bar = np.array([stP, PTM[iT], ssM], dtype=object) # why iM in matlab?
     G1b = evalMultivarSpline(gibbsSp, PTM_ss_1_bar)
     dGdm1 = evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1])
-
-    dGss = (MWu * G2[:, :, 0] + dGdm2[:, :, 0]) - (MWu * G1b[:, :, 0] + dGdm1[:, :, 0])
-    return Gss + dGss
+    dGss = (MWu * G2 + dGdm2) - (MWu * np.broadcast_to(G1b, G2.shape) + np.broadcast_to(dGdm1, G2.shape))
+    #dGss = (MWu * G2[:, :, 0] + dGdm2[:, :, 0]) - (MWu * G1b[:, :, 0] + dGdm1[:, :, 0])
+    sum = Gss + np.squeeze(dGss, iM)
+    return sum[:, :, np.newaxis] * np.ones(PTM[iM].shape)
 
 
 def _getCutoffMTdv(tdv, prop):
@@ -367,9 +367,9 @@ def _getSupportedThermodynamicVariables():
         _getTDVSpec('aw', evalWaterActivity, reqM=True, reqGrid=True, reqMWv=True, reqTDV=['phi']),
         _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqCutoff=True),
         _getTDVSpec('Vex', evalExcessVolume, reqM=True, reqTDV=['Va', 'Vm'], reqCutoff=True),
-        #_getTDVSpec('gam', evalActivityCoeff, reqM=True, reqMWu=True, reqGrid=True, reqTDV=['mus'], reqNu=True,
-        #            reqSpline=True, reqPTM=True),
-        #_getTDVSpec('Gex', evalExcessGibbsEnergy, reqM=True, reqGrid=True, reqTDV=['gam', 'phi'], reqNu=True),
+        _getTDVSpec('gam', evalActivityCoeff, reqM=True, reqMWu=True, reqGrid=True, reqTDV=['mus'], reqNu=True,
+                   reqSpline=True, reqPTM=True),
+        _getTDVSpec('Gex', evalExcessGibbsEnergy, reqM=True, reqGrid=True, reqTDV=['gam', 'phi'], reqNu=True),
     ])
 
     # Check that all reqTDVs are represented in the list
