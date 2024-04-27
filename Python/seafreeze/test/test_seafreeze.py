@@ -74,7 +74,7 @@ class TestSeafreeze(ut.TestCase):
     def test_get_shear_mod_GPa_grid(self):
         P = np.arange(900, 921, 10)
         T = np.arange(255, 276, 10)
-        PT = np.array([P, T])
+        PT = np.array([P, T], dtype=object)
         rho = np.array([[1356.072490993616, 1353.307249697806, 1350.440903858578],
                         [1356.862314715232, 1354.106807053618, 1351.250712225762],
                         [1357.649726085489, 1354.903864412315, 1352.057926458423]])

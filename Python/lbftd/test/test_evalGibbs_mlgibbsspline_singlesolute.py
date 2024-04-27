@@ -3,7 +3,7 @@ import warnings, unittest as ut
 import numpy as np
 import scipy.io as sio
 from mlbspline import load
-from lbftd import loadGibbs as lg, evalGibbs as eg
+from lbftd import loadGibbs as lg, evalGibbs as eg, statevars as sv
 
 
 class TestEvalGibbsSingleSolute(ut.TestCase):
@@ -118,10 +118,26 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         if valErrs:
             self.fail(valErrs)
 
+    def test_G0_standard_state(self):
+        out = sv._getG0ss(self.T, self.spline['Go'])
+        mlGoss = sio.loadmat('Gss1.mat')['gss1']
+        self.assertEqual(out.shape, mlGoss.shape,' output not the same shape as MatLab output')
+        if not np.allclose(out, mlGoss, rtol=relTolerance, atol=0):
+            absDiffs = np.absolute(out - mlGoss)
+            relDiffs = absDiffs / np.absolute(mlGoss)
+            self.fail('Output for G0ss has relative differences as large as ' + str(np.max(relDiffs)))
+
+    def test_dGss_standard_state(self):
+        out = sv._getdGss(self.P, self.T, self.spline, self.spline['MW'][1])
+        mldGss = sio.loadmat('dGss.mat')['dgss']
+        self.assertEqual(out.shape, mldGss.shape,' output not the same shape as MatLab output')
+        if not np.allclose(out, mldGss, rtol=relTolerance, atol=0):
+            absDiffs = np.absolute(out - mldGss)
+            relDiffs = absDiffs / np.absolute(mldGss)
+            self.fail('Output for dGss has relative differences as large as ' + str(np.max(relDiffs)))
 
 
 relTolerance = 5e-6
-# TODO: reevalute how we test absolute and relative differences
 
 if __name__ == '__main__':
     ut.main()

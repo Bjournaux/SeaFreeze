@@ -209,20 +209,25 @@ def evalExcessGibbsEnergy(gPTM, nu, tdv):
     """
     return R*nu*gPTM[iT]*gPTM[iM]*(np.log(tdv.gam)+(1-tdv.phi))
 
+def _getG0ss(T, G0Sp):
+    return evalMultivarSpline(G0Sp, np.reshape(T, [1, len(T)]))
 
-def _getGss(PTM, gibbsSp, MWu): # standard state Gibbs energy of solution -- needed for Gex
-    Go = getSplineDict(gibbsSp['Go'])
-    Gss = evalMultivarSpline(Go, np.reshape(PTM[iT], [1, len(PTM[iT])]))
-    #np.full(len(PTM[iM]), ssM)
-    PTM_ss = np.array([PTM[iP], PTM[iT], ssM], dtype=object)
-    G2 = evalMultivarSpline(gibbsSp, PTM_ss)
-    dGdm2 = evalMultivarSpline(gibbsSp, PTM_ss, [0, 0, 1])
-    PTM_ss_1_bar = np.array([stP, PTM[iT], ssM], dtype=object) # why iM in matlab?
+def _getdGss(p, t, gibbsSp, MWu):
+    ss_PTM = np.array([p, t, np.array([ssM])], dtype=object)
+    G2 = evalMultivarSpline(gibbsSp, ss_PTM)
+    dGdm2 = evalMultivarSpline(gibbsSp, ss_PTM, [0, 0, 1])
+    PTM_ss_1_bar = np.array([stP, t, ssM], dtype=object)  # why iM in matlab?
     G1b = evalMultivarSpline(gibbsSp, PTM_ss_1_bar)
     dGdm1 = evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1])
     dGss = (MWu * G2 + dGdm2) - (MWu * np.broadcast_to(G1b, G2.shape) + np.broadcast_to(dGdm1, G2.shape))
+    return np.squeeze(dGss, iM)
+
+def _getGss(PTM, gibbsSp, MWu): # standard state Gibbs energy of solution -- needed for Gex
+    G0ss = _getG0ss(PTM[iT], getSplineDict(gibbsSp['Go']))
+    #np.full(len(PTM[iM]), ssM)
+    dGss = _getdGss(PTM[iP], PTM[iT], gibbsSp, MWu)
     #dGss = (MWu * G2[:, :, 0] + dGdm2[:, :, 0]) - (MWu * G1b[:, :, 0] + dGdm1[:, :, 0])
-    sum = Gss + np.squeeze(dGss, iM)
+    sum = G0ss + np.squeeze(dGss, iM)
     return sum[:, :, np.newaxis] * np.ones(PTM[iM].shape)
 
 
