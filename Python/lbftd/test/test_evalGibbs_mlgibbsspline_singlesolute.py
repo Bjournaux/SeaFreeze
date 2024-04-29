@@ -15,6 +15,8 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         self.P = np.arange(0.1, 8000, 200).astype(float)
         self.T = np.arange(239, 501, 50).astype(float)
         self.M = np.arange(0.5, 8, 2).astype(float)
+        self.ssM = 1e-3  # standard state solution concentration (1 mol/Kg = 0.001 mol/cc)
+        self.stP = 0.1 # STP pressure in MPa
     def tearDown(sThermodyelf):
         pass
     def test_evalgibbs_singlesolute_grid_allmeasures(self):
@@ -136,8 +138,49 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             relDiffs = absDiffs / np.absolute(mldGss)
             self.fail('Output for dGss has relative differences as large as ' + str(np.max(relDiffs)))
 
+    def test_G2(self):
+        ss_PTM = np.array([self.P, self.T, np.array([self.ssM])], dtype=object)
+        out = sv._getG2(ss_PTM, self.spline)
+        mlG2 = sio.loadmat('g2.mat')['G2']
+        self.assertEqual(out.shape, mlG2.shape,' output not the same shape as MatLab output')
+        if not np.allclose(out, mlG2, rtol=relTolerance, atol=0):
+            absDiffs = np.absolute(out - mlG2)
+            relDiffs = absDiffs / np.absolute(mlG2)
+            self.fail('Output for G2 has relative differences as large as ' + str(np.max(relDiffs)))
+
+    def test_dGm2(self):
+        ss_PTM = np.array([self.P, self.T, np.array([self.ssM])], dtype=object)
+        out = sv._getdGm2(ss_PTM, self.spline)
+        mldgm2 = sio.loadmat('dgdm2.mat')['dGdm2']
+        self.assertEqual(out.shape, mldgm2.shape,' output not the same shape as MatLab output')
+        if not np.allclose(out, mldgm2, rtol=relTolerance, atol=0):
+            absDiffs = np.absolute(out - mldgm2)
+            relDiffs = absDiffs / np.absolute(mldgm2)
+            self.fail('Output for mldgm2 has relative differences as large as ' + str(np.max(relDiffs)))
+
+    def test_G1b(self):
+        PTM_ss_1_bar = np.array([np.array([self.stP]), self.T, np.array([self.ssM])], dtype=object)
+        out = sv._getG1b(PTM_ss_1_bar, self.spline)
+        mlg1b = sio.loadmat('g1b.mat')['G1b']
+        self.assertEqual(out.shape, mlg1b.shape,' output not the same shape as MatLab output')
+        if not np.allclose(out, mlg1b, rtol=relTolerance, atol=0):
+            absDiffs = np.absolute(out - mlg1b)
+            relDiffs = absDiffs / np.absolute(mlg1b)
+            self.fail('Output for mlg1b has relative differences as large as ' + str(np.max(relDiffs)))
+
+    def test_dGdm1(self):
+        PTM_ss_1_bar = np.array([np.array([self.stP]), self.T, np.array([self.ssM])], dtype=object)
+        out = sv._getdGdm1(PTM_ss_1_bar, self.spline)
+        mldGdm1 = sio.loadmat('dgdm1.mat')['dGdm1']
+        self.assertEqual(out.shape, mldGdm1.shape,' output not the same shape as MatLab output')
+        if not np.allclose(out, mldGdm1, rtol=relTolerance, atol=0):
+            absDiffs = np.absolute(out - mldGdm1)
+            relDiffs = absDiffs / np.absolute(mldGdm1)
+            self.fail('Output for mldGdm1 has relative differences as large as ' + str(np.max(relDiffs)))
+
 
 relTolerance = 5e-6
 
 if __name__ == '__main__':
     ut.main()
+

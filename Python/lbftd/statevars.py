@@ -212,22 +212,35 @@ def evalExcessGibbsEnergy(gPTM, nu, tdv):
 def _getG0ss(T, G0Sp):
     return evalMultivarSpline(G0Sp, np.reshape(T, [1, len(T)]))
 
-def _getdGss(p, t, gibbsSp, MWu):
-    ss_PTM = np.array([p, t, np.array([ssM])], dtype=object)
-    G2 = evalMultivarSpline(gibbsSp, ss_PTM)
-    dGdm2 = evalMultivarSpline(gibbsSp, ss_PTM, [0, 0, 1])
-    PTM_ss_1_bar = np.array([stP, t, ssM], dtype=object)  # why iM in matlab?
-    G1b = evalMultivarSpline(gibbsSp, PTM_ss_1_bar)
-    dGdm1 = evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1])
-    dGss = (MWu * G2 + dGdm2) - (MWu * np.broadcast_to(G1b, G2.shape) + np.broadcast_to(dGdm1, G2.shape))
-    return np.squeeze(dGss, iM)
+def _getG2(ss_PTM, gibbsSp):
+    return np.squeeze(evalMultivarSpline(gibbsSp, ss_PTM), iM)
+
+def _getdGm2(ss_PTM, gibbsSp):
+    return np.squeeze(evalMultivarSpline(gibbsSp, ss_PTM, [0, 0, 1]), iM)
+
+def _getG1b(PTM_ss_1_bar, gibbsSp):
+    return np.squeeze(evalMultivarSpline(gibbsSp, PTM_ss_1_bar), iM)
+
+def _getdGdm1(PTM_ss_1_bar, gibbsSp):
+    #return np.array((evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1]), np.newaxis), dtype=object)
+    return np.squeeze(evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1]), iM)
+def _getdGss(P, T, gibbsSp, MWu):
+    ss_PTM = np.array([P, T, np.array([ssM])], dtype=object)
+    G2 = _getG2(ss_PTM, gibbsSp)
+    dGdm2 = _getdGm2(ss_PTM, gibbsSp)
+    PTM_ss_1_bar = np.array([stP, T, ssM], dtype=object)  # why iM in matlab?
+    G1b = _getG1b(PTM_ss_1_bar, gibbsSp)
+    dGdm1 = _getdGdm1(PTM_ss_1_bar, gibbsSp)
+   # dGss = (MWu * G2 + dGdm2) - (MWu * np.broadcast_to(G1b, G2.shape) + np.broadcast_to(dGdm1, G2.shape))
+    dGss = (MWu * G2 + dGdm2) - (MWu * G1b+ dGdm1)
+    return dGss
 
 def _getGss(PTM, gibbsSp, MWu): # standard state Gibbs energy of solution -- needed for Gex
     G0ss = _getG0ss(PTM[iT], getSplineDict(gibbsSp['Go']))
     #np.full(len(PTM[iM]), ssM)
     dGss = _getdGss(PTM[iP], PTM[iT], gibbsSp, MWu)
     #dGss = (MWu * G2[:, :, 0] + dGdm2[:, :, 0]) - (MWu * G1b[:, :, 0] + dGdm1[:, :, 0])
-    sum = G0ss + np.squeeze(dGss, iM)
+    sum = G0ss + dGss
     return sum[:, :, np.newaxis] * np.ones(PTM[iM].shape)
 
 
