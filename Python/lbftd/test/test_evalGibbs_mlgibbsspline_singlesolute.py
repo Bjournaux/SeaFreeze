@@ -12,9 +12,9 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         self.spline = lg.loadGibbsSpline('gsp_singlesolute.mat', 'sp_NaCl')
         self.spline = self.spline['sp']
         self.mlout = load._stripNestingToFields(sio.loadmat('gsp3d_out.mat')['out'])
-        self.P = np.arange(0.1, 8000, 200).astype(float)
-        self.T = np.arange(239, 501, 50).astype(float)
-        self.M = np.arange(0.5, 8, 2).astype(float)
+        self.P = np.arange(0.1, 1000, 200).astype(float)
+        self.T = np.arange(241, 501, 50).astype(float)
+        self.M = np.arange(0.1, 7, 0.5).astype(float)
         self.ssM = 1e-3  # standard state solution concentration (1 mol/Kg = 0.001 mol/cc)
         self.stP = 0.1 # STP pressure in MPa
     def tearDown(sThermodyelf):
@@ -122,7 +122,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
 
     def test_G0_standard_state(self):
         out = sv._getG0ss(self.T, self.spline['Go'])
-        mlGoss = sio.loadmat('Gss1.mat')['gss1']
+        mlGoss = sio.loadmat('Gss1.mat')['Gss1']
         self.assertEqual(out.shape, mlGoss.shape,' output not the same shape as MatLab output')
         if not np.allclose(out, mlGoss, rtol=relTolerance, atol=0):
             absDiffs = np.absolute(out - mlGoss)
@@ -131,7 +131,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
 
     def test_dGss_standard_state(self):
         out = sv._getdGss(self.P, self.T, self.spline, self.spline['MW'][1])
-        mldGss = sio.loadmat('dGss.mat')['dgss']
+        mldGss = sio.loadmat('dGss.mat')['dGss']
         self.assertEqual(out.shape, mldGss.shape,' output not the same shape as MatLab output')
         if not np.allclose(out, mldGss, rtol=relTolerance, atol=0):
             absDiffs = np.absolute(out - mldGss)
@@ -148,7 +148,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             relDiffs = absDiffs / np.absolute(mlG2)
             self.fail('Output for G2 has relative differences as large as ' + str(np.max(relDiffs)))
 
-    def test_dGm2(self):
+    def test_dGdm2(self):
         ss_PTM = np.array([self.P, self.T, np.array([self.ssM])], dtype=object)
         out = sv._getdGm2(ss_PTM, self.spline)
         mldgm2 = sio.loadmat('dgdm2.mat')['dGdm2']

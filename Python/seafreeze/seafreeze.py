@@ -86,7 +86,7 @@ def seafreeze(PTm, phase, path=defpath, *tdvSpec):
         tdvs.Vs = _get_Vs(smg, rho)
     return tdvs
 
-def whichphase(PTm, solute='water1', path=defpath): # make sure solute arg works for NaCl, and is accurate for a given concentration; make sure this works with the new spline generally!
+def whichphase(PTm, solute='water1', path=defpath):
     """ Determines the most likely phase of water at each pressure/temperature
 
     :param PTm:     The pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
