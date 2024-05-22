@@ -202,8 +202,9 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
 
 ### Planned updates
-- ice VII and X 
-- NaCl and MgSO4 aqueous solutions 
+- Ice VII and X [available here as a beta](https://github.com/Bjournaux/SeaFreeze/tree/new_tdvs) 
+- NaCl aqueous solutions [available here as a beta ](https://github.com/Bjournaux/SeaFreeze/tree/new_tdvs/Python) 
+- MgSO4, NasSO4 and MgCl2 aqueous solutions 
 - NH_3 aqueous solutions
 - NaCl bearing solids (Halite and hydrohalite)
 
