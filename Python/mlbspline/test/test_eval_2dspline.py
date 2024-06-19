@@ -56,10 +56,10 @@ class TestEval2DSpline(ut.TestCase):
         out = eval.evalMultivarSpline(self.spline, x, allowExtrapolations=False)
         self.assertEqual(out.shape, self.mlout.shape, 'shapes not equal')
         # confirm nan for invalid points
-        self.assertTrue(np.all(np.isnan(out[(0, -1), :])))
-        self.assertTrue(np.all(np.isnan(out[:, (0, -1)])))
+        self.assertTrue(np.all(np.isnan(out[[0, -1], :])), 'some extrapolated values remain for first dim')
+        self.assertTrue(np.all(np.isnan(out[:, [0, -1]])), 'some extrapolated values remain for second dim')
         # confirm values for valid points
-        goodslc = tuple([slice(1, 1)] * 2)
+        goodslc = tuple([slice(1, -1)] * 2)
         if not (np.allclose(out[goodslc], self.mlout[goodslc], rtol=0, atol=1e-10)  # check both abs and rel differences
                 and np.allclose(out[goodslc], self.mlout[goodslc], rtol=1e-10, atol=0)):
             absDiffs = np.absolute(out[goodslc] - self.mlout[goodslc])
