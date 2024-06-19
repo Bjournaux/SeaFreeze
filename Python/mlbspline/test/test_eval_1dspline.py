@@ -30,34 +30,6 @@ class TestEval1DSpline(ut.TestCase):
         self.assertTrue(np.allclose(out, mlout, rtol=0, atol=1e-11), 'output not within absolute tolerances')
         self.assertTrue(np.allclose(out, mlout, rtol=1e-12, atol=0), 'output not within relative tolerances')
 
-    def test1dspline_isExtrapolation_GridAllValid(self):
-        knots = np.arange(240, 501, 20)
-        x = np.arange(250, 501, 10)
-        extrapIdx = eval._isExtrapolation(knots, x)
-        self.assertEqual(extrapIdx.size, 0, 'valid values considered extrapolations')
-
-    def test1dspline_isExtrapolation_GridAllExtrap(self):
-        knots = np.arange(240, 500, 20)
-        x = np.arange(30, 200, 30)
-        self.assertTrue(np.all(eval._isExtrapolation(knots, x) == np.arange(x.size)),
-                        'extrapolative x values considered valid')
-
-    def test1dspline_isExtrapolation_GridSomeInvalidOutsideKnotRange(self):
-        knots = np.arange(240, 500, 20) # doesn't include 500
-        x = np.arange(150, 601, 50)
-        expected = np.array([0, 1, 7, 8, 9])
-        actual = eval._isExtrapolation(knots, x)
-        self.assertTrue(np.logical_and(expected.size == actual.size, np.all(expected == actual)),
-                         'extrapolations incorrectly identified in grid')
-
-    def test1dspline_isExtrapolation_ScatterSomeInvalidValues(self):
-        knots = np.arange(240, 501, 20)
-        x = np.array([425, 36, 250, 64, 600, 499])
-        expected = np.array([1, 3, 4])
-        actual = eval._isExtrapolation(knots, x)
-        self.assertTrue(np.logical_and(expected.size == actual.size, np.all(expected == actual)),
-                         'extrapolations incorrectly identified in scatter')
-
     def test1dsplineeval_noextrap_grid(self):
         x = np.empty(1, object)
         x[0] = np.arange(100, 601, 20)

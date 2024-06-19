@@ -25,7 +25,8 @@ def evalMultivarSpline(spd, x, der=None, allowExtrapolations=True):
                 if provided, values must be non-negative integers, and
                 the number of dimensions must be the same as in the spline (len(der) == spd['number'].size)
     :param allowExtrapolations: if False, any values of x that fall outside the knot range of the spline
-                given by spd will return numpy.nan.
+                given by spd will return numpy.nan.  Note that you can initially get extrapolations just to see what
+                they look like and clean them up later using _setExtrapolationsToNan.
                 if True (default), extrapolations will be calculated according to the
                 spline's coefficients at its boundaries.  Not recommended, but used as default to preserve behavior.
     :return:    a Numpy n-D array. If x is a ndarray, then output.shape == x.shape.
@@ -34,7 +35,7 @@ def evalMultivarSpline(spd, x, der=None, allowExtrapolations=True):
     if der is None:
         der = []
 
-    dimCt = spd['number'].size  # Size of dim coefs
+    dimCt = _getSplineDimCount(spd)
     if len(der) == 0:
         der = [0] * dimCt  # Default to 0th derivative for all dimensions
 
@@ -58,10 +59,11 @@ def evalMultivarSpline(spd, x, der=None, allowExtrapolations=True):
         # underlying code will not bother to perform the calculations (may want to test this
         # presumption at some point if this function requires optimization).
         y = np.array(splev(xi, tck, der=der[di], ext=0 if allowExtrapolations else 1))
-        if not allowExtrapolations:
-            y[_isExtrapolation(tck[0], xi)] = np.nan
     # Need to rearrange back to original order and shape
-    return _getNextSpline(-1, dimCt, spd, y)[1]
+    out = _getNextSpline(-1, dimCt, spd, y)[1]
+    if not allowExtrapolations:
+        out = _setExtrapolationsToNan(spd, x, out)
+    return out
 
 
 def _getNextSpline(dimIdx, dimCt, spd, coefs):
@@ -94,5 +96,32 @@ def _isExtrapolation(knots, x):
     :param x:       Input values for the dimension as described in evalMultivarSpline
     """
     return np.argwhere(np.logical_or(x < knots.min(), x > knots.max())).squeeze()
+
+def _setExtrapolationsToNan(spd, x, y):
+    """ Returns a copy of y that has nan instead of the original value for all points where the x
+     value falls outside the range of the spline.
+    This function is independent of evalMultivarSpline() so could be used to cleanse data
+    after processing if extrapolations were initially allowed.
+
+    :param spd:      The spline that was evaluated with x input values to produce the output y
+    :param x:       Input values as in evalMultivarSpline
+    :param y:       Output values calculated by scipy for the provided values of x
+    :return:        a copy of y with values changed to numpy.nan if the corresponding value of x falls outside the
+                    knot range for that dimension of the spline.
+    """
+    dc = _getSplineDimCount(spd)
+    out = y.copy()
+    for di in range(0, dc): # do each dimension one at a time
+        xi = x[di]
+        ki = spd['knots'][di]
+        si = [slice(None)] * dc
+        si[di] = _isExtrapolation(ki, xi)
+        out[tuple(si)] = np.nan
+    return out
+
+
+def _getSplineDimCount(sp):
+    return sp['number'].size  # Size of dim coefs
+
 
 
