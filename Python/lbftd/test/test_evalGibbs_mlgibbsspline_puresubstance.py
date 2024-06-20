@@ -11,6 +11,7 @@ class TestEvalGibbsPureSubstance(ut.TestCase):
         warnings.simplefilter('ignore', category=ImportWarning)
         self.spline = lg.loadGibbsSpline('gsp_puresubstance.mat')['sp']
         self.mlout = load._stripNestingToFields(sio.loadmat('gsp2d_out.mat')['gsp2d_out'])
+        # knot ranges for this spline are P [0-3001], T[0-401]
         self.P = np.arange(0, 3001, 200).astype(float)
         self.T = np.arange(0, 401, 50).astype(float)
     def tearDown(sThermodyelf):
@@ -34,6 +35,27 @@ class TestEvalGibbsPureSubstance(ut.TestCase):
                               ' and relative differences as large as '+str(np.max(relDiffs))+'.\n'
         if valErrs:
             self.fail(valErrs)
+
+    def test_evalGibbs_puresubstance_grid_confirmExtrapolationBehavior(self):
+        P = np.array([self.P[1], 3002], float)
+        T = np.array([self.T[1], 402], float)
+        extrapOut = eg.evalSolutionGibbsGrid(self.spline, np.array([P, T], dtype=object), allowExtrapolations=True)
+        noExtrapsOut = eg.evalSolutionGibbsGrid(self.spline, np.array([P, T], dtype=object), allowExtrapolations=False)
+        # check a TDV that directly requires allowExtrapolations
+        self.assertTrue(np.all(np.logical_not(np.isnan(extrapOut.G))),
+                        'extrapolations are missing although they were allowed')
+        self.assertTrue(np.all(np.logical_not(np.isnan(noExtrapsOut.G[0, 0]))),
+                        'valid values are missing when extrapolations not allowed')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.G[1, :])), 'extrapolations are present in the first dim')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.G[:, 1])), 'extrapolations are present in the second dim')
+        # check a TDV that depends on derivatives only
+        self.assertTrue(np.all(np.logical_not(np.isnan(extrapOut.S))),
+                        'extrapolations are missing although they were allowed')
+        self.assertTrue(np.all(np.logical_not(np.isnan(noExtrapsOut.S[0, 0]))),
+                        'valid values are missing when extrapolations not allowed')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.S[1, :])), 'extrapolations are present in the first dim')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.S[:, 1])), 'extrapolations are present in the second dim')
+
     def test_evalgibbs_puresubstance_scatter_singlepoint_allmeasures(self):
         pidx = 0; tidx = 0
         PTM = np.empty((1,), object)

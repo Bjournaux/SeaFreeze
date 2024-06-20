@@ -186,7 +186,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False,
 
 
 def _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, allowExtrapolations, verbose=False):
-    derivs = getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose)
+    derivs = getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, allowExtrapolations, verbose)
     gPTM = _getGriddedPTM(tdvSpec, PTM, verbose) if any([tdv.reqGrid for tdv in tdvSpec]) else None
     f = _getVolSolventInVolSlnConversion(gibbsSp['MW'][1], PTM) if any([tdv.reqF for tdv in tdvSpec]) else None
     strip_cutoff = False
@@ -415,13 +415,14 @@ def _buildDerivDirective(derivSpec, dimCt):
     return out
 
 
-def getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose=False):
+def getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, allowExtrapolations, verbose=False):
     """
 
     :param gibbsSp:     The Gibbs energy spline
     :param PTM:         The pressure, temperature[, molality] points at which the spine should be evaluated
     :param dimCt:       2 if a PT spline, 3 if a PTM spline
     :param tdvSpec:     The expanded TDVSpec describing the thermodynamic variables to be calculated
+    :param allowExtrapolations False to return numpy.nan for all PTM values that fall outside the range of the spline
     :param verbose:     True to output timings
     :return:            Gibbs energy derivatives necessary to calculate the tdvs listed in the tdvSpec
     """
@@ -432,7 +433,7 @@ def getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose=False):
     for rd in reqderivs:
         derivDirective = _buildDerivDirective(getDerivSpec(rd), dimCt)
         start = time()
-        setattr(out, rd, evalMultivarSpline(gibbsSp, PTM, derivDirective))
+        setattr(out, rd, evalMultivarSpline(gibbsSp, PTM, derivDirective, allowExtrapolations))
         end = time()
         if verbose: _printTiming('deriv ' + rd, start, end)
     return out
