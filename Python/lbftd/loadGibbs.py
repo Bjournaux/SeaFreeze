@@ -28,8 +28,6 @@ def loadGibbsSpline(splineFile, splineVar=None):
     """
     raw = load._stripNestingToFields(load._getRaw(splineFile, splineVar))
     sp = load.getSplineDict(load._stripNestingToValue(raw['sp']))
-    load.validateSpline(sp)
-    #Mw = _getMW(sp)
     sp['MW'] = _getMW(sp)
     return {'sp': sp} # TODO: this is for legacy reasons, clean it up
 
