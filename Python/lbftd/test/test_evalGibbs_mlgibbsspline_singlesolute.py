@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, uniform
 import warnings, unittest as ut
 import numpy as np
 import scipy.io as sio
@@ -179,7 +179,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             relDiffs = absDiffs / np.absolute(mldGdm1)
             self.fail('Output for mldGdm1 has relative differences as large as ' + str(np.max(relDiffs)))
 
-    def test_evalGibbs_singlesolute_grid_confirmExtrapolationBehavior(self):
+    def test_evalGibbs_singlesolute_grid_ExtrapolationBehavior(self):
         P = np.array([self.P[1], 2000], dtype=float)
         T = np.array([self.T[1], 600], dtype=float)
         M = np.array([self.M[1], 10], dtype=float)
@@ -202,6 +202,25 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         self.assertTrue(np.all(np.isnan(noExtrapsOut.S[1, :, :])), 'extrapolations are present in the first dim')
         self.assertTrue(np.all(np.isnan(noExtrapsOut.S[:, 1, :])), 'extrapolations are present in the second dim')
         self.assertTrue(np.all(np.isnan(noExtrapsOut.S[:, :, 1])), 'extrapolations are present in the third dim')
+
+    def test_evalGibbs_singlesolute_scatter_ExtrapolationBehavior(self):
+        numpts = 4
+        ptindices = np.empty((numpts,), object)
+        knots = self.spline['knots']
+        PTM = np.empty((numpts,), object)
+        for i in np.arange(0, numpts):
+            # three invalid points, 1 valid point
+            p = uniform(knots[eg.iP][-1]+1, knots[eg.iP][-1]+10) if i == 0 else uniform(self.P[0], self.P[-1])
+            t = uniform(knots[eg.iT][-1]+1, knots[eg.iT][-1]+10) if i == 1 else uniform(self.T[0], self.T[-1])
+            m = uniform(knots[eg.iM][-1]+1, knots[eg.iM][-1]+10) if i == 2 else uniform(self.M[0], self.M[-1])
+            PTM[i] = (p, t, m)
+        extrapsOut = eg.evalSolutionGibbsScatter(self.spline, PTM, allowExtrapolations=True)
+        self.assertTrue(np.all(np.logical_not(np.isnan(extrapsOut.G))),
+                        'extrapolations missing although they were allowed')
+        noExtrapsOut = eg.evalSolutionGibbsScatter(self.spline, PTM, allowExtrapolations=False)
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.G[0:-1])), 'points with extrapolation not nan')
+        self.assertFalse(np.isnan(noExtrapsOut.G[-1]), 'valid point set to nan')
+
 
 
 relTolerance = 5e-6

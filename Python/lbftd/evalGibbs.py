@@ -117,16 +117,14 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False,
     tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True)
     # Point by point
     for p in range(PTM.size):
-        # this function will always replace 0 with eps
+        # this function will always replace 0 concentration with eps
         wPTM = _ptmTuple2NestedArrays(PTM[p], dimCt, needsCutoff)
         tempout = createThermodynamicStatesObj(tdvSpec, wPTM)
-        # Prepend a "cutoff" concentration if one is needed by any of the quantities being calculated
-        # This is slow, but we expect scatter to only be called for a limited number of points
-        if needsCutoff:
-            wPTM = _getPTMWithCutoff(wPTM, gibbsSp['cutoff'])
-        if dimCt > 2 and wPTM[iM][0] == 0:
-            wPTM[iM][0] = eps  # replace 0 M input with eps
         if allowExtrapolations or not _isPointExtrapolation(dimCt, gibbsSp['knots'], wPTM):
+            # Prepend a "cutoff" concentration if one is needed by any of the quantities being calculated
+            # This is slow, but we expect scatter to only be called for a limited number of points
+            if needsCutoff:
+                wPTM = _getPTMWithCutoff(wPTM, gibbsSp['cutoff'])
             tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, tempout, dimCt, allowExtrapolations, verbose)
             for t in tdvSpec:
                 tolastpt = getattr(tdvout, t.name)
@@ -281,7 +279,7 @@ def createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=False):
     # so later you can compare the original PTM to the one in tdvout.PTM to see if you need to remove the 0 M
     TDS = type('ThermodynamicStates', (object,),
                {fld: (np.copy(PTM) if fld == 'PTM'
-                      else np.empty((PTM.size,), float) if initializetdvs
+                      else np.full((PTM.size,), np.nan, float) if initializetdvs
                       else None) for fld in flds})
     out = TDS()
     return out
