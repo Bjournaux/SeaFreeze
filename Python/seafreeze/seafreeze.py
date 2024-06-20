@@ -165,7 +165,7 @@ def _get_tdvs(sp, PTm, is_scatter, *tdvSpec):
     :return:            tdv object (see lbftd documentation)
     """
     fn = eg.evalSolutionGibbsScatter if is_scatter else eg.evalSolutionGibbsGrid
-    return fn(sp, PTm, *tdvSpec)
+    return fn(sp, PTm, *tdvSpec, allowExtrapolations=False)
 
 def _get_shear_mod_GPa(sm, rho, T):
     return None if sm is None else sm[0] + sm[1] * (rho - sm[4]) + sm[2] * (rho - sm[4]) ** 2 + sm[3] * (T - sm[5])
