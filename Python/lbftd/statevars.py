@@ -24,11 +24,11 @@ With the exception of pressure, units are SI.  Pressure is in MPa rather than Pa
 ## TDV eval functions
 #########################################
 
-def evalGibbsEnergy(gibbsSp, PTM):
+def evalGibbsEnergy(gibbsSp, PTM, allowExtrapolations):
     """
     :return: G
     """
-    return evalMultivarSpline(gibbsSp, PTM)
+    return evalMultivarSpline(gibbsSp, PTM, allowExtrapolations=allowExtrapolations)
 
 
 def evalIsobaricSpecificHeat(gPTM, derivs):
@@ -196,11 +196,11 @@ def evalWaterActivity(gPTM, tdv, MWv):
     return np.exp(-2*gPTM[iM]*tdv.phi*MWv)
 
 
-def evalActivityCoeff(PTM, gibbsSp, MWu, gPTM, nu, tdv):
+def evalActivityCoeff(PTM, gibbsSp, MWu, gPTM, nu, tdv, allowExtrapolations):
     """
     :return: gam
     """
-    return np.exp(1/R * 1/nu * (tdv.mus - _getGss(PTM, gibbsSp, MWu)) / gPTM[iT] - np.log(gPTM[iM]))
+    return np.exp(1/R * 1/nu * (tdv.mus - _getGss(PTM, gibbsSp, MWu, allowExtrapolations)) / gPTM[iT] - np.log(gPTM[iM]))
 
 
 def evalExcessGibbsEnergy(gPTM, nu, tdv):
@@ -209,36 +209,36 @@ def evalExcessGibbsEnergy(gPTM, nu, tdv):
     """
     return R*nu*gPTM[iT]*gPTM[iM]*(np.log(tdv.gam)+(1-tdv.phi))
 
-def _getG0ss(T, G0Sp):
-    return evalMultivarSpline(G0Sp, np.reshape(T, [1, len(T)]))
+def _getG0ss(T, G0Sp, allowExtrapolations):
+    return evalMultivarSpline(G0Sp, np.reshape(T, [1, len(T)]), allowExtrapolations=allowExtrapolations)
 
-def _getG2(ss_PTM, gibbsSp):
-    return np.squeeze(evalMultivarSpline(gibbsSp, ss_PTM), iM)
+def _getG2(ss_PTM, gibbsSp, allowExtrapolations):
+    return np.squeeze(evalMultivarSpline(gibbsSp, ss_PTM, allowExtrapolations=allowExtrapolations), iM)
 
-def _getdGm2(ss_PTM, gibbsSp):
-    return np.squeeze(evalMultivarSpline(gibbsSp, ss_PTM, [0, 0, 1]), iM)
+def _getdGm2(ss_PTM, gibbsSp, allowExtrapolations):
+    return np.squeeze(evalMultivarSpline(gibbsSp, ss_PTM, [0, 0, 1], allowExtrapolations=allowExtrapolations), iM)
 
-def _getG1b(PTM_ss_1_bar, gibbsSp):
-    return np.squeeze(evalMultivarSpline(gibbsSp, PTM_ss_1_bar), iM)
+def _getG1b(PTM_ss_1_bar, gibbsSp, allowExtrapolations):
+    return np.squeeze(evalMultivarSpline(gibbsSp, PTM_ss_1_bar, allowExtrapolations=allowExtrapolations), iM)
 
-def _getdGdm1(PTM_ss_1_bar, gibbsSp):
+def _getdGdm1(PTM_ss_1_bar, gibbsSp, allowExtrapolations):
     #return np.array((evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1]), np.newaxis), dtype=object)
-    return np.squeeze(evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1]), iM)
-def _getdGss(P, T, gibbsSp, MWu):
+    return np.squeeze(evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1], allowExtrapolations=allowExtrapolations), iM)
+def _getdGss(P, T, gibbsSp, MWu, allowExtrapolations):
     ss_PTM = np.array([P, T, np.array([ssM])], dtype=object)
-    G2 = _getG2(ss_PTM, gibbsSp)
-    dGdm2 = _getdGm2(ss_PTM, gibbsSp)
+    G2 = _getG2(ss_PTM, gibbsSp, allowExtrapolations)
+    dGdm2 = _getdGm2(ss_PTM, gibbsSp, allowExtrapolations)
     PTM_ss_1_bar = np.array([stP, T, ssM], dtype=object)  # why iM in matlab?
-    G1b = _getG1b(PTM_ss_1_bar, gibbsSp)
-    dGdm1 = _getdGdm1(PTM_ss_1_bar, gibbsSp)
+    G1b = _getG1b(PTM_ss_1_bar, gibbsSp, allowExtrapolations)
+    dGdm1 = _getdGdm1(PTM_ss_1_bar, gibbsSp, allowExtrapolations)
    # dGss = (MWu * G2 + dGdm2) - (MWu * np.broadcast_to(G1b, G2.shape) + np.broadcast_to(dGdm1, G2.shape))
     dGss = (MWu * G2 + dGdm2) - (MWu * G1b+ dGdm1)
     return dGss
 
-def _getGss(PTM, gibbsSp, MWu): # standard state Gibbs energy of solution -- needed for Gex
-    G0ss = _getG0ss(PTM[iT], getSplineDict(gibbsSp['Go']))
+def _getGss(PTM, gibbsSp, MWu, allowExtrapolations): # standard state Gibbs energy of solution -- needed for Gex
+    G0ss = _getG0ss(PTM[iT], getSplineDict(gibbsSp['Go']), allowExtrapolations)
     #np.full(len(PTM[iM]), ssM)
-    dGss = _getdGss(PTM[iP], PTM[iT], gibbsSp, MWu)
+    dGss = _getdGss(PTM[iP], PTM[iT], gibbsSp, MWu, allowExtrapolations)
     #dGss = (MWu * G2[:, :, 0] + dGdm2[:, :, 0]) - (MWu * G1b[:, :, 0] + dGdm1[:, :, 0])
     sum = G0ss + dGss
     return sum[:, :, np.newaxis] * np.ones(PTM[iM].shape)
@@ -288,7 +288,7 @@ def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=Fa
                 reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f', parmNu ='nu',
                 reqDerivs=None, parmderivs='derivs', reqTDV=None, parmtdv='tdv', reqSpline=False,
                 parmspline='gibbsSp', reqPTM=False, parmptm='PTM', reqNu=None,
-                reqCutoff=None, isInternalOnly=False):
+                reqCutoff=None, reqAllowExtrap=False, parmAllowExtrap='allowExtrapolations'):
     """ Builds a TDVSpec namedtuple indicating what is required to calculate this particular thermodynamic variable
     :param name:        the name / symbol of the tdv (e.g., G, rho, alpha, muw)
     :param calcFn:      the name of the function used to calculate the tdv
@@ -320,8 +320,9 @@ def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=Fa
     :param reqCutoff:   If True, calcFn needs the concentration at the "cutoff" value for calculating apparent values
                         Currently, no cutoff parameter is supported. This just indicates internal logic will use a cutoff value
     :param req0M:       if True, calcFn needs the 0 concentration for calculating apparent values
-    :param isInternalOnly: If True, the tdv is calculated internally only.  Such TDVs cannot be directly requested by
-                        the end user and will not be returned in final output
+    :param reqAllowExtrap: If True, calcFn needs to know how to handle extrapolations when calling functions in
+                        lbftd.eval for spline evaluation.
+    :param parmAllowExtrap: the name of the parameter of calcFn used to pass in the allowExtrapolations parameter
     :return:            a namedtuple giving the spec for the tdv
     """
     if reqDerivs is None:
@@ -346,6 +347,7 @@ def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=Fa
     if not reqTDV:      flds.remove('parmtdv')
     if not reqSpline:   flds.remove('parmspline')
     if not reqPTM:      flds.remove('parmptm')
+    if not reqAllowExtrap: flds.remove('parmAllowExtrap')
     vals = {f: v for f, v in arginfo.locals.items() if f in flds}
 
     tdvspec = namedtuple('TDVSpec', flds)
@@ -360,7 +362,7 @@ def _getSupportedThermodynamicVariables():
     :return: immutable iterable with the full set of specs for supported thermodynamic variables
     """
     out = tuple([
-        _getTDVSpec('G', evalGibbsEnergy, reqSpline=True, reqPTM=True),
+        _getTDVSpec('G', evalGibbsEnergy, reqSpline=True, reqPTM=True, reqAllowExtrap=True),
         _getTDVSpec('U', evalInternalEnergy, reqGrid=True, reqTDV=['G', 'rho', 'S']),
         _getTDVSpec('A', evalHelmholtzEnergy, reqGrid=True, reqTDV=['U', 'S']),
         _getTDVSpec('H', evalEnthalpy, reqGrid=True, reqTDV=['G', 'S']),
@@ -386,7 +388,7 @@ def _getSupportedThermodynamicVariables():
         _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqCutoff=True),
         _getTDVSpec('Vex', evalExcessVolume, reqM=True, reqTDV=['Va', 'Vm'], reqCutoff=True),
         _getTDVSpec('gam', evalActivityCoeff, reqM=True, reqMWu=True, reqGrid=True, reqTDV=['mus'], reqNu=True,
-                   reqSpline=True, reqPTM=True),
+                   reqSpline=True, reqPTM=True, reqAllowExtrap=True),
         _getTDVSpec('Gex', evalExcessGibbsEnergy, reqM=True, reqGrid=True, reqTDV=['gam', 'phi'], reqNu=True),
     ])
 

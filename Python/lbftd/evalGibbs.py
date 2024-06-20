@@ -15,12 +15,12 @@ stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[LBFTD %(levelname)s] %(message)s'))
 
 
-def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapolate=False):
+def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapolate=False, allowExtrapolations=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Warning: units must be as specified here because some conversions are hardcoded into this function.
+    Warning: units must be as specified in the README because some conversions are hardcoded into this function.
     With the exception of pressure, units are SI.  Pressure is in MPa rather than Pa.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -29,15 +29,15 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapola
                     order defined by statevars.iP, iT, and iM.
                     If molality is not provided, this function assumes that it is calculating
                     thermodynamic properties for a pure substance.
+                    To calculate some tdvs, this spline must also include the following values:
+                        - MWv (molecular weight of solvent in kg/mol), defaults to molecular weight of water
+                        - MWu (molecular weight of solute in kg/mol)
+                        - nu (number of ions in solution, dimensionless)
     :param PTM:     a Numpy ndarray of ndarrays with the conditions at which gibbsSp should be evaluated
                     the number of dimensions must be same as in the spline (PTM.size == gibbsSp['number'].size)
                     each of the inner ndarrays represents one of pressure (P), temperature (T), or molality (M)
-                    and must be in the same order and units described in the notes for the gibbsSp parameter
+                    and must be in the same order and units described in the README.
                     Additionally, each dimension must be sorted from low to high values.
-    :param failOnExtrapolate:   True if you want an error to appear if PTM includes values that fall outside the knot
-                    sequence of gibbsSp.  If False, throws a warning rather than an error, and
-                    proceeds with the calculation.
-    :param verbose: boolean indicating whether to print status updates, warnings, etc.
     :param tdvSpec: iterable indicating the thermodynamic variables to be calculated
                     elements can be either strings showing the names (full list at statevars.statevarnames)
                     or TDV objects from statevars.statevars.
@@ -45,6 +45,13 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapola
                     and those in statevars.statevars for a PTM spline.
                     Any other args provided will result in an error.
                     See the README for units.
+    :param verbose: bool indicating whether to print status updates, warnings, etc. Default to False.
+    :param failOnExtrapolate:   boolean indicating whether to error out if PTM includes values that fall outside the
+                    knot range of gibbsSp.  If False (default), proceeds with the calculation.
+                    See also allowExtrapolations parameter.
+    :param allowExtrapolations: boolean indicating whether to return calculated output for values of x that fall outside
+                    the knot range of the spline. False (default) returns numpy.nan for such values of x.
+                    See also failOnExtrapolate.
     :return:        a named tuple with the requested thermodynamic variables as named properties
                     matching the statevars requested in the *tdvSpec parameter of this function
                     the output will also include P, T, and M (if provided) properties
@@ -52,60 +59,62 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapola
     statevarnames = _getSupportedThermodynamicVariables()
     [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
     _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, failOnExtrapolate)
-    pt = np.logical_or(PTM[iP] < gibbsSp['knots'][iP].min(), PTM[iP] > gibbsSp['knots'][iP].max())
-    ind = np.empty(PTM.size, object)  # valid indicies
-    val = np.empty(PTM.size, object)  # valid PT values
-    vP = PTM[iP][~pt]
-    sortP = np.argsort(PTM[0])
-    ind[iP] = sortP[np.searchsorted(PTM[0], vP, sorter=sortP)]
-    val[iP] = vP
-    if len(vP) == 0:
-        val[iP] = np.array([np.nan])
-        ind[iP] = sortP
-    if PTM.size > 1: # for univariant spline evaluation in Gex calculation
-        tt = np.logical_or(PTM[iT] < gibbsSp['knots'][iT].min(), PTM[iT] > gibbsSp['knots'][iT].max())
-        vT = PTM[iT][~tt]
-        sortT = np.argsort(PTM[1])
-        ind[iT] = sortT[np.searchsorted(PTM[1], vT, sorter=sortT)]
-        val[iT] = vT
-        if len(vT) == 0:
-            val[iT] = np.array([np.nan])
-            ind[iT] = sortT
-    if PTM.size > 2:
-        mm = PTM[iM] > gibbsSp['knots'][iM].max()
-        vM = PTM[iM][~mm]
-        sortM = np.argsort(PTM[2])
-        ind[iM] = sortM[np.searchsorted(PTM[2], vM, sorter=sortM)]
-        val[iM] = vM
-        if len(vM) == 0:
-            val[iM] = np.array([np.nan])
-            ind[iM] = sortM
-        if val[iM][0] == 0:
-            val[iM][0] = eps  # replace 0 M input with eps
+    # pt = np.logical_or(PTM[iP] < gibbsSp['knots'][iP].min(), PTM[iP] > gibbsSp['knots'][iP].max())
+    # ind = np.empty(PTM.size, object)  # valid indices
+    # val = np.empty(PTM.size, object)  # valid PT values
+    # vP = PTM[iP][~pt]
+    # sortP = np.argsort(PTM[0])
+    # ind[iP] = sortP[np.searchsorted(PTM[0], vP, sorter=sortP)]
+    # val[iP] = vP
+    # if len(vP) == 0:
+    #     val[iP] = np.array([np.nan])
+    #     ind[iP] = sortP
+    # if PTM.size > 1: # for univariant spline evaluation in Gex calculation
+    #     tt = np.logical_or(PTM[iT] < gibbsSp['knots'][iT].min(), PTM[iT] > gibbsSp['knots'][iT].max())
+    #     vT = PTM[iT][~tt]
+    #     sortT = np.argsort(PTM[1])
+    #     ind[iT] = sortT[np.searchsorted(PTM[1], vT, sorter=sortT)]
+    #     val[iT] = vT
+    #     if len(vT) == 0:
+    #         val[iT] = np.array([np.nan])
+    #         ind[iT] = sortT
+    # if PTM.size > 2:
+    #     mm = PTM[iM] > gibbsSp['knots'][iM].max()
+    #     vM = PTM[iM][~mm]
+    #     sortM = np.argsort(PTM[2])
+    #     ind[iM] = sortM[np.searchsorted(PTM[2], vM, sorter=sortM)]
+    #     val[iM] = vM
+    #     if len(vM) == 0:
+    #         val[iM] = np.array([np.nan])
+    #         ind[iM] = sortM
+    #     if val[iM][0] == 0:
+    #         val[iM][0] = eps  # replace 0 M input with eps
+    tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True) # this has the original PTM
     if _needsCutoff(dimCt, tdvSpec):
-        val[iM] = np.insert(val[iM], 0, gibbsSp['cutoff'])
-    obj = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)
-    valout = _evalInternal(gibbsSp, tdvSpec, val, obj, dimCt, verbose)
-    tdvout = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)  # Should be all NaN
-    for n in range(len(getmembers(tdvout))):
-        if getmembers(tdvout)[n][0] in statevarnames[1]:
-            v = getmembers(tdvout)[n][1]
-            if PTM.size > 2:
-                v[ind[0][0]:ind[0][-1] + 1, ind[1][0]:ind[1][-1] + 1, ind[2][0]:ind[2][-1] + 1] = getmembers(valout)[n][1]
-            else:
-                v[ind[0][0]:ind[0][-1] + 1, ind[1][0]:ind[1][-1] + 1] = getmembers(valout)[n][1]
-            setattr(tdvout, getmembers(tdvout)[n][0], v)
-        else:
-            continue
+        PTM[iM] = np.insert(PTM[iM], 0, gibbsSp['cutoff'])
+        # val[iM] = np.insert(val[iM], 0, gibbsSp['cutoff'])
+    valout = _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, allowExtrapolations, verbose)
+    # tdvout = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)  # Should be all NaN
+    # for n in range(len(getmembers(tdvout))):
+    #     if getmembers(tdvout)[n][0] in statevarnames[1]:
+    #         v = getmembers(tdvout)[n][1]
+    #         if PTM.size > 2:
+    #             v[ind[0][0]:ind[0][-1] + 1, ind[1][0]:ind[1][-1] + 1, ind[2][0]:ind[2][-1] + 1] = getmembers(valout)[n][1]
+    #         else:
+    #             v[ind[0][0]:ind[0][-1] + 1, ind[1][0]:ind[1][-1] + 1] = getmembers(valout)[n][1]
+    #         setattr(tdvout, getmembers(tdvout)[n][0], v)
+    #     else:
+    #         continue
     return tdvout
 
 
-def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False, verbose=False):
+def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False,
+                             verbose=False, allowExtrapolations=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Warning: units must be as specified here because some conversions are hardcoded into this function.
+    Warning: units must be as specified in the README because some conversions are hardcoded into this function.
     With the exception of pressure, units are SI.  Pressure is in MPa rather than Pa.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -114,19 +123,15 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False, ve
                     order defined by statevars.iP, iT, and iM.
                     If molality is not provided, this function assumes that it is calculating
                     thermodynamic properties for a pure substance.
+                    To calculate some tdvs, this spline must include the following values:
+                        - MWv (molecular weight of solvent in kg/mol), defaults to molecular weight of water
+                        - MWu (molecular weight of solute in kg/mol)
+                        - nu (number of ions in solution, dimensionless)
     :param PTM:     a Numpy ndarray of tuples with the points at which gibbsSp should be evaluated
                     the number of elements in each tuple must be same as in the spline (PTM[i].size == gibbsSp['number'].size)
                     each tuples gives the pressure (P), temperature (T), and (optionally) molality (M)
                     and must be in the same order and units described in the notes for the gibbsSp parameter
                     No sorting is required.
-    :param MWv:     float with molecular weight of solvent (kg/mol).
-                    Defaults to molecular weight of water (7 sig figs)
-    :param MWu:     float with molecular weight of solute (kg/mol).
-    :param nu:      float with number of ions in solution (dimensionless)
-    :param failOnExtrapolate:   True if you want an error to appear if PTM includes values that fall outside the knot
-                    sequence of gibbsSp.  If False, throws a warning rather than an error, and
-                    proceeds with the calculation.
-    :param verbose: boolean indicating whether to print status updates, warnings, etc.
     :param tdvSpec: iterable indicating the thermodynamic variables to be calculated
                     elements can be either strings showing the names (full list at statevars.statevarnames)
                     or TDV objects from statevars.statevars.
@@ -134,6 +139,13 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False, ve
                     and those in statevars.statevars for a PTM spline.
                     Any other args provided will result in an error.
                     See the README for units.
+    :param failOnExtrapolate:   boolean indicating whether to error out if PTM includes values that fall outside the
+                    knot range of gibbsSp.  If False (default), proceeds with the calculation.
+                    See also allowExtrapolations parameter.
+    :param allowExtrapolations: boolean indicating whether to return calculated output for values of x that fall outside
+                    the knot range of the spline. False (default) returns numpy.nan for such values of x.
+                    See also failOnExtrapolate.
+    :param verbose: boolean indicating whether to print status updates, warnings, etc.
     :return:        a named tuple with the requested thermodynamic variables as named properties
                     matching the statevars requested in the *tdvSpec parameter of this function
                     Each statevar property will contain an ndarray of values corresponding to the points listed in PTM.
@@ -163,7 +175,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False, ve
             if wPTM[iM][0] == 0:
                 wPTM[iM][0] = eps  # replace 0 M input with eps
         if extrap == [False]:
-            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, tempout, dimCt, verbose)
+            tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, tempout, dimCt, allowExtrapolations, verbose)
             for t in tdvSpec:
                 tolastpt = getattr(tdvout, t.name)
                 tolastpt[p] = getattr(tempout, t.name).flat[0]
@@ -173,7 +185,7 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False, ve
     return tdvout
 
 
-def _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, verbose=False):
+def _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, allowExtrapolations, verbose=False):
     derivs = getDerivatives(gibbsSp, PTM, dimCt, tdvSpec, verbose)
     gPTM = _getGriddedPTM(tdvSpec, PTM, verbose) if any([tdv.reqGrid for tdv in tdvSpec]) else None
     f = _getVolSolventInVolSlnConversion(gibbsSp['MW'][1], PTM) if any([tdv.reqF for tdv in tdvSpec]) else None
@@ -189,7 +201,7 @@ def _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, verbose=False):
         for t in tdvsToEval:
             if t.reqCutoff:
                 strip_cutoff = True
-            args = _buildEvalArgs(t, derivs, PTM, gPTM, tdvout, gibbsSp, f)
+            args = _buildEvalArgs(t, derivs, PTM, gPTM, tdvout, gibbsSp, f, allowExtrapolations)
             start = time()
             setattr(tdvout, t.name, t.calcFn(**args))  # Calculate the value and set it in the output
             end = time()
@@ -212,7 +224,7 @@ def _parseInput(gibbsSp, *tdvSpec):
     return dimCt, tdvSpec, addedTDVs
 
 
-def _buildEvalArgs(tdv, derivs, PTM, gPTM, tdvout, gibbsSp, f):
+def _buildEvalArgs(tdv, derivs, PTM, gPTM, tdvout, gibbsSp, f, allowExtrapolations):
     # check inputs should have found any bad inputs before this is called
     args = dict()
     if tdv.reqDerivs: args[tdv.parmderivs] = derivs
@@ -224,6 +236,7 @@ def _buildEvalArgs(tdv, derivs, PTM, gPTM, tdvout, gibbsSp, f):
     if tdv.reqSpline: args[tdv.parmspline] = gibbsSp
     if tdv.reqPTM:    args[tdv.parmptm] = PTM
     if tdv.reqF:      args[tdv.parmf] = f
+    if tdv.reqAllowExtrap: args[tdv.parmAllowExtrap] = allowExtrapolations
     return args
 
 
@@ -287,7 +300,7 @@ def _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, failOnExtrapolate):
     if extrapolationDims:
         msg = ' '.join(
             ['Dimensions', pformat({'P' if d == iP else ('T' if d == iT else 'M') for d in extrapolationDims}),
-             'contain values that fall outside the knot sequence for the given spline, which will be masked out.'])
+             'contain values that fall outside the knot sequence for the given spline.'])
         if failOnExtrapolate:
             raise ValueError(msg)
         else:
@@ -316,30 +329,34 @@ def createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=False):
     # Copy PTM so if you add a 0 concentration, you affect only the version in the output var
     # so later you can compare the original PTM to the one in tdvout.PTM to see if you need to remove the 0 M
     TDS = type('ThermodynamicStates', (object,),
-               {fld: (np.copy(PTM) if fld == 'PTM' else np.full((PTM.size,), np.nan, float) if initializetdvs else None) for
-                fld in flds})
+               {fld: (np.copy(PTM) if fld == 'PTM'
+                      else np.empty((PTM.size,), float) if initializetdvs
+                      else None) for fld in flds})
     out = TDS()
     return out
 
 
-def createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=False):
-    """
-
-    :param tdvSpec:         The tdvSpec indicating which tdvs will need to be stored in the object
-    :param PTM:             The original PTM data, which will be stored in the object
-    :param initializetdvs:  True if creating the ThermodynamicStates object for scatter data
-                            Initializes output in the object by creating empty arrays matching the size of PTM
-    :return:                A ThermodynamicStates object ready to store calculated thermodynamic state variables
-    """
-    flds = {t.name for t in tdvSpec} | {'PTM'}
-    try:
-        emptyGridShape = (PTM[iP].size, PTM[iT].size, PTM[iM].size)
-    # size of grid now matches PTM input; initialized with NaN values
-    except:
-        emptyGridShape = (PTM[iP].size, PTM[iT].size)
-    TDS = type('ThermodynamicStates', (object,), {fld: (np.copy(PTM) if fld == 'PTM' else np.full(emptyGridShape, np.nan, float) if initializetdvs else None) for fld in flds})
-    out = TDS()
-    return out
+# def createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=False):
+#     """
+#
+#     :param tdvSpec:         The tdvSpec indicating which tdvs will need to be stored in the object
+#     :param PTM:             The original PTM data, which will be stored in the object
+#     :param initializetdvs:  True if creating the ThermodynamicStates object for scatter data
+#                             Initializes output in the object by creating empty arrays matching the size of PTM
+#     :return:                A ThermodynamicStates object ready to store calculated thermodynamic state variables
+#     """
+#     flds = {t.name for t in tdvSpec} | {'PTM'}
+#     try:
+#         emptyGridShape = (PTM[iP].size, PTM[iT].size, PTM[iM].size)
+#     # size of grid now matches PTM input; initialized with NaN values
+#     except:
+#         emptyGridShape = (PTM[iP].size, PTM[iT].size)
+#     TDS = type('ThermodynamicStates', (object,), {fld: (np.copy(PTM) if fld == 'PTM'
+#                                                         else np.full(emptyGridShape, np.nan, float) if initializetdvs
+#                                                         else None)
+#                                                   for fld in flds})
+#     out = TDS()
+#     return out
 
 
 def _ptmTuple2NestedArrays(PTM, dimCt, needs0M):

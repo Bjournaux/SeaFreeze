@@ -121,7 +121,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             self.fail(valErrs)
 
     def test_G0_standard_state(self):
-        out = sv._getG0ss(self.T, self.spline['Go'])
+        out = sv._getG0ss(self.T, self.spline['Go'], True)
         mlGoss = sio.loadmat('Gss1.mat')['Gss1']
         self.assertEqual(out.shape, mlGoss.shape,' output not the same shape as MatLab output')
         if not np.allclose(out, mlGoss, rtol=relTolerance, atol=0):
@@ -130,7 +130,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             self.fail('Output for G0ss has relative differences as large as ' + str(np.max(relDiffs)))
 
     def test_dGss_standard_state(self):
-        out = sv._getdGss(self.P, self.T, self.spline, self.spline['MW'][1])
+        out = sv._getdGss(self.P, self.T, self.spline, self.spline['MW'][1], True)
         mldGss = sio.loadmat('dGss.mat')['dGss']
         self.assertEqual(out.shape, mldGss.shape,' output not the same shape as MatLab output')
         if not np.allclose(out, mldGss, rtol=relTolerance, atol=0):
@@ -140,7 +140,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
 
     def test_G2(self):
         ss_PTM = np.array([self.P, self.T, np.array([self.ssM])], dtype=object)
-        out = sv._getG2(ss_PTM, self.spline)
+        out = sv._getG2(ss_PTM, self.spline, True)
         mlG2 = sio.loadmat('g2.mat')['G2']
         self.assertEqual(out.shape, mlG2.shape,' output not the same shape as MatLab output')
         if not np.allclose(out, mlG2, rtol=relTolerance, atol=0):
@@ -150,7 +150,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
 
     def test_dGdm2(self):
         ss_PTM = np.array([self.P, self.T, np.array([self.ssM])], dtype=object)
-        out = sv._getdGm2(ss_PTM, self.spline)
+        out = sv._getdGm2(ss_PTM, self.spline, True)
         mldgm2 = sio.loadmat('dgdm2.mat')['dGdm2']
         self.assertEqual(out.shape, mldgm2.shape,' output not the same shape as MatLab output')
         if not np.allclose(out, mldgm2, rtol=relTolerance, atol=0):
@@ -160,7 +160,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
 
     def test_G1b(self):
         PTM_ss_1_bar = np.array([np.array([self.stP]), self.T, np.array([self.ssM])], dtype=object)
-        out = sv._getG1b(PTM_ss_1_bar, self.spline)
+        out = sv._getG1b(PTM_ss_1_bar, self.spline, True)
         mlg1b = sio.loadmat('g1b.mat')['G1b']
         self.assertEqual(out.shape, mlg1b.shape,' output not the same shape as MatLab output')
         if not np.allclose(out, mlg1b, rtol=relTolerance, atol=0):
@@ -170,7 +170,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
 
     def test_dGdm1(self):
         PTM_ss_1_bar = np.array([np.array([self.stP]), self.T, np.array([self.ssM])], dtype=object)
-        out = sv._getdGdm1(PTM_ss_1_bar, self.spline)
+        out = sv._getdGdm1(PTM_ss_1_bar, self.spline, True)
         mldGdm1 = sio.loadmat('dgdm1.mat')['dGdm1']
         self.assertEqual(out.shape, mldGdm1.shape,' output not the same shape as MatLab output')
         if not np.allclose(out, mldGdm1, rtol=relTolerance, atol=0):
