@@ -25,7 +25,7 @@ These rely only on P and T:
 - _Ks_: isotropic bulk modulus in MPa
 - _V_: unit volume in m<sup>3</sup> kg<sup>-1</sup>
 
-These rely on P,T, and M, and some also require non-zero molecular weights (for solvent and solute) to calculate.
+These rely on P,T, and M to calculate.  
 - _mus_: solute chemical potential in J mol<sup>-1</sup>
 - _muw_: solvent chemical potential in J mol<sup>-1</sup>
 - _Vm_: partial molar volume in cc mol<sup>-1</sup>
@@ -44,6 +44,17 @@ See demo folder for example usage.
 
 
 __**For developers**__:
+
+When adding a new spline representation, which includes fields defined in MatLab, be sure that it includes the following 
+fields, which are required to calculate several thermodynamic variables.
+- _MW_: molecular weight.  Required by _mus_, _muw_, _Vm_, _Cpm_, _phi_, _aw_, _gam_, _Vex_, _Gex_.
+  - for a 2D (pure substance) spline, this is a float giving the molecular weight of the substance.  If not provided
+    for a 2D spline, the molecular weight of water will be used.  
+  - for a 3D (simple solution) spline, this is an array-like object with two floats, the first giving the molecular 
+    weight of the solvent and the second the molecular weight of the solute.  Evaluation will fail if any dependent
+    tdv is requested and the values are not provided.  
+- _cutoff_: used for calculating apparent values.  Should be a scalar float representing the lowest concentration.
+       Generally set to .0002, but NOT by default. Required by _Cpa_, _phi_, _aw_, _Va_, _Vex_, _Gex_.
 
 To add a new thermodynamic variable (TDV), all of the following should be done.  This list may not be comprehensive.
 -  New variables cannot be named PTM, P, T, or M, as those symbols are reserved for the input. 
