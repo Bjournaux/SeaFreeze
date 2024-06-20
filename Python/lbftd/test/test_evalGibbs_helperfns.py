@@ -180,6 +180,27 @@ class TestEvalGibbsHelperFns(ut.TestCase):
         self.assertFalse('allowExtrapolations' in fooargs)
         self.assertTrue(fooargs['fooae'] == 'foo')
 
+    def test_isPointExtrapolation_2DTrue(self):
+        knots = np.array([np.arange(2), np.arange(3)], object)
+        self.assertTrue(eg._isPointExtrapolation(2, knots, np.array([np.array([3.1]), np.array([1.2])], object)))
+        self.assertTrue(eg._isPointExtrapolation(2, knots, np.array([np.array([.5]), np.array([2.2])], object)))
+
+    def test_isPointExtrapolation_2DFalse(self):
+        knots = np.array([np.arange(2), np.arange(3)], object)
+        self.assertFalse(eg._isPointExtrapolation(2, knots, np.array([np.array([0.1]), np.array([1.2])], object)))
+
+    def test_isPointExtrapolation_3DTrue(self):
+        knots = np.array([np.arange(3), np.arange(2), np.arange(4)], object)
+        self.assertTrue(eg._isPointExtrapolation(3, knots, np.array([np.array([3.1]), np.array([1.2]), np.array([2.4])], object)))
+        self.assertTrue(eg._isPointExtrapolation(3, knots, np.array([np.array([.5]), np.array([2.2]), np.array([2.4])], object)))
+        self.assertTrue(eg._isPointExtrapolation(3, knots, np.array([np.array([.5]), np.array([1.2]), np.array([4.6])], object)))
+
+    def test_isPointExtrapolation_3DFalse(self):
+        knots = np.array([np.arange(3), np.arange(2), np.arange(4)], object)
+        self.assertFalse(
+            eg._isPointExtrapolation(3, knots, np.array([np.array([1.1]), np.array([0.2]), np.array([2.4])], object)))
+
+
 #TODO: write additional test for if the length of MW is greater or less than 2 (only if reqMWu), as well as a test for if MW is a number if reqMWv
 
 

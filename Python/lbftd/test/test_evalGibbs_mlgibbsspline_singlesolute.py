@@ -12,6 +12,7 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
         self.spline = lg.loadGibbsSpline('gsp_singlesolute.mat', 'sp_NaCl')
         self.spline = self.spline['sp']
         self.mlout = load._stripNestingToFields(sio.loadmat('gsp3d_out.mat')['out'])
+        # knot ranges for this spline are P[0-1000.1], T[229-501], M[0-7.01]
         self.P = np.arange(0.1, 1000, 200).astype(float)
         self.T = np.arange(241, 501, 50).astype(float)
         self.M = np.arange(0.1, 7, 0.5).astype(float)
@@ -177,6 +178,30 @@ class TestEvalGibbsSingleSolute(ut.TestCase):
             absDiffs = np.absolute(out - mldGdm1)
             relDiffs = absDiffs / np.absolute(mldGdm1)
             self.fail('Output for mldGdm1 has relative differences as large as ' + str(np.max(relDiffs)))
+
+    def test_evalGibbs_singlesolute_grid_confirmExtrapolationBehavior(self):
+        P = np.array([self.P[1], 2000], dtype=float)
+        T = np.array([self.T[1], 600], dtype=float)
+        M = np.array([self.M[1], 10], dtype=float)
+        PTM = np.array([P, T, M], dtype=object)
+        extrapOut = eg.evalSolutionGibbsGrid(self.spline, PTM, allowExtrapolations=True)
+        noExtrapsOut = eg.evalSolutionGibbsGrid(self.spline, PTM, allowExtrapolations=False)
+        # check a TDV that directly requires allowExtrapolations
+        self.assertTrue(np.all(np.logical_not(np.isnan(extrapOut.G))),
+                        'extrapolations are missing although they were allowed')
+        self.assertTrue(np.all(np.logical_not(np.isnan(noExtrapsOut.G[0, 0, 0]))),
+                        'valid values are missing when extrapolations not allowed')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.G[1, :, :])), 'extrapolations are present in the first dim')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.G[:, 1, :])), 'extrapolations are present in the second dim')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.G[:, :, 1])), 'extrapolations are present in the third dim')
+        # check a TDV that depends on derivatives only
+        self.assertTrue(np.all(np.logical_not(np.isnan(extrapOut.S))),
+                        'extrapolations are missing although they were allowed')
+        self.assertTrue(np.all(np.logical_not(np.isnan(noExtrapsOut.S[0, 0, 0]))),
+                        'valid values are missing when extrapolations not allowed')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.S[1, :, :])), 'extrapolations are present in the first dim')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.S[:, 1, :])), 'extrapolations are present in the second dim')
+        self.assertTrue(np.all(np.isnan(noExtrapsOut.S[:, :, 1])), 'extrapolations are present in the third dim')
 
 
 relTolerance = 5e-6

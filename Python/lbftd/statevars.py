@@ -193,14 +193,17 @@ def evalWaterActivity(gPTM, tdv, MWv):
     """
     :return: aw
     """
-    return np.exp(-2*gPTM[iM]*tdv.phi*MWv)
+    logVal = -2 * gPTM[iM].astype(float) * tdv.phi * MWv
+    return np.exp(logVal.astype(float))
 
 
 def evalActivityCoeff(PTM, gibbsSp, MWu, gPTM, nu, tdv, allowExtrapolations):
     """
     :return: gam
     """
-    return np.exp(1/R * 1/nu * (tdv.mus - _getGss(PTM, gibbsSp, MWu, allowExtrapolations)) / gPTM[iT] - np.log(gPTM[iM]))
+    gss = _getGss(PTM, gibbsSp, MWu, allowExtrapolations)
+    logVal = 1/R * 1/nu * (tdv.mus - gss) / gPTM[iT].astype(float) - np.log(gPTM[iM].astype(float))
+    return np.exp(logVal.astype(float))
 
 
 def evalExcessGibbsEnergy(gPTM, nu, tdv):

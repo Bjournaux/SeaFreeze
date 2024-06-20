@@ -5,7 +5,7 @@ import logging
 from collections.abc import Iterable
 import numpy as np
 from psutil import virtual_memory
-from mlbspline.eval import evalMultivarSpline
+from mlbspline.eval import evalMultivarSpline, _isExtrapolation
 from lbftd import statevars
 from lbftd.statevars import iT, iP, iM, _getSupportedThermodynamicVariables, eps
 from inspect import getmembers
@@ -59,52 +59,10 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapola
     statevarnames = _getSupportedThermodynamicVariables()
     [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
     _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, failOnExtrapolate)
-    # pt = np.logical_or(PTM[iP] < gibbsSp['knots'][iP].min(), PTM[iP] > gibbsSp['knots'][iP].max())
-    # ind = np.empty(PTM.size, object)  # valid indices
-    # val = np.empty(PTM.size, object)  # valid PT values
-    # vP = PTM[iP][~pt]
-    # sortP = np.argsort(PTM[0])
-    # ind[iP] = sortP[np.searchsorted(PTM[0], vP, sorter=sortP)]
-    # val[iP] = vP
-    # if len(vP) == 0:
-    #     val[iP] = np.array([np.nan])
-    #     ind[iP] = sortP
-    # if PTM.size > 1: # for univariant spline evaluation in Gex calculation
-    #     tt = np.logical_or(PTM[iT] < gibbsSp['knots'][iT].min(), PTM[iT] > gibbsSp['knots'][iT].max())
-    #     vT = PTM[iT][~tt]
-    #     sortT = np.argsort(PTM[1])
-    #     ind[iT] = sortT[np.searchsorted(PTM[1], vT, sorter=sortT)]
-    #     val[iT] = vT
-    #     if len(vT) == 0:
-    #         val[iT] = np.array([np.nan])
-    #         ind[iT] = sortT
-    # if PTM.size > 2:
-    #     mm = PTM[iM] > gibbsSp['knots'][iM].max()
-    #     vM = PTM[iM][~mm]
-    #     sortM = np.argsort(PTM[2])
-    #     ind[iM] = sortM[np.searchsorted(PTM[2], vM, sorter=sortM)]
-    #     val[iM] = vM
-    #     if len(vM) == 0:
-    #         val[iM] = np.array([np.nan])
-    #         ind[iM] = sortM
-    #     if val[iM][0] == 0:
-    #         val[iM][0] = eps  # replace 0 M input with eps
-    tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True) # this has the original PTM
+    tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True)  # this has the original PTM
     if _needsCutoff(dimCt, tdvSpec):
-        PTM[iM] = np.insert(PTM[iM], 0, gibbsSp['cutoff'])
-        # val[iM] = np.insert(val[iM], 0, gibbsSp['cutoff'])
-    valout = _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, allowExtrapolations, verbose)
-    # tdvout = createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=True)  # Should be all NaN
-    # for n in range(len(getmembers(tdvout))):
-    #     if getmembers(tdvout)[n][0] in statevarnames[1]:
-    #         v = getmembers(tdvout)[n][1]
-    #         if PTM.size > 2:
-    #             v[ind[0][0]:ind[0][-1] + 1, ind[1][0]:ind[1][-1] + 1, ind[2][0]:ind[2][-1] + 1] = getmembers(valout)[n][1]
-    #         else:
-    #             v[ind[0][0]:ind[0][-1] + 1, ind[1][0]:ind[1][-1] + 1] = getmembers(valout)[n][1]
-    #         setattr(tdvout, getmembers(tdvout)[n][0], v)
-    #     else:
-    #         continue
+        PTM = _getPTMWithCutoff(PTM, gibbsSp['cutoff'])
+    tdvout = _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, allowExtrapolations, verbose)
     return tdvout
 
 
@@ -165,23 +123,15 @@ def evalSolutionGibbsScatter(gibbsSp, PTM, *tdvSpec, failOnExtrapolate=False,
         # Prepend a "cutoff" concentration if one is needed by any of the quantities being calculated
         # This is slow, but we expect scatter to only be called for a limited number of points
         if needsCutoff:
-            wPTM[iM] = np.insert(wPTM[iM], 0, gibbsSp['cutoff'])
-        extrap = [(wPTM[0][0] < gibbsSp['knots'][iP].min()) + (wPTM[0][0] > gibbsSp['knots'][iP].max()) +
-                  (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max())]
-        if wPTM.size > 2:
-            extrap = [(wPTM[0][0] < gibbsSp['knots'][iP].min()) + (wPTM[0][0] > gibbsSp['knots'][iP].max()) +
-                      (wPTM[1][0] < gibbsSp['knots'][iT].min()) + (wPTM[1][0] > gibbsSp['knots'][iT].max()) +
-                      (wPTM[2][0] > gibbsSp['knots'][iM].max())]
-            if wPTM[iM][0] == 0:
-                wPTM[iM][0] = eps  # replace 0 M input with eps
-        if extrap == [False]:
+            wPTM = _getPTMWithCutoff(wPTM, gibbsSp['cutoff'])
+        if dimCt > 2 and wPTM[iM][0] == 0:
+            wPTM[iM][0] = eps  # replace 0 M input with eps
+        if allowExtrapolations or not _isPointExtrapolation(dimCt, gibbsSp['knots'], wPTM):
             tempout = _evalInternal(gibbsSp, tdvSpec, wPTM, tempout, dimCt, allowExtrapolations, verbose)
             for t in tdvSpec:
                 tolastpt = getattr(tdvout, t.name)
                 tolastpt[p] = getattr(tempout, t.name).flat[0]
                 setattr(tdvout, t.name, tolastpt)
-        else:
-            continue
     return tdvout
 
 
@@ -210,6 +160,7 @@ def _evalInternal(gibbsSp, tdvSpec, PTM, tdvout, dimCt, allowExtrapolations, ver
     if strip_cutoff:
         _removeCutoff(tdvout)
     return tdvout
+
 
 
 def _parseInput(gibbsSp, *tdvSpec):
@@ -336,29 +287,6 @@ def createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=False):
     return out
 
 
-# def createThermodynamicStatesObjGrid(tdvSpec, PTM, initializetdvs=False):
-#     """
-#
-#     :param tdvSpec:         The tdvSpec indicating which tdvs will need to be stored in the object
-#     :param PTM:             The original PTM data, which will be stored in the object
-#     :param initializetdvs:  True if creating the ThermodynamicStates object for scatter data
-#                             Initializes output in the object by creating empty arrays matching the size of PTM
-#     :return:                A ThermodynamicStates object ready to store calculated thermodynamic state variables
-#     """
-#     flds = {t.name for t in tdvSpec} | {'PTM'}
-#     try:
-#         emptyGridShape = (PTM[iP].size, PTM[iT].size, PTM[iM].size)
-#     # size of grid now matches PTM input; initialized with NaN values
-#     except:
-#         emptyGridShape = (PTM[iP].size, PTM[iT].size)
-#     TDS = type('ThermodynamicStates', (object,), {fld: (np.copy(PTM) if fld == 'PTM'
-#                                                         else np.full(emptyGridShape, np.nan, float) if initializetdvs
-#                                                         else None)
-#                                                   for fld in flds})
-#     out = TDS()
-#     return out
-
-
 def _ptmTuple2NestedArrays(PTM, dimCt, needs0M):
     """ Converts a PTM tuple to numpy ndarrays
 
@@ -377,6 +305,16 @@ def _needsCutoff(dimCt, tdvSpec):
     """
     return dimCt == 3 and any([t.reqCutoff for t in tdvSpec])
 
+def _getPTMWithCutoff(PTM, cutoff):
+    """ if all three dimensions happen to be the same size, numpy may create PTM as a 2D array
+        rather than an array of three arrays, which is what we need.  The only place in the code
+        this matters is when the size of one of the dimensions of PTM changes (as here).
+    """
+    newPTM = np.empty((3,), dtype=object)
+    newPTM[iM] = np.insert(PTM[iM], 0, cutoff)
+    newPTM[iP] = PTM[iP]
+    newPTM[iT] = PTM[iT]
+    return newPTM
 
 def _removeCutoff(tdvout):
     """ If a "cutoff" concentration was added, take the values out. A cutoff concentration will always be prepended
@@ -455,6 +393,17 @@ def _getVolSolventInVolSlnConversion(MWu, PTM):
     :return: f
     """
     return 1 + MWu * PTM[iM]
+
+def _isPointExtrapolation(dimCt, knots, PTM):
+    for di in np.arange(dimCt):
+        extrap = _isExtrapolation(knots[di], PTM[di])
+        if bool(extrap.size):
+            return True
+    return False
+
+
+
+
 
 
 def _printTiming(calcdesc, start, end):
