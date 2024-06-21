@@ -71,9 +71,6 @@ def seafreeze(PTm, phase, path=defpath, *tdvSpec):
         raise ValueError('The specified phase is not recognized.  Supported phases are ' +
                          ', '.join(phases.keys()) + '.')
     sp = load.loadSpline(path, phasedesc.sp_name)
-    #sp['MW'] = phasedesc.MW
-    #sp['nu'] = phasedesc.nu
-    #sp['cutoff'] = phasedesc.cutoff
     # Calc density and isentropic bulk modulus
     isscatter = _is_scatter(PTm)
     tdvs = _get_tdvs(sp, PTm, isscatter, *tdvSpec)
@@ -224,12 +221,9 @@ phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15]
           "water1": PhaseDesc("G_H2O_2GPa_500K", None, 0, mH2O_kgmol, None, None),
           # Extends to 500 K and 2300 MPa; Bollengier et al 2019
           "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol, None, None),  # Extends to 100 GPa; Brown 2018
-          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol, None, None),
-          # LBF representation of IAPWS 95; Wagner and Pruss, 2002
-           "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3, None, None),
-          # LBF representation of unpublished NH3 data from B Journaux and JM Brown
-          "NaClaq": PhaseDesc("LBF_NaClaq", None, 0, 58.44e-3, 2, 0.0002)  # "NaCl_LBF_8000MPa"
-          # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
+          "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol, None, None), # LBF representation of IAPWS 95; Wagner and Pruss, 2002
+          #  "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3, None, None), # LBF representation of unpublished NH3 data from B Journaux and JM Brown
+          "NaClaq": PhaseDesc("LBF_NaClaq", None, 0, 58.44e-3, 2, 0.0002)  # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
           }
 max_phase_num = max([p.phase_num for p in phases.values()])
 

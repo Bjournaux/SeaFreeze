@@ -163,14 +163,6 @@ class TestSeafreeze(ut.TestCase):
         self.assertAlmostEqual(3.6242e+03, out.Vp[0], places=1)
         self.assertAlmostEqual(1.8579e+03, out.Vs[0], places=1)
 
-    def test_sf_NaCl_grid(self):
-        P = np.arange(0.1, 1000.2, 10)
-        T = np.arange(240, 501, 2)
-        m = np.arange(0, 9, 0.5)
-        PTm = np.array([P, T, m], dtype=object)
-        out = sf.seafreeze(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'Cpa')
-        out2 = sf.seafreeze(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'phi')
-
     def test_sf_III_pt(self):
         PT = np.empty((1,), dtype=object)
         PT[0] = (227, 244)
@@ -193,10 +185,11 @@ class TestSeafreeze(ut.TestCase):
         PT = np.empty((1,), dtype=object)
         PT[0] = (200, 280, 0.5)
         out = sf.seafreeze(PT, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'Vex', 'Gex')
-        self.assertAlmostEqual(1.2619e+03, out.Gex[0], places=1)
-        self.assertAlmostEqual(-0.9897, out.Vex[0], places=1)
+        self.assertAlmostEqual(1.2006, out.Vex[0], places=3)
+        self.assertAlmostEqual(.7059, out.gam[0], places=4)
+        self.assertAlmostEqual(-547.559, out.Gex[0], places=3)
 
-    def test_sf_NaCl_Gex(self):
+    def test_sf_NaCl_Gex_scatterGridSameOutputForPoint(self):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (50.1, 250, 3.5)
         out1 = sf.seafreeze(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
@@ -204,7 +197,7 @@ class TestSeafreeze(ut.TestCase):
         T = np.arange(240, 501, 2)
         m = np.arange(1, 9, 0.5)
         PTM = np.array([P, T, m], dtype=object)
-        out2 = sf.seafreeze(PTM, 'NaCl', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
+        out2 = sf.seafreeze(PTM, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
         self.assertAlmostEqual(out2.G[5][5][5], out1.G[0], places=1)
         self.assertAlmostEqual(out2.gam[5][5][5], out1.gam[0], places=1)
         self.assertAlmostEqual(out2.Gex[5][5][5], out1.Gex[0], places=0)
@@ -213,15 +206,15 @@ class TestSeafreeze(ut.TestCase):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (900, 285, 3)
         out = sf.seafreeze(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'aw', 'Va', 'Vex', 'Cpa')
-        # self.assertAlmostEqual(1.3988e+04, out.muw[0], places=0)
-        self.assertAlmostEqual(1.2206, out.Vex[0],  places=1)
-        self.assertAlmostEqual(26.0166, out.Va[0],  places=1)
-        # self.assertAlmostEqual(3.4884e+03, out.Cp[0], places=1)
-        self.assertAlmostEqual(97.4854, out.Cpa[0],  places=0)
-        self.assertAlmostEqual(1.2250, out.phi[0], places=1)
-        self.assertAlmostEqual(0.8760, out.aw[0], places=1)
+        self.assertAlmostEqual(1.4022e4, out.muw[0], places=0)
+        self.assertAlmostEqual(1.8064, out.Vex[0],  places=1)
+        self.assertAlmostEqual(26.4272, out.Va[0],  places=1)
+        self.assertAlmostEqual(3.4667e3, out.Cp[0], places=1)
+        self.assertAlmostEqual(81.3617, out.Cpa[0],  places=0)
+        self.assertAlmostEqual(1.1002, out.phi[0], places=1)
+        self.assertAlmostEqual(0.8879, out.aw[0], places=1)
 
-    def test_sf_NaCl_Gex(self):
+    def test_sf_NaCl_Gex_gridScatterProduceSameResults(self):
         P = np.arange(0.1, 1000.2, 10)
         T = np.arange(240, 501, 2)
         m = np.arange(1, 9, 0.5)
