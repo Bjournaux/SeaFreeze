@@ -12,12 +12,12 @@ minT = 250;     maxT = 350
 minP = 0;       maxP = 1000
 toP = lambda r: (maxP - minP)*r + minP
 toT = lambda r: (maxT - minT)*r + minT
-PT = np.empty(n, np.object)
+PT = np.empty(n, object)
 for i in np.arange(0, n):
     PT[i] = (toP(random()), toT(random()))
 
 water_spline = lg.loadGibbsSpline('water_demo_spline.mat')
-tdstate = eg.evalSolutionGibbsScatter(water_spline['sp'], PT, 'rho', 'Cp', 'Kt', 'alpha')
+tdstate = eg.evalSolutionGibbsScatter(water_spline['sp'], PT, 'alpha')
 
 # graph the output
 rcParams['axes.labelpad'] = 10 # add some padding to prevents axis labels from covering ticks

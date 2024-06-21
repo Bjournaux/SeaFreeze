@@ -13,7 +13,7 @@ class TestEval1DSpline(ut.TestCase):
     def tearDown(self):
         pass
     def test1dsplineeval_grid(self):
-        x = np.empty(1, np.object)              # sadly, must do this so numpy won't nest or unnest against your will
+        x = np.empty(1, object)              # sadly, must do this so numpy won't nest or unnest against your will
         x[0] = np.arange(240, 501, 20)          # in Matlab, a = 240:20:500;
         out = eval.evalMultivarSpline(self.spline, x)
         self.assertEqual(out.shape, self.mlout.shape, 'shapes not equal')
@@ -29,6 +29,19 @@ class TestEval1DSpline(ut.TestCase):
         mlout = self.mlout[0]   # pick out just the upper left corner of the output
         self.assertTrue(np.allclose(out, mlout, rtol=0, atol=1e-11), 'output not within absolute tolerances')
         self.assertTrue(np.allclose(out, mlout, rtol=1e-12, atol=0), 'output not within relative tolerances')
+
+    def test1dsplineeval_noextrap_grid(self):
+        x = np.empty(1, object)
+        x[0] = np.arange(100, 601, 20)
+        out = eval.evalMultivarSpline(self.spline, x, allowExtrapolations=False)
+        self.assertEqual(out.shape, x[0].shape, 'incorrect length')
+        invalidXIndices = eval._isExtrapolation(self.spline['knots'][0], x[0])
+        validXMask = np.ones(len(x[0]), bool)
+        validXMask[invalidXIndices] = 0
+        self.assertTrue(np.logical_or(np.allclose(out[validXMask], self.mlout, rtol=0, atol=1e-11),
+                                       np.allclose(out[validXMask], self.mlout, rtol=1e-12, atol=0)),
+                        'output values within range of spline are not correct')
+        self.assertTrue(np.all(np.isnan(out[invalidXIndices])), 'invalid value of x does not return nan')
 
 
 if __name__ == '__main__':
