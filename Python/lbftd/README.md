@@ -45,8 +45,9 @@ See demo folder for example usage.
 
 __**For developers**__:
 
-When adding a new spline representation, which includes fields defined in MatLab, be sure that it includes the following 
-fields, which are required to calculate several thermodynamic variables.
+When adding a new spline representation, which includes fields defined in MatLab (i.e., _number_, _knots_, _order_, 
+_coefs_) be sure that it includes the following fields, which are required to calculate several thermodynamic variables.
+- _nu_: for 3D splines only, gives number of ions in solution.  Required by _phi_, _aw_, _gam_, _Gex_. 
 - _MW_: molecular weight.  Required by _mus_, _muw_, _Vm_, _Cpm_, _phi_, _aw_, _gam_, _Vex_, _Gex_.
   - for a 2D (pure substance) spline, this is a float giving the molecular weight of the substance.  If not provided
     for a 2D spline, the molecular weight of water will be used.  
