@@ -1,5 +1,5 @@
 function out=SF_WhichPhase(PT)
-% Version 0.9.1, 
+% Version 0.9.2, 
 % Calculate which phase is stable at a given PT array
 % Returns a numerical value with
 % 0 = liquid
@@ -8,7 +8,8 @@ function out=SF_WhichPhase(PT)
 % 3 = ice III
 % 5 = ice V
 % 6 = ice VI
-% returns NaN for PT values outside the range of all phases
+% returns NaN for PT values outside the range of all phases. Currently ice
+% VII does not work.
 %
 %%% Example 
 %
@@ -27,14 +28,15 @@ out_II=fnval(G_iceII,PT');
 out_III=fnval(G_iceIII,PT');
 out_V=fnval(G_iceV,PT');
 out_VI=fnval(G_iceVI,PT');
+%out_VII=fnval(G_iceVII_X_French,PT');
 out_Bollengier=fnval(G_H2O_2GPa_500K,PT');
-% out_Brown=fnGval(G_H2O_100GPa_10000K,PT);
+%out_Brown=fnGval(G_H2O_100GPa_10000K,PT);
 % out_IAPWS=fnGval(G_H2O_IAPWS,PT);
 [np,nt]=size(out_Ih);
 
  
 
- 
+
   for i=1:np*nt
             all_phaseG = [out_Bollengier(i) out_Ih(i) out_II(i) out_III(i) NaN out_V(i) out_VI(i)];
             all_phaseG(find(all_phaseG == 0)) = NaN;

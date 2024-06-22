@@ -62,8 +62,8 @@ class TestLoadSplineWithMatlabVersions(ut.TestCase):
     def check3dspline(self, sp):
         self.assertEqual(sp['form'], 'B-', 'form not properly loaded')
         self.assertEqual(sp['dim'], 1, 'dim not properly loaded')
-        self.assertTrue(np.array_equal(sp['number'], np.array([29, 30, 14])), 'number not properly loaded')
-        self.assertTrue(np.array_equal(sp['order'], np.array([6, 6, 4])), 'order not properly loaded')
+        self.assertTrue(np.array_equal(sp['number'], np.array([29, 30, 14], dtype=object)), 'number not properly loaded')
+        self.assertTrue(np.array_equal(sp['order'], np.array([6, 6, 4], dtype=object)), 'order not properly loaded')
         self.assertEqual(sp['knots'].size, 3, 'knots not properly loaded')
         self.assertEqual(sp['knots'][0].shape, (35, ), 'knots first dim size incorrect')
         self.assertEqual(sp['knots'][1].shape, (36, ), 'knots second dim size incorrect')
@@ -91,6 +91,30 @@ class TestLoadSplineWithMatlabVersions(ut.TestCase):
     def test3dsplinev73(self):
         sp = load.loadSpline('spline3d_v73.mat')
         self.check3dspline(sp)
+    def testUnknownKeys(self):
+        sp = load.loadSpline('NH3_H2O_LBF.mat', 'spG_PTm_NH3_H2O_V1')
+        self.assertTrue('Tc' in sp.keys())
+        self.assertEqual(sp['Tc'], 450.0)
+        self.assertTrue('PTmc' in sp.keys())
+        # spot check a few values - use assertAlmostEqual for floats
+        self.assertEqual(len(sp['PTmc']), 3)
+        self.assertAlmostEqual(sp['PTmc'][0][3], 6.00000000e+07)
+        self.assertAlmostEqual(sp['PTmc'][1][1], 242.192467)
+        self.assertAlmostEqual(sp['PTmc'][2][7], 0.18173037)
+        self.assertTrue('version' in sp.keys())
+        self.assertEqual(len(sp['version']), 6)
+        self.assertEqual(sp['version'][1], 2)
+        self.assertTrue('mask' in sp.keys())
+        self.assertEqual(len(sp['mask']), 75)
+        self.assertEqual(sp['mask'][0][20][1], 1.)
+        self.assertTrue(np.isnan(sp['mask'][20][0][2]))
+        self.assertTrue('nu' in sp.keys())
+        self.assertEqual(sp['nu'], 1.)
+        self.assertTrue('MW' in sp.keys())
+        self.assertAlmostEqual(sp['MW'], 0.01703026)
+        self.assertTrue('Go' in sp.keys())
+        self.assertEqual(sp['Go'], 1.)
+
 
 
 if __name__ == '__main__':

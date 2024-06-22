@@ -6,6 +6,7 @@ from numpy.lib.scimath import sqrt
 import logging
 
 from mlbspline.eval import evalMultivarSpline
+from mlbspline.load import getSplineDict
 
 log = logging.getLogger('lbftd')
 stream = logging.StreamHandler()
@@ -23,23 +24,18 @@ With the exception of pressure, units are SI.  Pressure is in MPa rather than Pa
 ## TDV eval functions
 #########################################
 
-def evalGibbsEnergy(gibbsSp, PTM):
+def evalGibbsEnergy(gibbsSp, PTM, allowExtrapolations):
     """
     :return: G
     """
-    return evalMultivarSpline(gibbsSp, PTM)
+    return evalMultivarSpline(gibbsSp, PTM, allowExtrapolations=allowExtrapolations)
 
 
-def evalIsobaricSpecificHeat(gibbsSp, gPTM, derivs):
+def evalIsobaricSpecificHeat(gPTM, derivs):
     """
     :return: Cp
     """
-    if gibbsSp['ndT']:
-        T = np.exp(gPTM[iT])*gibbsSp['Tc']
-    else:
-        T = gPTM[iT]
-    return -1 * derivs.d2T * T
-
+    return -1 * derivs.d2T * gPTM[iT]
 
 def evalIsochoricSpecificHeat(tdv, gPTM, derivs):
     """
@@ -161,25 +157,105 @@ def evalApparentSpecificHeat(f, gPTM, tdv):
     """
     :return: Cpa
     """
-    return (tdv.Cp * f - _get0MTdv(tdv, 'Cp')) / _getDividableBy(gPTM[iM])
-
+    return (tdv.Cp * f - _getCutoffMTdv(tdv, 'Cp')) / _getDividableBy(gPTM[iM])
 
 def evalApparentVolume(f, gPTM, tdv):
     """ Slope of a chord between pure solvent and a concentration on a V v. M graph
     :return: Va
+"""
+    return 1e6 * (tdv.V * f - _getCutoffMTdv(tdv, 'V')) / _getDividableBy(gPTM[iM]) # do i need to reshape _getCutoffMTdv(tdv, 'V') to be 40x6x5 instead of 40x6x1 (only grabbing 1 molality, duh...need to have the same matrix repeated len(gPTM[iM] times in the third (concentration) dimension for this calc to work. something like: test =np.repeat(CP0, len(gPTM[iM]), 2), but figure out axis !!!
+
+
+
+
+#return 1e6 * (tdv.V * f - np.reshape(np.repeat(_getCutoffMTdv(tdv, 'V'), len(tdv.PTM[iM])+1), [len(tdv.PTM[iP]), len(tdv.PTM[iT]), len(tdv.PTM[iM])])) / _getDividableBy(gPTM[iM]) # need to reshape _getCutoffMTdv(tdv, 'V') to be 40x6x5 instead of 40x6x1 (only grabbing 1 molality, duh...need to have the same matrix repeated len(gPTM[iM] times in the third (concentration) dimension for this calc to work. something like: test =np.repeat(CP0, len(gPTM[iM]), 2), but figure out axis !!!
+
+#    return 1e6 * (tdv.V * f - _getCutoffMTdv(tdv, 'V')) / _getDividableBy(gPTM[iM]) # need to reshape _getCutoffMTdv(tdv, 'V') to be 40x6x5 instead of 40x6x1 (only grabbing 1 molality, duh...need to have the same matrix repeated len(gPTM[iM] times in the third (concentration) dimension for this calc to work. something like: test =np.repeat(CP0, len(gPTM[iM]), 2), but figure out axis !!!
+#test =np.repeat(_getCutoffMTdv(tdv, 'V'), len(tdv.PTM[iM])+1)
+# test2 =np.reshape(np.repeat(CP0, len(tdv.PTM[iM])+1), [len(tdv.PTM[iP]), len(tdv.PTM[iT]), len(tdv.PTM[iM])+1])
+
+#np.reshape(np.repeat(_getCutoffMTdv(tdv, 'V'), len(tdv.PTM[iM])+1), [len(tdv.PTM[iP]), len(tdv.PTM[iT]), len(tdv.PTM[iM])+1])
+def evalExcessVolume(tdv):
     """
-    return 1e6 * (tdv.V * f - _get0MTdv(tdv, 'V')) / _getDividableBy(gPTM[iM]) # 1e6 for MPa conversion
+    :return: Vex
+    """
+    return tdv.Va - (_getCutoffMTdv(tdv, 'Vm'))
 
 
-def _get0MTdv(tdv, prop):
+def evalOsmoticCoeff(gPTM, tdv, MWv, nu):
+    """
+    :return: phi
+    """
+    return (1 / MWv) * (_getCutoffMTdv(tdv, 'G')/ (1 / MWv) - tdv.muw)/_getDividableBy(gPTM[iM])/_getDividableBy(gPTM[iT])/R/nu
+
+
+def evalWaterActivity(gPTM, tdv, MWv):
+    """
+    :return: aw
+    """
+    logVal = -2 * gPTM[iM].astype(float) * tdv.phi * MWv
+    return np.exp(logVal.astype(float))
+
+
+def evalActivityCoeff(PTM, gibbsSp, MWu, gPTM, nu, tdv, allowExtrapolations):
+    """
+    :return: gam
+    """
+    gss = _getGss(PTM, gibbsSp, MWu, allowExtrapolations)
+    logVal = 1/R * 1/nu * (tdv.mus - gss) / gPTM[iT].astype(float) - np.log(gPTM[iM].astype(float))
+    return np.exp(logVal.astype(float))
+
+
+def evalExcessGibbsEnergy(gPTM, nu, tdv):
+    """
+    :return: Gex
+    """
+    return R*nu*gPTM[iT]*gPTM[iM]*(np.log(tdv.gam)+(1-tdv.phi))
+
+def _getG0ss(T, G0Sp, allowExtrapolations):
+    return evalMultivarSpline(G0Sp, np.reshape(T, [1, len(T)]), allowExtrapolations=allowExtrapolations)
+
+def _getG2(ss_PTM, gibbsSp, allowExtrapolations):
+    return np.squeeze(evalMultivarSpline(gibbsSp, ss_PTM, allowExtrapolations=allowExtrapolations), iM)
+
+def _getdGm2(ss_PTM, gibbsSp, allowExtrapolations):
+    return np.squeeze(evalMultivarSpline(gibbsSp, ss_PTM, [0, 0, 1], allowExtrapolations=allowExtrapolations), iM)
+
+def _getG1b(PTM_ss_1_bar, gibbsSp, allowExtrapolations):
+    return np.squeeze(evalMultivarSpline(gibbsSp, PTM_ss_1_bar, allowExtrapolations=allowExtrapolations), iM)
+
+def _getdGdm1(PTM_ss_1_bar, gibbsSp, allowExtrapolations):
+    #return np.array((evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1]), np.newaxis), dtype=object)
+    return np.squeeze(evalMultivarSpline(gibbsSp, PTM_ss_1_bar, [0, 0, 1], allowExtrapolations=allowExtrapolations), iM)
+def _getdGss(P, T, gibbsSp, MWu, allowExtrapolations):
+    ss_PTM = np.array([P, T, np.array([ssM])], dtype=object)
+    G2 = _getG2(ss_PTM, gibbsSp, allowExtrapolations)
+    dGdm2 = _getdGm2(ss_PTM, gibbsSp, allowExtrapolations)
+    PTM_ss_1_bar = np.array([stP, T, ssM], dtype=object)  # why iM in matlab?
+    G1b = _getG1b(PTM_ss_1_bar, gibbsSp, allowExtrapolations)
+    dGdm1 = _getdGdm1(PTM_ss_1_bar, gibbsSp, allowExtrapolations)
+   # dGss = (MWu * G2 + dGdm2) - (MWu * np.broadcast_to(G1b, G2.shape) + np.broadcast_to(dGdm1, G2.shape))
+    dGss = (MWu * G2 + dGdm2) - (MWu * G1b+ dGdm1)
+    return dGss
+
+def _getGss(PTM, gibbsSp, MWu, allowExtrapolations): # standard state Gibbs energy of solution -- needed for Gex
+    G0ss = _getG0ss(PTM[iT], getSplineDict(gibbsSp['Go']), allowExtrapolations)
+    #np.full(len(PTM[iM]), ssM)
+    dGss = _getdGss(PTM[iP], PTM[iT], gibbsSp, MWu, allowExtrapolations)
+    #dGss = (MWu * G2[:, :, 0] + dGdm2[:, :, 0]) - (MWu * G1b[:, :, 0] + dGdm1[:, :, 0])
+    sum = G0ss + dGss
+    return sum[:, :, np.newaxis] * np.ones(PTM[iM].shape)
+
+
+def _getCutoffMTdv(tdv, prop):
     slc = [slice(None)] * (len(tdv.PTM))
     slc[iM] = slice(0, 1)
     return getattr(tdv, prop)[tuple(slc)]
 
 
 def _getDividableBy(inp):
-    eps = np.finfo(inp.dtype).eps
-    return np.where(inp != 0, inp, eps)
+    Eps = np.finfo(float).eps #     Eps = np.finfo(inp.dtype).eps (error when inp.dtype is int)
+    return np.where(inp != 0, inp, Eps)
 
 
 #########################################
@@ -212,9 +288,10 @@ def _getSupportedDerivatives():
 #########################################
 
 def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=False, parmMWu='MWu',
-                reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f',
+                reqGrid=False, parmgrid='gPTM', reqF=False, parmf='f', parmNu ='nu',
                 reqDerivs=None, parmderivs='derivs', reqTDV=None, parmtdv='tdv', reqSpline=False,
-                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', req0M=False):
+                parmspline='gibbsSp', reqPTM=False, parmptm='PTM', reqNu=None,
+                reqCutoff=None, reqAllowExtrap=False, parmAllowExtrap='allowExtrapolations'):
     """ Builds a TDVSpec namedtuple indicating what is required to calculate this particular thermodynamic variable
     :param name:        the name / symbol of the tdv (e.g., G, rho, alpha, muw)
     :param calcFn:      the name of the function used to calculate the tdv
@@ -243,7 +320,12 @@ def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=Fa
     :param parmspline:  the name of the parameter of calcFn used to pass in the spline def if reqSpline
     :param reqPTM:      If True, calcFn needs the original dimension input (parm PTM in evalSolutionGibbs*) to run
     :param parmptm:     the name of the parameter of calcFn used to pass in the original input if reqPTM
+    :param reqCutoff:   If True, calcFn needs the concentration at the "cutoff" value for calculating apparent values
+                        Currently, no cutoff parameter is supported. This just indicates internal logic will use a cutoff value
     :param req0M:       if True, calcFn needs the 0 concentration for calculating apparent values
+    :param reqAllowExtrap: If True, calcFn needs to know how to handle extrapolations when calling functions in
+                        lbftd.eval for spline evaluation.
+    :param parmAllowExtrap: the name of the parameter of calcFn used to pass in the allowExtrapolations parameter
     :return:            a namedtuple giving the spec for the tdv
     """
     if reqDerivs is None:
@@ -261,12 +343,14 @@ def _getTDVSpec(name, calcFn, reqM=False, reqMWv=False, parmMWv='MWv', reqMWu=Fa
     # Build properties of the TDVSpec dynamically
     flds = arginfo.args
     if not reqMWv:      flds.remove('parmMWv')
+    if not reqNu:       flds.remove('parmNu')
     if not reqMWu:      flds.remove('parmMWu')
     if not reqGrid:     flds.remove('parmgrid')
     if not reqDerivs:   flds.remove('parmderivs')
     if not reqTDV:      flds.remove('parmtdv')
     if not reqSpline:   flds.remove('parmspline')
     if not reqPTM:      flds.remove('parmptm')
+    if not reqAllowExtrap: flds.remove('parmAllowExtrap')
     vals = {f: v for f, v in arginfo.locals.items() if f in flds}
 
     tdvspec = namedtuple('TDVSpec', flds)
@@ -278,17 +362,17 @@ def _getSupportedThermodynamicVariables():
         dependencies are handled elsewhere
         See also the comments for _getTDVSpec and evalSolutionGibbs*
 
-    :return: immutable iterable with the the full set of specs for supported thermodynamic variables
+    :return: immutable iterable with the full set of specs for supported thermodynamic variables
     """
     out = tuple([
-        _getTDVSpec('G', evalGibbsEnergy, reqSpline=True, reqPTM=True),
+        _getTDVSpec('G', evalGibbsEnergy, reqSpline=True, reqPTM=True, reqAllowExtrap=True),
         _getTDVSpec('U', evalInternalEnergy, reqGrid=True, reqTDV=['G', 'rho', 'S']),
         _getTDVSpec('A', evalHelmholtzEnergy, reqGrid=True, reqTDV=['U', 'S']),
         _getTDVSpec('H', evalEnthalpy, reqGrid=True, reqTDV=['G', 'S']),
         _getTDVSpec('S', evalEntropy, reqDerivs=['d1T']),
         _getTDVSpec('rho', evalDensity, reqDerivs=['d1P']),
         _getTDVSpec('V', evalVolume, reqTDV=['rho']),
-        _getTDVSpec('Cp', evalIsobaricSpecificHeat, reqSpline=True, reqGrid=True, reqDerivs=['d2T']),
+        _getTDVSpec('Cp', evalIsobaricSpecificHeat, reqGrid=True, reqDerivs=['d2T']),
         _getTDVSpec('Cv', evalIsochoricSpecificHeat, reqGrid=True, reqDerivs=['dPT', 'd2P'], reqTDV=['Cp']),
         _getTDVSpec('Kt', evalIsothermalBulkModulus, reqDerivs=['d1P', 'd2P']),
         _getTDVSpec('Kp', evalPDerivIsothermalBulkModulus, reqDerivs=['d1P', 'd2P', 'd3P']),
@@ -301,11 +385,20 @@ def _getSupportedThermodynamicVariables():
         _getTDVSpec('Vm', evalPartialMolarVolume, reqMWu=True, reqF=True, reqDerivs=['d1P', 'dPM']),
         _getTDVSpec('Cpm', evalPartialMolarHeatCapacity, reqMWu=True, reqGrid=True, reqF=True, reqDerivs=['d2T1M'],
                     reqTDV=['Cp']),
-        _getTDVSpec('Cpa', evalApparentSpecificHeat, reqM=True, reqGrid=True, reqF=True, reqTDV=['Cp'], req0M=True),
-        _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], req0M=True)
-            ])
+        _getTDVSpec('Cpa', evalApparentSpecificHeat, reqM=True, reqGrid=True, reqF=True, reqTDV=['Cp'],
+                    reqCutoff=True),
+        _getTDVSpec('phi', evalOsmoticCoeff, reqM=True, reqMWv=True, reqGrid=True, reqTDV=['G', 'muw'], reqNu=True,
+                    reqCutoff=True),
+        _getTDVSpec('aw', evalWaterActivity, reqM=True, reqGrid=True, reqMWv=True, reqTDV=['phi']),
+        _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqCutoff=True),
+        _getTDVSpec('Vex', evalExcessVolume, reqM=True, reqTDV=['Va', 'Vm'], reqCutoff=True),
+        _getTDVSpec('gam', evalActivityCoeff, reqM=True, reqMWu=True, reqGrid=True, reqTDV=['mus'], reqNu=True,
+                   reqSpline=True, reqPTM=True, reqAllowExtrap=True),
+        _getTDVSpec('Gex', evalExcessGibbsEnergy, reqM=True, reqGrid=True, reqTDV=['gam', 'phi'], reqNu=True),
+    ])
+
     # Check that all reqTDVs are represented in the list
-    outnames = frozenset([t.name for t in out])
+    outnames = frozenset([t.name for t in out]).union(frozenset(['Vp', 'Vs', 'shear']))
     unrecognizedDependencies = [(tdv.name, dep) for tdv in out for dep in tdv.reqTDV if dep not in outnames]
     if unrecognizedDependencies:
         raise ValueError('One or more statevars depend on an unrecognized TDV: '+pformat(unrecognizedDependencies))
@@ -379,6 +472,10 @@ def expandTDVSpec(tdvSpec, dimCt):
 #########################################
 iP = 0; iT = 1; iM = 2  # Dimension indices
 defDer = 0              # Default derivative
+R = 8.3144
+eps = np.finfo(float).eps
+ssM = 1e-3  # standard state solution concentration (1 mol/Kg = 0.001 mol/cc)
+stP = 0.1  # STP pressure (1 bar = 0.1 MPa)
 
 derivSpec = namedtuple('DerivativeSpec', ['name', 'wrtP', 'wrtT', 'wrtM'])
 derivatives = _getSupportedDerivatives()
