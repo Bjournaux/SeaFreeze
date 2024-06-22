@@ -13,7 +13,14 @@ stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[SeaFreeze %(levelname)s] %(message)s'))
 defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs_VII_NaCl.mat')
 
+
 def seafreeze(PTm, phase, path=defpath, *tdvSpec):
+    # this deprecation warning is being added on 2024.06.21.
+    # Per Python guidelines, the function should not be removed for 2 years.
+    warnings.warn('use getProp instead', DeprecationWarning, stacklevel=2)
+    return getProp(PTm, phase, path, *tdvSpec)
+
+def getProp(PTm, phase, path=defpath, *tdvSpec):
     """ Calculates thermodynamic quantities for H2O water or ice polymorphs Ih, III, V, VI, VII and X for all phases
         (see lbftd documentation for full list)
         for solid phases only:

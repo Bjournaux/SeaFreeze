@@ -16,11 +16,11 @@ else
   cp ../LICENSE.txt .
 fi
 
-if [ -e seafreeze/SeaFreeze_Gibbs.mat ]; then
+if [ -e seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat ]; then
   DELSP=0
 else
   DELSP=1
-  cp ../Matlab/SeaFreeze_Gibbs.mat seafreeze/
+  cp ../Matlab/SeaFreeze_Gibbs_VII_NaCl.mat seafreeze/
 fi
 
 # update tools then create src and wheel distributions
@@ -34,5 +34,5 @@ if [ $DELL -eq 1 ]; then
 fi
 
 if [ $DELSP -eq 1 ]; then
-  rm seafreeze/SeaFreeze_Gibbs.mat
+  rm seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat
 fi
