@@ -8,9 +8,15 @@ V1.0
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
-The SeaFreeze package allows to compute the thermodynamic and elastic properties of pure water, ice polymorphs (Ih, II, III, V VI and ice VII/ice X) up to 100 GPa and 10,000K and aqueous NaCl solution up to 8GPa and 2,000K. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase, constructed to reproduce thermodynamic measurments. The formalism is described in more details in [Journaux et al. (2020)](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2019JE006176), and in the liquid water Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). Aqueous NaCl equation of state publication is in preparation.
+The SeaFreeze package allows to compute the thermodynamic and elastic properties of pure water, ice polymorphs (Ih, II, 
+III, V VI and ice VII/ice X) up to 100 GPa and 10,000K and aqueous NaCl solution up to 8GPa and 2,000K. It is based on 
+the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each 
+phase, constructed to reproduce thermodynamic measurements. The formalism is described in more details in 
+[Journaux et al. (2020)](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2019JE006176), and in the liquid water 
+Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). 
+Aqueous NaCl equation of state publication is in preparation.
 
-Currently the Python version is the most up to date. The Matlab version is still under beta for version 1.0.
+Currently, the Python version is the most up to date. The Matlab version is still under beta for version 1.0.
 
 Contact: bjournau (at) uw (dot) edu
 
@@ -24,7 +30,8 @@ Report to the README file for each version (Python or Matlab) for installing Sea
 
 ## Running SeaFreeze
 
-This section provides basic examples on how to run SeaFreeze. It is using pseudo code, so synthax will change depdending on the version used. 
+This section provides basic examples on how to run SeaFreeze. It is using pseudocode, so syntax will change 
+depending on the version used. 
 
 ### Inputs
 
@@ -294,7 +301,11 @@ Output :
 
 ## Important remarks 
 ### Water representations
-The ices' Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parametrization wil lead to incorect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
+The ices' Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), 
+specially for phase equilibrium calculation. Using other water parametrization wil lead to incorrect melting curves. 
+'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extension (up to 100 GPa) and 
+comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K 
+range and up to 2300 MPa.
 
 A Gibbs energy representation of French and Redmer (2015) ice VII and X equation of state is provided for comparison only. It should not be used for melting point or solid-solid phase boundaries predictions.
 
@@ -331,7 +342,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ## Change log
 
 ### Changes since 0.9.0
-- `1.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.
+- `1.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.  NaN returned for values outside the range of the representation.
 - `0.9.4`: add ice VII and ice X from French and Redmer (2015).
 - [SeaFreeze GUI](https://github.com/Bjournaux/SeaFreeze/tree/master/SeaFreezeGUI) available
 - `0.9.4`: Adjusted python readme syntax and package authorship info 
