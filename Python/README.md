@@ -84,6 +84,8 @@ The output of the function is an object with properties corresponding to the fol
 | Water Activity      |`aw`| - |
 |Activity Coefficient|`gam`| - |
 | Excess Gibbs Energy     |`Gex`| J/kg |
+
+
 | Quantity  (PTm only)      |  Symbol in SeaFreeze  |  Unit (SI)  |
 | --------------- |:---------------------:| :----------:|
 | Solute Chemical Potential           | `mus` | J/mol |
