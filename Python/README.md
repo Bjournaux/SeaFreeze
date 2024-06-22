@@ -17,10 +17,11 @@ To upgrade to the latest version, use
 `pip install --upgrade SeaFreeze`
 
 
-## `seafreeze.seafreeze`: calculating thermodynamic and elastic properties of a phase of water
+### `seafreeze.getProps`:
+Calculates thermodynamic and elastic properties of a phase of water or solution
 
 ### Usage
-The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following parameters:
+The main function of SeaFreeze is `seafreeze.getProps`*, which has the following parameters:
 - `PT`: the pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
   calculated -- note that these are required units, as conversions are built into several calculations
   This parameter can have one of the following formats:
@@ -35,10 +36,13 @@ The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following
   - 'III' - from Journaux et al., 2019
   - 'V' - from Journaux et al., 2019
   - 'VI' - from Journaux et al., 2019
-  - 'VII_X_French' for ice VII and ice X (French and Redmer 2015)
+  - 'VII_X_French' for ice VII and ice X; from French and Redmer 2015
   - 'water1' -  extends to 500 K and 2300 MPa; from Bollengier et al. 2019
   - 'water2' -  extends to 100 GPa; from Brown 2018
   - 'water_IAPWS95' - LBF representation of IAPWS 95; from Wagner and Pruß, 2002
+  - 'NaClaq' - LBF representation of aqueous NaCl up to 1000 MPa; from Brown and Journaux in prep
+
+  *Note seafreeze.seafreeze is currently deprecated and will remain so for 2 years as per Python guidelines
 
 The output of the function is an object with properties corresponding to the following thermodynamic quantities
 (all but the last three are from [lbftd](https://github.com/jmichaelb/LocalBasisFunction/tree/master/Python/lbftd)):
