@@ -70,7 +70,6 @@ out is a structure containing all output quantities (SI units):
 
 
 
-
 ## Example
 
 An executable Matlab live script (Example_SeaFreeze.mlx) is provided allowing to run the following examples.
