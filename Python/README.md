@@ -43,24 +43,38 @@ The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following
 The output of the function is an object with properties corresponding to the following thermodynamic quantities
 (all but the last three are from [lbftd](https://github.com/jmichaelb/LocalBasisFunction/tree/master/Python/lbftd)):
 
-| Quantity        |  Symbol in SeaFreeze  |  Unit (SI)  |
+| Quantity  (PT only)      |  Symbol in SeaFreeze  |  Unit (SI)  |
 | --------------- |:---------------------:| :----------:|
 | Gibbs Energy           | `G` | J/kg |
 | Entropy                | `S` | J/K/kg |
 | Internal Energy        | `U` | J/kg |
 | Enthalpy               | `H` | J/kg |
 | Helmholtz free energy  | `A` | J/kg |
-| Density                |`rho`| kg/m<sup>3</sup> |
+| Density                |`rho`| kg/m^3 |
 |Specific heat capacity at constant pressure|`Cp`| J/kg/K |
 |Specific heat capacity at constant volume|`Cv`| J/kg/K |
 | Isothermal bulk modulus      |`Kt`| MPa |
 |Pressure derivative of the Isothermal bulk modulus|`Kp`| - |
 | Isoentropic bulk modulus     |`Ks`| MPa |
-| Thermal expansivity     |`alpha`| K<sup>-1</sup>  |
-| Shear modulus     |`shear`| MPa |
-| P wave velocity     |`Vp`| m/s |
-| S wave velocity     |`Vs`| m/s |
+| Thermal expansivity     |`alpha`| /K |
+| Shear modulus (only for solids)    |`shear`| MPa |
+| P wave velocity (only for solids)     |`Vp`| m/s |
+| S wave velocity (only for solids)     |`Vs`| m/s |
 | Bulk sound speed     |`vel`| m/s |
+
+| Quantity  (requires PTM)      |  Symbol in SeaFreeze  |  Unit (SI)  |
+| --------------- |:---------------------:| :----------:|
+| Solute Chemical Potential           | `mus` | J/mol |
+| Solvent Chemical Potential                | `muw` | J/mol |
+| Partial Molar Volume        | `Vm` | cc/mol |
+| Partial Molar Heat Capacity               | `Cpm` | J/kg/K/mol |
+| Apparent Heat Capacity  | `Cpa` | J/kg/K/mol |
+| Apparent Volume                |`Va`| cc/mol |
+|Excess Volume|`Vex`| cc/mol |
+|Osmotic Coefficient|`phi`| -|
+| Water Activity      |`aw`| - |
+|Activity Coefficient|`gam`| - |
+| Excess Gibbs Energy     |`Gex`| J/kg |
 
  **NaN values returned when out of parameterization boundaries.**
 
@@ -123,14 +137,14 @@ Each item in this dictionary has the phase number as its key and the phase as th
 
 ```python
 import numpy as np
-from seafreeze import seafreeze as sf
+from seafreeze.seafreeze import seafreeze as sf
 
 # determine the phase of water at 900 MPa and 255 K
 PT = np.empty((1,), dtype=object)
 PT[0] = (900, 255)
 out = sf.whichphase(PT)
 # map to a phase using phasenum2phase
-sf.phasenum2phase[out[0]]
+sf.phasenum2phase(out[0])
 
 
 # determine phase for three separate (P,T) conditions
@@ -140,12 +154,12 @@ PT[1] = (400, 250)
 PT[2] = (1000, 300)
 out = sf.whichphase(PT)
 # show phase for each (P,T)
-[(PT, sf.phasenum2phase[pn]) for (PT, pn) in zip(PT, out)]
+[(PT, sf.phasenum2phase(pn)) for (PT, pn) in zip(PT, out)]
 
 # find the likely phases at pressures 0-5 MPa and temperatures 240-300 K
 P = np.arange(0, 5, 0.1)
 T = np.arange(240, 300)
-PT = np.array([P, T])
+PT = np.array([P, T], dtype=object)
 out = sf.whichphase(PT)
 ```
 
@@ -169,13 +183,14 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 * **Baptiste Journaux** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Marshall J. Styczinski** - *Blue Marble Space Institute of Science, Seattle, USA*
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
 * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
+* **Ula Jones** - *University of Washington, Earth and Space Sciences Department, Seattle, USA*
 
 ## Change log
 
 ### Changes since 0.9.0
+- `1.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.
 - `0.9.4`: Adjusted python readme syntax and package authorship info
 - `0.9.3`: add ice VII and ice X from French and Redmer (2015). LocalBasisFunction spline interpretation software integrated into SeaFreeze Python package. Adjusted packaging to work better with pip
 - `0.9.2.post2`: `whichphase` returns `numpy.nan` if PT is outside the regime of all phases
