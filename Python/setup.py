@@ -1,3 +1,4 @@
+# setup.py
 import setuptools
 
 with open('README.md', 'r') as fh:
@@ -8,10 +9,11 @@ setuptools.setup(
     version='1.0.0',
     author='Baptiste Journaux',
     author_email='bjournau@uw.edu',
-    description='Thermodynamic properties of the phases of H2O',
+    description='Thermodynamic properties of the phases of H2O and NaCl (aq)',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/Bjournaux/SeaFreeze',
+    download_url='https://pypi.org/project/SeaFreeze/',
     packages=['seafreeze', 'mlbspline', 'lbftd'],
     package_dir={'seafreeze': 'seafreeze', 'mlbspline': 'mlbspline', 'lbftd': 'lbftd'},
     classifiers=[
