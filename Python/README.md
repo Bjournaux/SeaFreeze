@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V0.9.6
+V1.0
 
 The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, III, V, VI and ice VII/ice X) in the 0-100 GPa and 220 - 10000K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
@@ -39,7 +39,6 @@ The main function of SeaFreeze is `seafreeze.seafreeze`, which has the following
   - 'water1' -  extends to 500 K and 2300 MPa; from Bollengier et al. 2019
   - 'water2' -  extends to 100 GPa; from Brown 2018
   - 'water_IAPWS95' - LBF representation of IAPWS 95; from Wagner and Pruß, 2002
-
 
 The output of the function is an object with properties corresponding to the following thermodynamic quantities
 (all but the last three are from [lbftd](https://github.com/jmichaelb/LocalBasisFunction/tree/master/Python/lbftd)):
