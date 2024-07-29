@@ -17,11 +17,11 @@ To upgrade to the latest version, use
 `pip install --upgrade SeaFreeze`
 
 
-### `seafreeze.getProps`:
+### `seafreeze.getProp`:
 Calculates thermodynamic and elastic properties of a phase of water or solution
 
 ### Usage
-The main function of SeaFreeze is `seafreeze.getProps`*, which has the following parameters:
+The main function of SeaFreeze is `seafreeze.getProp`*, which has the following parameters:
 - `PT`: the pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
   calculated -- note that these are required units, as conversions are built into several calculations
   This parameter can have one of the following formats:
@@ -89,33 +89,33 @@ import numpy as np
 from seafreeze import seafreeze as sf
 
 # list supported phases
-sf.phases.keys()
+print(sf.phases.keys())
 
 # evaluate thermodynamics for ice VI at 900 MPa and 255 K
-PT = np.empty((1,), dtype='object')
+PT = np.empty((1,), dtype="object")
 PT[0] = (900, 255)
-out = sf.seafreeze(PT, 'VI')
-# view a couple of the calculated thermodynamic quantities at this P and T
-out.rho     # density
-out.Vp      # compressional wave velocity
+out = sf.getProp(PT, "VI")
+# View a couple of the calculated thermodynamic quantities at this P and T
+print(out.rho)  # density
+print(out.Vp)  # compressional wave velocity
 
 # evaluate thermodynamics for water at three separate PT conditions
-PT = np.empty((3,), dtype='object')
+PT = np.empty((3,), dtype="object")
 PT[0] = (441.0858, 313.95)
 PT[1] = (478.7415, 313.96)
 PT[2] = (444.8285, 313.78)
-out = sf.seafreeze(PT, 'water1')
-# values for output fields correspond positionally to (P,T) tuples 
-out.H       # enthalpy
+out = sf.getProp(PT, "water1")
+# values for output fields correspond positionally to (P,T) tuples
+print(out.H)  # enthalpy
 
 # evaluate ice V thermodynamics at pressures 400-500 MPa and temperatures 240-250 K
 P = np.arange(400, 501, 2)
 T = np.arange(240, 250.1, 0.5)
-PT = np.array([P, T], dtype='object')
-out = sf.seafreeze(PT, 'V')
+PT = np.array([P, T], dtype="object")
+out = sf.getProp(PT, "V")
 # rows in output correspond to pressures; columns to temperatures
-out.A       # Helmholtz energy
-out.shear   # shear modulus
+print(out.A)  # Helmholtz energy
+print(out.shear)  # shear modulus
 ```
 
 
@@ -141,14 +141,15 @@ Each item in this dictionary has the phase number as its key and the phase as th
 
 ```python
 import numpy as np
-from seafreeze.seafreeze import seafreeze as sf
+from seafreeze import seafreeze as sf
+
 
 # determine the phase of water at 900 MPa and 255 K
 PT = np.empty((1,), dtype=object)
 PT[0] = (900, 255)
 out = sf.whichphase(PT)
 # map to a phase using phasenum2phase
-sf.phasenum2phase(out[0])
+print(sf.phasenum2phase(out[0]))
 
 
 # determine phase for three separate (P,T) conditions
@@ -158,7 +159,7 @@ PT[1] = (400, 250)
 PT[2] = (1000, 300)
 out = sf.whichphase(PT)
 # show phase for each (P,T)
-[(PT, sf.phasenum2phase(pn)) for (PT, pn) in zip(PT, out)]
+print([(PT, sf.phasenum2phase(pn)) for (PT, pn) in zip(PT, out)])
 
 # find the likely phases at pressures 0-5 MPa and temperatures 240-300 K
 P = np.arange(0, 5, 0.1)
