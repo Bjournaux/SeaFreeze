@@ -94,7 +94,7 @@ sf.phases.keys()
 # evaluate thermodynamics for ice VI at 900 MPa and 255 K
 PT = np.empty((1,), dtype='object')
 PT[0] = (900, 255)
-out = sf.seafreeze(PT, 'VI')
+out = sf.getProp(PT, 'VI')
 # view a couple of the calculated thermodynamic quantities at this P and T
 out.rho     # density
 out.Vp      # compressional wave velocity
@@ -104,7 +104,7 @@ PT = np.empty((3,), dtype='object')
 PT[0] = (441.0858, 313.95)
 PT[1] = (478.7415, 313.96)
 PT[2] = (444.8285, 313.78)
-out = sf.seafreeze(PT, 'water1')
+out = sf.getProp(PT, 'water1')
 # values for output fields correspond positionally to (P,T) tuples 
 out.H       # enthalpy
 
@@ -112,7 +112,7 @@ out.H       # enthalpy
 P = np.arange(400, 501, 2)
 T = np.arange(240, 250.1, 0.5)
 PT = np.array([P, T], dtype='object')
-out = sf.seafreeze(PT, 'V')
+out = sf.getProp(PT, 'V')
 # rows in output correspond to pressures; columns to temperatures
 out.A       # Helmholtz energy
 out.shear   # shear modulus
