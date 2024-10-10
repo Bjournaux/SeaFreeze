@@ -25,7 +25,7 @@ setuptools.setup(
     install_requires=[
         'h5py >= 3.10',
         'hdf5storage >= 0.1.19',
-        'numpy >= 1.26.3',
+        'numpy >= 1.26.3, <2',
         'scipy >= 1.12',
         'psutil >= 5.9.8'
     ]
