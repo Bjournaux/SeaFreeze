@@ -11,7 +11,8 @@ from lbftd.statevars import iP, iT, iM
 log = logging.getLogger('seafreeze')
 stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[SeaFreeze %(levelname)s] %(message)s'))
-defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs_VII_NaCl.mat')
+# defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs_VII_NaCl.mat') # older file
+defpath = op.join(op.dirname(op.abspath(__file__)), 'SeaFreeze_Gibbs_VII_NaCl5GPa.mat') # this newer pre-publication fit is smoother and more reliable over the range of PT relevant to ocean worlds including Earth's crust
 
 
 def seafreeze(PTm, phase, path=defpath, *tdvSpec):
@@ -230,7 +231,8 @@ phases = {"Ih": PhaseDesc("G_iceIh", [3.04, -0.00462, 0, -0.00607, 1000, 273.15]
           "water2": PhaseDesc("G_H2O_100GPa_10000K", None, np.nan, mH2O_kgmol, None, None),  # Extends to 100 GPa; Brown 2018
           "water_IAPWS95": PhaseDesc("G_H2O_IAPWS", None, np.nan, mH2O_kgmol, None, None), # LBF representation of IAPWS 95; Wagner and Pruss, 2002
           #  "NH3": PhaseDesc("LBF_NH3_H2O_SSdev_v1", None, 0, 17.031e-3, None, None), # LBF representation of unpublished NH3 data from B Journaux and JM Brown
-          "NaClaq": PhaseDesc("LBF_NaClaq", None, 0, 58.44e-3, 2, 0.0002)  # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
+          # "NaClaq": PhaseDesc("LBF_NaClaq", None, 0, 58.44e-3, 2, 0.0002)  # WIP LBF representation of NaCl data from B Journaux, JM Brown, and O Bollengier
+          "NaClaq": PhaseDesc("sp_NaCl_5GPa_500K", None, 0, 58.44e-3, 2, 0.0002) # updated and improved WIP LBF representation of NaCl data from B Journaux, JM Brown, O Bollengier et al.
           }
 max_phase_num = max([p.phase_num for p in phases.values()])
 

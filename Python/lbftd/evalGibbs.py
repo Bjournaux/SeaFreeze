@@ -167,9 +167,9 @@ def _parseInput(gibbsSp, *tdvSpec):
     origSpec = tdvSpec
     tdvSpec = statevars.expandTDVSpec(tdvSpec, dimCt)
     addedTDVs = [s.name for s in tdvSpec if s.name not in origSpec]
-    if origSpec and addedTDVs:  # The original spec was not empty and more tdvs were added
-        print('NOTE: The requested thermodynamic variables depend on the following variables, which will be ' +
-              'included as properties of the output object: ' + pformat(addedTDVs))
+    # if origSpec and addedTDVs:  # The original spec was not empty and more tdvs were added
+    #     print('NOTE: The requested thermodynamic variables depend on the following variables, which will be ' +
+    #           'included as properties of the output object: ' + pformat(addedTDVs))
     return dimCt, tdvSpec, addedTDVs
 
 
