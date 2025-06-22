@@ -339,11 +339,13 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA*  
 * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
 * **Matthew J. Powell-Palm** - *Texas A&M University, Department of Mechanical Engineering, USA*
+* **Steven D. Vance** - *NASA Jet Propulsion Laboratory, California Institute of Technology, Pasadena, USA*
 
 ## Change log
 
 ### Changes since 0.9.0
-- `1.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.  NaN returned for values outside the range of the representation.
+- `1.0.1`: updated and improved  NaCl aqueous solution EOS and concentration dependent thermodynamic variables. Reasonable stability for conditions in ocean worlds including Earth's crust.  NaN returned for values outside the range of the representation.
+- `1.0.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.  NaN returned for values outside the range of the representation.
 - `0.9.4`: add ice VII and ice X from French and Redmer (2015).
 - [SeaFreeze GUI](https://github.com/Bjournaux/SeaFreeze/tree/master/SeaFreezeGUI) available
 - `0.9.4`: Adjusted python readme syntax and package authorship info 
@@ -354,7 +356,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 
 ### Planned updates
 - Ice VII and X [available here as a beta](https://github.com/Bjournaux/SeaFreeze/tree/new_tdvs) 
-- NaCl aqueous solutions [available here as a beta ](https://github.com/Bjournaux/SeaFreeze/tree/new_tdvs/Python) 
+- NaCl aqueous solutions  available as beta in main as of 1.0.0 
 - MgSO4, NasSO4 and MgCl2 aqueous solutions
 - NH_3 aqueous solutions
 - NaCl bearing solids (Halite and hydrohalite)
