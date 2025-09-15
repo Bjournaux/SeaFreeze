@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V0.9.3 (Matlab version)
+V1.0.2 (Matlab version)
 
 **An update to 1.0 will be available soon, refer to the python version for latest updates and support of aqueous NaCl solutions**
 
