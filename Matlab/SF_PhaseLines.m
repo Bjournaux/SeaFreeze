@@ -581,22 +581,6 @@ function out=Phaselines(material_1, material_2, varargin)
             TP = contourc(T, P, Z, [0, 0]);
             TP(:,463)=[201.9335,670.8401];
             TP(:,1)=[];
-            %Add on to VI and II
-            load('iceII_sp_G_fPT_1200MPa.mat', 'sp_G_fPT');
-            P = 899:1200;
-            T = 0.1:0.5:90;
-            PhaselinesD.II.VI_II_add={P,T};
-            out=SeaFreeze(PhaselinesD.II.VI_II_add, 'VI');
-            materialI=out.G;
-            out=fnGval(sp_G_fPT, PhaselinesD.II.VI_II_add);
-            materialII=out.G;
-            Z= materialI-materialII;
-            A=contourc(T,P,Z, [0,0]);
-            A(:,1)=[];
-            A(:,1)=[86.7641,899.100];
-            %Addition of TP and A for II and VI
-            A=fliplr(A);
-            TP=cat(2,A,TP);
             %Data for 'III' and 'V'
         elseif ((strcmp('III', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('III', material_2))
             A = SeaFreeze(PhaselinesD.III.V_III, 'III');
@@ -740,24 +724,7 @@ function out=Phaselines(material_1, material_2, varargin)
             TP = contourc(T, P, Z, [0, 0]);
             TP(:,1)=[];
             TP(:,786:835)=[];
-            
-            %Add on for II and VI
-            load('iceII_sp_G_fPT_1200MPa.mat', 'sp_G_fPT');
-            P = 899:1200;
-            T = 0.1:0.5:90;
-            PhaselinesD.II.VI_II_add={P,T};
-            out=SeaFreeze(PhaselinesD.II.VI_II_add, 'VI');
-            materialI=out.G;
-            out=fnGval(sp_G_fPT, PhaselinesD.II.VI_II_add);
-            materialII=out.G;
-            Z= materialI-materialII;
-            A=contourc(T,P,Z, [0,0]);
-            A(:,1)=[];
-            A(:,1)=[86.7641,899.100];
-            %Addition of TP and A for II and VI
-            A=fliplr(A);
-            TP=cat(2,A,TP);
-            %Data for 'III' and 'V'
+                        %Data for 'III' and 'V'
         elseif ((strcmp('III', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('III', material_2))
             A = SeaFreeze(PhaselinesD.III.V_III, 'III');
             B = SeaFreeze(PhaselinesD.III.V_III, 'V');
@@ -817,5 +784,5 @@ function out=Phaselines(material_1, material_2, varargin)
             disp('Error: Please type materials and option as ''(''x'',''y'',''meta'')')
         end
     end
-    out=TP';
+    out=flip(TP',2);
     
