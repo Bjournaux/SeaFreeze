@@ -62,8 +62,8 @@ function out=Phaselines(material_1, material_2, varargin)
         hold on
         %Data 'Ih' and 'water1'
         if ((strcmp('Ih', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('Ih', material_2))
-            A=SeaFreeze(PhaselinesD.Ih.water1_Ih, 'Ih');
-            B=SeaFreeze(PhaselinesD.Ih.water1_Ih, 'water1');
+            A=SF_getprop(PhaselinesD.Ih.water1_Ih, 'Ih');
+            B=SF_getprop(PhaselinesD.Ih.water1_Ih, 'water1');
             Gibbs1= A.G;
             Gibbs2= B.G;
             Z=Gibbs1-Gibbs2;
@@ -80,8 +80,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,64:316), TP(1,64:316), '-r');
             %Data for 'Ih' and 'II'
         elseif ((strcmp('Ih', material_1) && strcmp('II', material_2)) || strcmp('II', material_1) && strcmp('Ih', material_2))
-            A = SeaFreeze(PhaselinesD.Ih.II_Ih, 'Ih');
-            B = SeaFreeze(PhaselinesD.Ih.II_Ih, 'II');
+            A = SF_getprop(PhaselinesD.Ih.II_Ih, 'Ih');
+            B = SF_getprop(PhaselinesD.Ih.II_Ih, 'II');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -100,8 +100,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,1:236), TP(1,1:236), 'LineStyle', '--', 'Color', 'r')
             %Data 'Ih' and 'III'
         elseif((strcmp('Ih', material_1) && strcmp('III', material_2)) || strcmp('III', material_1) && strcmp('Ih', material_2))
-            A = SeaFreeze(PhaselinesD.Ih.III_Ih, 'Ih');
-            B = SeaFreeze(PhaselinesD.Ih.III_Ih, 'III');
+            A = SF_getprop(PhaselinesD.Ih.III_Ih, 'Ih');
+            B = SF_getprop(PhaselinesD.Ih.III_Ih, 'III');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -121,8 +121,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,47:66), TP(1, 47:66), ':r');
             %Data for 'II' and 'III'
         elseif ((strcmp('II', material_1) && strcmp('III', material_2)) || strcmp('III', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.III_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.III_II, 'III');
+            A = SF_getprop(PhaselinesD.II.III_II, 'II');
+            B = SF_getprop(PhaselinesD.II.III_II, 'III');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -143,8 +143,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,323:453),TP(1,323:453), ':r');
             %Data for 'II' and 'V'
         elseif ((strcmp('II', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.V_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.V_II, 'V');
+            A = SF_getprop(PhaselinesD.II.V_II, 'II');
+            B = SF_getprop(PhaselinesD.II.V_II, 'V');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -166,8 +166,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,643:784)= [];
             %Data for 'II' and 'VI'
         elseif ((strcmp('II', material_1) && strcmp('VI', material_2)) || strcmp('VI', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.VI_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.VI_II, 'VI');
+            A = SF_getprop(PhaselinesD.II.VI_II, 'II');
+            B = SF_getprop(PhaselinesD.II.VI_II, 'VI');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -186,7 +186,7 @@ function out=Phaselines(material_1, material_2, varargin)
             P = 898:1200;
             T = 0.1:0.5:90;
             PhaselinesD.II.VI_II_add={P,T};
-            out=SeaFreeze(PhaselinesD.II.VI_II_add, 'VI');
+            out=SF_getprop(PhaselinesD.II.VI_II_add, 'VI');
             materialI=out.G;
             out=fnGval(sp_G_fPT, PhaselinesD.II.VI_II_add);
             materialII=out.G;
@@ -203,8 +203,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,505:806),TP(1,505:806),'-r');
             %Data for 'III' and 'V'
         elseif ((strcmp('III', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('III', material_2))
-            A = SeaFreeze(PhaselinesD.III.V_III, 'III');
-            B = SeaFreeze(PhaselinesD.III.V_III, 'V');
+            A = SF_getprop(PhaselinesD.III.V_III, 'III');
+            B = SF_getprop(PhaselinesD.III.V_III, 'V');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -225,8 +225,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,133:171), TP(1,133:171), ':r')
             %Data for 'III' and 'water1'
         elseif ((strcmp('III', material_1) && strcmp('water1', material_2)) || strcmp('III', material_1) && strcmp('water1', material_2))
-            A = SeaFreeze(PhaselinesD.III.water1_III, 'III');
-            B = SeaFreeze(PhaselinesD.III.water1_III, 'water1');
+            A = SF_getprop(PhaselinesD.III.water1_III, 'III');
+            B = SF_getprop(PhaselinesD.III.water1_III, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -247,8 +247,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,299:477),TP(1,299:477), ':r');
             %Data for 'V' and 'water1'
         elseif ((strcmp('V', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('V', material_2))
-            A = SeaFreeze(PhaselinesD.V.water1_V, 'V');
-            B = SeaFreeze(PhaselinesD.V.water1_V, 'water1');
+            A = SF_getprop(PhaselinesD.V.water1_V, 'V');
+            B = SF_getprop(PhaselinesD.V.water1_V, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -270,8 +270,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,576:622)=[];
             %Data for 'VI' and 'water1'
         elseif ((strcmp('VI', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('VI', material_2))
-            A = SeaFreeze(PhaselinesD.VI.water1_VI, 'VI');
-            B = SeaFreeze(PhaselinesD.VI.water1_VI, 'water1');
+            A = SF_getprop(PhaselinesD.VI.water1_VI, 'VI');
+            B = SF_getprop(PhaselinesD.VI.water1_VI, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -287,8 +287,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,1821:1879), TP(1,1821:1879), ':r');
             %Data for 'V' and 'VI'
         elseif ((strcmp('V', material_1) && strcmp('VI', material_2)) || strcmp('VI', material_1) && strcmp('V', material_2))
-            A = SeaFreeze(PhaselinesD.V.VI_V, 'V');
-            B = SeaFreeze(PhaselinesD.V.VI_V, 'VI');
+            A = SF_getprop(PhaselinesD.V.VI_V, 'V');
+            B = SF_getprop(PhaselinesD.V.VI_V, 'VI');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -318,8 +318,8 @@ function out=Phaselines(material_1, material_2, varargin)
         hold on
         %Data for 'Ih' and 'water1'
         if ((strcmp('Ih', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('Ih', material_2))
-            A=SeaFreeze(PhaselinesD.Ih.water1_Ih, 'Ih');
-            B=SeaFreeze(PhaselinesD.Ih.water1_Ih, 'water1');
+            A=SF_getprop(PhaselinesD.Ih.water1_Ih, 'Ih');
+            B=SF_getprop(PhaselinesD.Ih.water1_Ih, 'water1');
             Gibbs1= A.G;
             Gibbs2= B.G;
             Z=Gibbs1-Gibbs2;
@@ -331,8 +331,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,:),TP(1,:), '-r')
             %Data for 'Ih' and 'II'
         elseif ((strcmp('Ih', material_1) && strcmp('II', material_2)) || strcmp('II', material_1) && strcmp('Ih', material_2))
-            A = SeaFreeze(PhaselinesD.Ih.II_Ih, 'Ih');
-            B = SeaFreeze(PhaselinesD.Ih.II_Ih, 'II');
+            A = SF_getprop(PhaselinesD.Ih.II_Ih, 'Ih');
+            B = SF_getprop(PhaselinesD.Ih.II_Ih, 'II');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -347,8 +347,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,1:206), TP(1,1:206), 'Linestyle', '--', 'Color', 'r')
             %Data for 'Ih' and 'III'
         elseif((strcmp('Ih', material_1) && strcmp('III', material_2)) || strcmp('III', material_1) && strcmp('Ih', material_2))
-            A = SeaFreeze(PhaselinesD.Ih.III_Ih, 'Ih');
-            B = SeaFreeze(PhaselinesD.Ih.III_Ih, 'III');
+            A = SF_getprop(PhaselinesD.Ih.III_Ih, 'Ih');
+            B = SF_getprop(PhaselinesD.Ih.III_Ih, 'III');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -362,8 +362,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,:), TP(1,:), '-r');
             %Data for 'II' and 'III'
         elseif ((strcmp('II', material_1) && strcmp('III', material_2)) || strcmp('III', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.III_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.III_II, 'III');
+            A = SF_getprop(PhaselinesD.II.III_II, 'II');
+            B = SF_getprop(PhaselinesD.II.III_II, 'III');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -377,8 +377,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,:), TP(1,:), '-r');
             %Data for 'II' and 'V'
         elseif ((strcmp('II', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.V_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.V_II, 'V');
+            A = SF_getprop(PhaselinesD.II.V_II, 'II');
+            B = SF_getprop(PhaselinesD.II.V_II, 'V');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -392,8 +392,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,:), TP(1,:), '-r');
             %Data for 'II' and 'VI'
         elseif ((strcmp('II', material_1) && strcmp('VI', material_2)) || strcmp('VI', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.VI_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.VI_II, 'VI');
+            A = SF_getprop(PhaselinesD.II.VI_II, 'II');
+            B = SF_getprop(PhaselinesD.II.VI_II, 'VI');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -408,7 +408,7 @@ function out=Phaselines(material_1, material_2, varargin)
             P = 899:1200;
             T = 0.1:0.5:90;
             PhaselinesD.II.VI_II_add={P,T};
-            out=SeaFreeze(PhaselinesD.II.VI_II_add, 'VI');
+            out=SF_getprop(PhaselinesD.II.VI_II_add, 'VI');
             materialI=out.G;
             out=fnGval(sp_G_fPT, PhaselinesD.II.VI_II_add);
             materialII=out.G;
@@ -425,8 +425,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,505:809),TP(1,505:809),'-r');
             %Data for 'III' and 'V'
         elseif ((strcmp('III', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('III', material_2))
-            A = SeaFreeze(PhaselinesD.III.V_III, 'III');
-            B = SeaFreeze(PhaselinesD.III.V_III, 'V');
+            A = SF_getprop(PhaselinesD.III.V_III, 'III');
+            B = SF_getprop(PhaselinesD.III.V_III, 'V');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -440,8 +440,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,:), TP(1,:), '-r');
             %Data for 'III' and 'water1'
         elseif ((strcmp('III', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('III', material_2))
-            A = SeaFreeze(PhaselinesD.III.water1_III, 'III');
-            B = SeaFreeze(PhaselinesD.III.water1_III, 'water1');
+            A = SF_getprop(PhaselinesD.III.water1_III, 'III');
+            B = SF_getprop(PhaselinesD.III.water1_III, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -455,8 +455,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,:), TP(1,:), '-r');
             %Data for 'V' and 'water1'
         elseif ((strcmp('V', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('V', material_2))
-            A = SeaFreeze(PhaselinesD.V.water1_V, 'V');
-            B = SeaFreeze(PhaselinesD.V.water1_V, 'water1');
+            A = SF_getprop(PhaselinesD.V.water1_V, 'V');
+            B = SF_getprop(PhaselinesD.V.water1_V, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -470,8 +470,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,:), TP(1,:), '-r');
             %Data for 'VI' and 'water1'
         elseif ((strcmp('VI', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('VI', material_2))
-            A = SeaFreeze(PhaselinesD.VI.water1_VI, 'VI');
-            B = SeaFreeze(PhaselinesD.VI.water1_VI, 'water1');
+            A = SF_getprop(PhaselinesD.VI.water1_VI, 'VI');
+            B = SF_getprop(PhaselinesD.VI.water1_VI, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -484,8 +484,8 @@ function out=Phaselines(material_1, material_2, varargin)
             plot(TP(2,:), TP(1,:), '-r');
             %Data for 'V' and 'VI'
         elseif ((strcmp('V', material_1) && strcmp('VI', material_2)) || strcmp('VI', material_1) && strcmp('V', material_2))
-            A = SeaFreeze(PhaselinesD.V.VI_V, 'V');
-            B = SeaFreeze(PhaselinesD.V.VI_V, 'VI');
+            A = SF_getprop(PhaselinesD.V.VI_V, 'V');
+            B = SF_getprop(PhaselinesD.V.VI_V, 'VI');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -505,8 +505,8 @@ function out=Phaselines(material_1, material_2, varargin)
     elseif options(1)== 0  && options(2)==0
         %Data for 'Ih' and 'water1'
         if ((strcmp('Ih', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('Ih', material_2))
-            A=SeaFreeze(PhaselinesD.Ih.water1_Ih, 'Ih');
-            B=SeaFreeze(PhaselinesD.Ih.water1_Ih, 'water1');
+            A=SF_getprop(PhaselinesD.Ih.water1_Ih, 'Ih');
+            B=SF_getprop(PhaselinesD.Ih.water1_Ih, 'water1');
             Gibbs1= A.G;
             Gibbs2= B.G;
             Z=Gibbs1-Gibbs2;
@@ -517,8 +517,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'Ih' and 'II'
         elseif ((strcmp('Ih', material_1) && strcmp('II', material_2)) || strcmp('II', material_1) && strcmp('Ih', material_2))
-            A = SeaFreeze(PhaselinesD.Ih.II_Ih, 'Ih');
-            B = SeaFreeze(PhaselinesD.Ih.II_Ih, 'II');
+            A = SF_getprop(PhaselinesD.Ih.II_Ih, 'Ih');
+            B = SF_getprop(PhaselinesD.Ih.II_Ih, 'II');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -530,8 +530,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'Ih' and 'III'
         elseif((strcmp('Ih', material_1) && strcmp('III', material_2)) || strcmp('III', material_1) && strcmp('Ih', material_2))
-            A = SeaFreeze(PhaselinesD.Ih.III_Ih, 'Ih');
-            B = SeaFreeze(PhaselinesD.Ih.III_Ih, 'III');
+            A = SF_getprop(PhaselinesD.Ih.III_Ih, 'Ih');
+            B = SF_getprop(PhaselinesD.Ih.III_Ih, 'III');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -544,8 +544,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1:12)=[];
             %Data for 'II' and 'III'
         elseif ((strcmp('II', material_1) && strcmp('III', material_2)) || strcmp('III', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.III_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.III_II, 'III');
+            A = SF_getprop(PhaselinesD.II.III_II, 'II');
+            B = SF_getprop(PhaselinesD.II.III_II, 'III');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -557,8 +557,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1:6)=[];
             %Data for 'II' and 'V'
         elseif ((strcmp('II', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.V_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.V_II, 'V');
+            A = SF_getprop(PhaselinesD.II.V_II, 'II');
+            B = SF_getprop(PhaselinesD.II.V_II, 'V');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -571,8 +571,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,412)=[249.4176,355.5042];
             %Data for 'II' and 'VI'
         elseif ((strcmp('II', material_1) && strcmp('VI', material_2)) || strcmp('VI', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.VI_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.VI_II, 'VI');
+            A = SF_getprop(PhaselinesD.II.VI_II, 'II');
+            B = SF_getprop(PhaselinesD.II.VI_II, 'VI');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -583,8 +583,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'III' and 'V'
         elseif ((strcmp('III', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('III', material_2))
-            A = SeaFreeze(PhaselinesD.III.V_III, 'III');
-            B = SeaFreeze(PhaselinesD.III.V_III, 'V');
+            A = SF_getprop(PhaselinesD.III.V_III, 'III');
+            B = SF_getprop(PhaselinesD.III.V_III, 'V');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -596,8 +596,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1:2)= [];
             %Data for 'III' and 'water1'
         elseif ((strcmp('III', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('III', material_2))
-            A = SeaFreeze(PhaselinesD.III.water1_III, 'III');
-            B = SeaFreeze(PhaselinesD.III.water1_III, 'water1');
+            A = SF_getprop(PhaselinesD.III.water1_III, 'III');
+            B = SF_getprop(PhaselinesD.III.water1_III, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -610,8 +610,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1:7)=[];
             %Data for 'V' and 'water1'
         elseif ((strcmp('V', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('V', material_2))
-            A = SeaFreeze(PhaselinesD.V.water1_V, 'V');
-            B = SeaFreeze(PhaselinesD.V.water1_V, 'water1');
+            A = SF_getprop(PhaselinesD.V.water1_V, 'V');
+            B = SF_getprop(PhaselinesD.V.water1_V, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -623,8 +623,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1:13)=[];
             %Data for 'VI' and 'water1'
         elseif ((strcmp('VI', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('VI', material_2))
-            A = SeaFreeze(PhaselinesD.VI.water1_VI, 'VI');
-            B = SeaFreeze(PhaselinesD.VI.water1_VI, 'water1');
+            A = SF_getprop(PhaselinesD.VI.water1_VI, 'VI');
+            B = SF_getprop(PhaselinesD.VI.water1_VI, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -636,8 +636,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'V' and 'VI'
         elseif ((strcmp('V', material_1) && strcmp('VI', material_2)) || strcmp('VI', material_1) && strcmp('V', material_2))
-            A = SeaFreeze(PhaselinesD.V.VI_V, 'V');
-            B = SeaFreeze(PhaselinesD.V.VI_V, 'VI');
+            A = SF_getprop(PhaselinesD.V.VI_V, 'V');
+            B = SF_getprop(PhaselinesD.V.VI_V, 'VI');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -656,8 +656,8 @@ function out=Phaselines(material_1, material_2, varargin)
     elseif options(1)==1
         %Data for 'Ih' and 'water1'
         if((strcmp('Ih', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('Ih', material_2))
-            A=SeaFreeze(PhaselinesD.Ih.water1_Ih, 'Ih');
-            B=SeaFreeze(PhaselinesD.Ih.water1_Ih, 'water1');
+            A=SF_getprop(PhaselinesD.Ih.water1_Ih, 'Ih');
+            B=SF_getprop(PhaselinesD.Ih.water1_Ih, 'water1');
             Gibbs1= A.G;
             Gibbs2= B.G;
             Z=Gibbs1-Gibbs2;
@@ -668,8 +668,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,317:355)=[];
             %Data for 'Ih' and 'II'
         elseif ((strcmp('Ih', material_1) && strcmp('II', material_2)) || strcmp('II', material_1) && strcmp('Ih', material_2))
-            A = SeaFreeze(PhaselinesD.Ih.II_Ih, 'Ih');
-            B = SeaFreeze(PhaselinesD.Ih.II_Ih, 'II');
+            A = SF_getprop(PhaselinesD.Ih.II_Ih, 'Ih');
+            B = SF_getprop(PhaselinesD.Ih.II_Ih, 'II');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -680,8 +680,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,722:773)=[];
             %Data for 'Ih' and 'III'
         elseif((strcmp('Ih', material_1) && strcmp('III', material_2)) || strcmp('III', material_1) && strcmp('Ih', material_2))
-            A = SeaFreeze(PhaselinesD.Ih.III_Ih, 'Ih');
-            B = SeaFreeze(PhaselinesD.Ih.III_Ih, 'III');
+            A = SF_getprop(PhaselinesD.Ih.III_Ih, 'Ih');
+            B = SF_getprop(PhaselinesD.Ih.III_Ih, 'III');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -691,8 +691,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'II' and 'III'
         elseif ((strcmp('II', material_1) && strcmp('III', material_2)) || strcmp('III', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.III_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.III_II, 'III');
+            A = SF_getprop(PhaselinesD.II.III_II, 'II');
+            B = SF_getprop(PhaselinesD.II.III_II, 'III');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -702,8 +702,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'II' and 'V'
         elseif ((strcmp('II', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.V_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.V_II, 'V');
+            A = SF_getprop(PhaselinesD.II.V_II, 'II');
+            B = SF_getprop(PhaselinesD.II.V_II, 'V');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -714,8 +714,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,643:784)=[];
             %Data for 'II' and 'VI'
         elseif ((strcmp('II', material_1) && strcmp('VI', material_2)) || strcmp('VI', material_1) && strcmp('II', material_2))
-            A = SeaFreeze(PhaselinesD.II.VI_II, 'II');
-            B = SeaFreeze(PhaselinesD.II.VI_II, 'VI');
+            A = SF_getprop(PhaselinesD.II.VI_II, 'II');
+            B = SF_getprop(PhaselinesD.II.VI_II, 'VI');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -726,8 +726,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,786:835)=[];
                         %Data for 'III' and 'V'
         elseif ((strcmp('III', material_1) && strcmp('V', material_2)) || strcmp('V', material_1) && strcmp('III', material_2))
-            A = SeaFreeze(PhaselinesD.III.V_III, 'III');
-            B = SeaFreeze(PhaselinesD.III.V_III, 'V');
+            A = SF_getprop(PhaselinesD.III.V_III, 'III');
+            B = SF_getprop(PhaselinesD.III.V_III, 'V');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -737,8 +737,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'III' and 'water1'
         elseif ((strcmp('III', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('III', material_2))
-            A = SeaFreeze(PhaselinesD.III.water1_III, 'III');
-            B = SeaFreeze(PhaselinesD.III.water1_III, 'water1');
+            A = SF_getprop(PhaselinesD.III.water1_III, 'III');
+            B = SF_getprop(PhaselinesD.III.water1_III, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -748,8 +748,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'V' and 'water1'
         elseif ((strcmp('V', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('V', material_2))
-            A = SeaFreeze(PhaselinesD.V.water1_V, 'V');
-            B = SeaFreeze(PhaselinesD.V.water1_V, 'water1');
+            A = SF_getprop(PhaselinesD.V.water1_V, 'V');
+            B = SF_getprop(PhaselinesD.V.water1_V, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -760,8 +760,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1:47)=[];
             %Data for 'VI' and 'water1'
         elseif ((strcmp('VI', material_1) && strcmp('water1', material_2)) || strcmp('water1', material_1) && strcmp('VI', material_2))
-            A = SeaFreeze(PhaselinesD.VI.water1_VI, 'VI');
-            B = SeaFreeze(PhaselinesD.VI.water1_VI, 'water1');
+            A = SF_getprop(PhaselinesD.VI.water1_VI, 'VI');
+            B = SF_getprop(PhaselinesD.VI.water1_VI, 'water1');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;
@@ -771,8 +771,8 @@ function out=Phaselines(material_1, material_2, varargin)
             TP(:,1)=[];
             %Data for 'V' and 'VI'
         elseif ((strcmp('V', material_1) && strcmp('VI', material_2)) || strcmp('VI', material_1) && strcmp('V', material_2))
-            A = SeaFreeze(PhaselinesD.V.VI_V, 'V');
-            B = SeaFreeze(PhaselinesD.V.VI_V, 'VI');
+            A = SF_getprop(PhaselinesD.V.VI_V, 'V');
+            B = SF_getprop(PhaselinesD.V.VI_V, 'VI');
             Gibbs1=A.G;
             Gibbs2=B.G;
             Z=Gibbs1-Gibbs2;

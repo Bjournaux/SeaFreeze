@@ -39,8 +39,8 @@ function out = spvl(sp,x)
 
 if iscell(sp.knots)  % we are dealing with a tensor product spline
    [t,a,n,~,d] = spbk(sp); m = length(t);
-   nd=length(x);
    if iscell(x)  % evaluation on a mesh
+   nd=length(x);  % number of grid dimensions
      v = a; sizev = [d,n]; nsizev = zeros(1,m);
       for i=m:-1:1
          nsizev(i) = length(x{i}(:));
@@ -60,6 +60,7 @@ if iscell(sp.knots)  % we are dealing with a tensor product spline
  
    else          % evaluation at scattered points;
                  % this will eventually be done directly here.
+      nd=size(x,1);  % number of scatter points (rows)
       out=zeros(nd,1);
       parfor ii=1:nd
          sizev = [d,n]; nsizev = ones(1,m);
