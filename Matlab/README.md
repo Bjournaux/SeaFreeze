@@ -177,31 +177,6 @@ out = SF_getprop({P,T,m}, 'NaClaq', {'rho','aw'});
 
 `NaN` is returned outside the parametrization bounds (≤5000 MPa, 229–501 K, up to ~7 mol/kg).
 
-## Tests
-
-A cross-validation suite compares the MATLAB output against the Python reference implementation on a set of ice, water and NaCl cases.
-
-### 1. Generate the Python reference
-From `Matlab/test/`:
-```bash
-python gen_python_reference.py
-```
-This writes `reference_SeaFreeze.mat`. Requires `numpy`, `scipy`, `hdf5storage`, and the repository's `Python/` directory resolvable on `sys.path` (the script handles that automatically).
-
-### 2. Run the MATLAB comparison
-From MATLAB, with `Matlab/test/` on the path:
-```matlab
-test_SeaFreeze_vs_python
-test_SeaFreeze_vs_python('rtol', 1e-5, 'atol', 1e-8, 'verbose', true)
-```
-The test reports `[pass]`, `[FAIL]` and `[info]` per property per case, and throws an error if any comparison exceeds tolerance.
-
-### Expected tolerances / known differences
-- Pure ices, liquid water (`water1`, `water2`, `water_IAPWS95`), ice VII/X and `NaClaq` (grid + scatter + edge molalities) all match to ~1e-10 (relative) or better.
-- **Ice V grid** has 6 documented `[info]` drifts (`S`, `U`, `H`, `Cv`, `Ks`, `alpha`; max relative ~7e-4). These reflect a small difference between MATLAB's `fnval(fnder(…))` and SciPy's `splev` knot-extrapolation behaviour on this particular spline — not a code bug. The test classifies them as informational via per-case `expected_drift` overrides; they appear in the report as `[info]` and do **not** count as failures.
-- The test prints a per-case summary (`pass / info / fail`) and a final table. `error()` is raised only on real `[fail]`s.
-- The test guards reference freshness: if `reference_SeaFreeze.mat` is older than `gen_python_reference.py`, you get a warning to regenerate; if any expected case is missing, the test errors out with a clear hint.
-
 ## Utility functions
 
 ### `SeaFreeze_version`
@@ -260,6 +235,10 @@ Plot the full water phase diagram.
 ```matlab
 SF_WPD
 ```
+
+## Tests
+
+The MATLAB package ships with a function-style and classdef-style test suite plus a Python cross-validation harness. See [`test/README.md`](test/README.md) for how to run them, what each suite covers, and the documented tolerances / known differences.
 
 ## Important remarks
 
