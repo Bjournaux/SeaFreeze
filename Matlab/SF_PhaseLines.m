@@ -40,7 +40,7 @@ addParameter(p, 'm',       NaN,    @(x) isnumeric(x) && (isscalar(x) || isvector
 addParameter(p, 'P',       [],     @(x) isnumeric(x) && isvector(x));
 addParameter(p, 'T',       [],     @(x) isnumeric(x) && isvector(x));
 addParameter(p, 'segment', 'all',  @(s) ismember(lower(char(s)), {'all','stable','meta'}));
-addParameter(p, 'plot',    false,  @(x) islogical(x) || (isnumeric(x) && isscalar(x)));
+addParameter(p, 'plot',    false,  @valid_plot_arg);
 parse(p, matA, matB, varargin{:});
 matA = char(matA);
 matB = char(matB);
@@ -48,7 +48,16 @@ m_val   = p.Results.m(:)';   % row vector (scalar stays scalar)
 P_user  = p.Results.P;
 T_user  = p.Results.T;
 segment = lower(char(p.Results.segment));
-do_plot = logical(p.Results.plot);
+% 'plot' may be a logical/scalar (true => new figure, false => no plot),
+% or an existing figure handle to overlay onto.
+plot_arg   = p.Results.plot;
+if isgraphics(plot_arg, 'figure')
+    do_plot    = true;
+    target_fig = plot_arg;
+else
+    do_plot    = logical(plot_arg);
+    target_fig = [];
+end
 
 % ------------ Look up the pair (handles symmetric ordering) -----------------
 [pair, swapped] = lookup_pair(matA, matB);
@@ -143,7 +152,7 @@ end
 
 % ------------ Optional plot -------------------------------------------------
 if do_plot
-    fig = render_plot(results);
+    fig = render_plot(results, target_fig);
     for k = 1:numel(results), results(k).fig = fig; end
 end
 
@@ -206,6 +215,32 @@ function [T_eq, P_eq] = parse_contourc(TP)
 end
 
 
+function tf = valid_plot_arg(x)
+    % 'plot' accepts: logical / scalar (true|false) or a figure handle.
+    tf = islogical(x) || (isnumeric(x) && isscalar(x)) || ...
+         isgraphics(x, 'figure');
+end
+
+
+function [Px, Tx] = group_with_breaks(P, T, mask)
+    % Return the (P, T) values where mask==true, with NaN inserted between
+    % each contiguous run. Lets a single plot() call render disjoint
+    % segments (e.g. metastable extensions on either side of a stable
+    % region) without drawing a fake connector across the gap.
+    Px = []; Tx = [];
+    if isempty(P) || ~any(mask), return; end
+    m = logical(mask(:))';
+    starts = find(diff([false m]) == 1);
+    ends   = find(diff([m false]) == -1);
+    P = P(:); T = T(:);
+    for k = 1:length(starts)
+        Px = [Px; P(starts(k):ends(k)); NaN]; %#ok<AGROW>
+        Tx = [Tx; T(starts(k):ends(k)); NaN]; %#ok<AGROW>
+    end
+    if ~isempty(Px), Px(end) = []; Tx(end) = []; end   % strip trailing NaN
+end
+
+
 function stable = classify_stable(P_eq, T_eq, range)
     if isempty(range) || ~isstruct(range) || ...
             (~isfinite(range.lo) && ~isfinite(range.hi))
@@ -221,74 +256,92 @@ function stable = classify_stable(P_eq, T_eq, range)
 end
 
 
-function fig = render_plot(results)
+function fig = render_plot(results, target_fig)
     % Accepts either a scalar struct (single curve) or a struct array
-    % (one entry per molality, plotted with distinct colours and a legend).
-    fig = figure;
-    hold on;
+    % (one entry per molality). target_fig is empty (= create new figure)
+    % or an existing figure handle to overlay onto.
+    if nargin < 2, target_fig = []; end
+
+    if isempty(target_fig)
+        fig = figure;
+        ax  = gca(fig);
+        new_axes = true;
+    else
+        fig = target_fig;
+        ax  = gca(fig);
+        new_axes = false;
+    end
+    hold(ax, 'on');
     n = numel(results);
 
+    % Always set DisplayName on plotted lines so caller can build their own
+    % legend across multiple SF_PhaseLines calls if they want.
     if n == 1
         out = results(1);
-        % Single-curve rendering: red solid (stable) + red dotted (meta).
+        if isfield(out,'m')
+            label_base = sprintf('%s–%s (m=%.3g)', out.matA, out.matB, out.m);
+        else
+            label_base = sprintf('%s–%s', out.matA, out.matB);
+        end
         if any(out.stable)
-            plot(out.P(out.stable), out.T(out.stable), '-r', 'LineWidth', 1.4);
+            [Ps, Ts] = group_with_breaks(out.P, out.T, out.stable);
+            plot(ax, Ps, Ts, '-r', 'LineWidth', 1.4, 'DisplayName', label_base);
         end
         if any(~out.stable)
-            plot(out.P(~out.stable), out.T(~out.stable), ':r', 'LineWidth', 1.0);
+            [Pm, Tm] = group_with_breaks(out.P, out.T, ~out.stable);
+            plot(ax, Pm, Tm, ':r', 'LineWidth', 1.0, ...
+                 'DisplayName', [label_base ' (meta)'], 'HandleVisibility', 'off');
         end
         show_TPs = ~isfield(out,'m') || out.m <= 0.05;
         if show_TPs && ~isempty(out.triple_points)
-            plot(out.triple_points(:,2), out.triple_points(:,1), 'bo', ...
-                 'MarkerFaceColor','b', 'MarkerSize', 5);
+            plot(ax, out.triple_points(:,2), out.triple_points(:,1), 'bo', ...
+                 'MarkerFaceColor','b', 'MarkerSize', 5, 'HandleVisibility','off');
         end
-        if isfield(out,'m')
-            title(sprintf('%s — %s (m = %.3g mol/kg)', out.matA, out.matB, out.m));
-        else
-            title(sprintf('%s — %s', out.matA, out.matB));
+        if new_axes
+            title(ax, label_base);
         end
     else
-        % Multi-curve rendering: one colour per molality, legend by m.
         colors = lines(n);
         legend_handles = gobjects(0);
         legend_labels  = {};
         for k = 1:n
             r = results(k);
+            label = sprintf('%s–%s (m=%.3g mol/kg)', r.matA, r.matB, r.m);
             h_stable = []; h_meta = [];
             if any(r.stable)
-                h_stable = plot(r.P(r.stable), r.T(r.stable), '-', ...
-                                'Color', colors(k,:), 'LineWidth', 1.4);
+                [Ps, Ts] = group_with_breaks(r.P, r.T, r.stable);
+                h_stable = plot(ax, Ps, Ts, '-', 'Color', colors(k,:), ...
+                                'LineWidth', 1.4, 'DisplayName', label);
             end
             if any(~r.stable)
-                h_meta = plot(r.P(~r.stable), r.T(~r.stable), ':', ...
-                              'Color', colors(k,:), 'LineWidth', 1.0);
+                [Pm, Tm] = group_with_breaks(r.P, r.T, ~r.stable);
+                h_meta = plot(ax, Pm, Tm, ':', 'Color', colors(k,:), ...
+                              'LineWidth', 1.0, 'HandleVisibility','off');
             end
-            % Use the stable line as the legend handle if available, else meta.
             if ~isempty(h_stable)
                 legend_handles(end+1) = h_stable; %#ok<AGROW>
             elseif ~isempty(h_meta)
                 legend_handles(end+1) = h_meta; %#ok<AGROW>
             end
-            legend_labels{end+1} = sprintf('m = %.3g mol/kg', r.m); %#ok<AGROW>
+            legend_labels{end+1} = label; %#ok<AGROW>
         end
-        % Triple points: only show if every entry is below the threshold
-        % (effectively means all m are in the negligible-FPD regime).
         all_low = all(arrayfun(@(r) ~isfield(r,'m') || r.m <= 0.05, results));
         if all_low && ~isempty(results(1).triple_points)
-            h_tp = plot(results(1).triple_points(:,2), results(1).triple_points(:,1), ...
-                        'bo', 'MarkerFaceColor','b', 'MarkerSize', 5);
-            legend_handles(end+1) = h_tp;
-            legend_labels{end+1}  = 'triple points';
+            plot(ax, results(1).triple_points(:,2), results(1).triple_points(:,1), ...
+                 'bo', 'MarkerFaceColor','b', 'MarkerSize', 5, 'HandleVisibility','off');
         end
-        legend(legend_handles, legend_labels, 'Location','best', 'FontSize', 9);
-        title(sprintf('%s — %s (%d molalities)', ...
-                      results(1).matA, results(1).matB, n));
+        if new_axes
+            legend(ax, legend_handles, legend_labels, 'Location','best', 'FontSize', 9);
+            title(ax, sprintf('%s — %s (%d molalities)', ...
+                              results(1).matA, results(1).matB, n));
+        end
     end
 
-    xlabel('Pressure (MPa)');
-    ylabel('Temperature (K)');
-    grid on;
-    hold off;
+    if new_axes
+        xlabel(ax, 'Pressure (MPa)');
+        ylabel(ax, 'Temperature (K)');
+        grid(ax, 'on');
+    end
 end
 
 

@@ -171,6 +171,30 @@ catch err
     [np, nf] = check(['plot path threw: ', err.message], false, np, nf);
 end
 
+% Overlay onto an existing figure: pass the previous fig handle as 'plot'
+try
+    o1 = SF_PhaseLines('Ih','water1','plot',true);
+    ax = gca(o1.fig);
+    n_lines_before = numel(findobj(ax,'Type','Line'));
+    o2 = SF_PhaseLines('VI','water1','plot',o1.fig);
+    n_lines_after = numel(findobj(ax,'Type','Line'));
+    cond = o2.fig == o1.fig && n_lines_after > n_lines_before;
+    if ishandle(o1.fig), close(o1.fig); end
+    [np, nf] = check('overlay onto figure handle', cond, np, nf);
+catch err
+    [np, nf] = check(['overlay-figure threw: ', err.message], false, np, nf);
+end
+
+try
+    f = figure;
+    o = SF_PhaseLines('Ih','NaClaq','m',[1.0 2.0],'plot',f);
+    cond = all(arrayfun(@(s) s.fig == f, o));
+    close(f);
+    [np, nf] = check('overlay onto figure handle (multi-m)', cond, np, nf);
+catch err
+    [np, nf] = check(['overlay-figure-multi-m threw: ', err.message], false, np, nf);
+end
+
 fprintf('\n%d passed, %d failed\n', np, nf);
 if nf > 0
     error('test_SF_PhaseLines: %d failures', nf);

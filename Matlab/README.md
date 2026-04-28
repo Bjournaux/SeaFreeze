@@ -235,6 +235,15 @@ out = SF_PhaseLines('Ih', 'NaClaq', 'm', [1.0, 2, 4, 5], 'plot', true);
 ```matlab
 % Override the default sampling grid
 out = SF_PhaseLines('III', 'water1', 'P', 200:0.5:350, 'T', 240:0.1:260);
+
+% Compose multiple curves on the same figure: pass the figure handle
+% returned by a previous call as the 'plot' argument. Subsequent calls
+% overlay new curves without resetting axis labels, title or grid.
+o1 = SF_PhaseLines('Ih','water1','plot',true);                  % new figure
+SF_PhaseLines('III','water1','plot',o1.fig);                    % overlay
+SF_PhaseLines('VI','water1','plot',o1.fig);                     % overlay
+SF_PhaseLines('Ih','NaClaq','m',[1 2 3],'plot',o1.fig);         % overlay multi-m
+legend(gca(o1.fig), 'show', 'Location','best');                 % show legend
 ```
 
 For `NaClaq` pairs, the entire curve is returned as `stable`; distinguishing stable from metastable for ice ↔ NaClaq requires triple points whose locations depend on molality (not currently supported).
