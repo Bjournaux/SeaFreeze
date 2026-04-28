@@ -7,6 +7,7 @@ The SeaFreeze package computes thermodynamic and elastic properties of water, ic
 ## What's new in 1.1.0
 - **Aqueous NaCl solutions** (`NaClaq`) via the same 3D (P,T,m) spline used by the Python version, including a corrected scatter-input mixing-quantities path that uses a per-row baseline at `m = cutoff` (previously broken with a runtime warning).
 - **Selective property computation**: ask for only the properties you need (e.g. just `rho` or `{'G','Cp'}`) to save time.
+- `SF_getprop` **is now the preferec function for getting properties (replaces SeaFreeze)**, `SeaFreeze` still works for now but shows an deprecation message.
 - **No Curve Fitting Toolbox required** for `SF_getprop`. A single evaluator (`fnGval` over `sp_val`) handles every phase, including the LBF-form spline used for ice VII/X. (`SF_WhichPhase` and `SF_PhaseLines` still call `fnval` and so do still need the toolbox; tracked for a future port.)
 - **New outputs**: `Js` (Joule-Thomson coefficient) and `gamma_Gruneisen` (Grüneisen parameter) for every phase; `f`, `m`, `xs`, `xw`, `Vw` (partial molar volume of solvent) for `NaClaq` mixing.
 - **Optional `sp.Tc`** (dimensionless temperature, `tau = log(T/Tc)`) and **`sp.mask`** (validity-domain interpolation) supported by `fnGval` for new spline parametrizations.
