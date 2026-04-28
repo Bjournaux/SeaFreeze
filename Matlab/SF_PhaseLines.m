@@ -36,7 +36,7 @@ function out = SF_PhaseLines(matA, matB, varargin)
 p = inputParser;
 addRequired(p, 'matA', @(s) ischar(s) || (isstring(s) && isscalar(s)));
 addRequired(p, 'matB', @(s) ischar(s) || (isstring(s) && isscalar(s)));
-addParameter(p, 'm',       NaN,    @(x) isnumeric(x) && isscalar(x));
+addParameter(p, 'm',       NaN,    @(x) isnumeric(x) && (isscalar(x) || isvector(x)));
 addParameter(p, 'P',       [],     @(x) isnumeric(x) && isvector(x));
 addParameter(p, 'T',       [],     @(x) isnumeric(x) && isvector(x));
 addParameter(p, 'segment', 'all',  @(s) ismember(lower(char(s)), {'all','stable','meta'}));
@@ -44,7 +44,7 @@ addParameter(p, 'plot',    false,  @(x) islogical(x) || (isnumeric(x) && isscala
 parse(p, matA, matB, varargin{:});
 matA = char(matA);
 matB = char(matB);
-m_val   = p.Results.m;
+m_val   = p.Results.m(:)';   % row vector (scalar stays scalar)
 P_user  = p.Results.P;
 T_user  = p.Results.T;
 segment = lower(char(p.Results.segment));
@@ -57,15 +57,15 @@ if swapped, [matA, matB] = deal(matB, matA); end
 % ------------ Validate molality if NaClaq is involved -----------------------
 nacl_involved = any(strcmp({matA, matB}, 'NaClaq'));
 if nacl_involved
-    if isnan(m_val)
+    if any(isnan(m_val))
         error('SeaFreeze:badInput', ...
             'Pair (%s, %s) involves NaClaq; pass molality via ''m'' (mol/kg).', matA, matB);
     end
     rng_nacl = SF_phase_range('NaClaq');
-    if m_val < rng_nacl.m(1) || m_val > rng_nacl.m(2)
+    if any(m_val < rng_nacl.m(1)) || any(m_val > rng_nacl.m(2))
         error('SeaFreeze:badInput', ...
-            'Molality %.3g is outside the NaClaq spline range [%.3g, %.3g] mol/kg.', ...
-            m_val, rng_nacl.m(1), rng_nacl.m(2));
+            'Molality value(s) outside the NaClaq spline range [%.3g, %.3g] mol/kg: %s.', ...
+            rng_nacl.m(1), rng_nacl.m(2), mat2str(m_val));
     end
 end
 
@@ -91,43 +91,67 @@ else
     T = T_user(:)';
 end
 
-% ------------ Compute G surfaces and zero contour ---------------------------
-[Ga, Gb] = compute_surfaces(matA, matB, P, T, m_val);
-Z = Ga - Gb;
-TP = contourc(T, P, Z, [0 0]);
-% contourc may return multiple disjoint segments concatenated, each with a
-% header column [level; npts]. Flatten and skip the headers.
-[T_eq, P_eq] = parse_contourc(TP);
-
-if isempty(T_eq)
-    error('SeaFreeze:noContour', ...
-        'No zero-crossing of G(%s) - G(%s) found in the sampled (P, T) grid.', matA, matB);
+% ------------ Loop over molality values (single iter for pure pairs) --------
+if nacl_involved
+    m_iter = m_val;
+else
+    m_iter = NaN;     % single iteration with no molality
 end
+n_m = numel(m_iter);
+results = [];   % initialised on first iteration so field set matches `r`
 
-% ------------ Stable / metastable classification ----------------------------
-stable_mask = classify_stable(P_eq, T_eq, pair.stable_range);
+for k = 1:n_m
+    [Ga, Gb] = compute_surfaces(matA, matB, P, T, m_iter(k));
+    Z = Ga - Gb;
+    TP = contourc(T, P, Z, [0 0]);
+    [T_eq, P_eq] = parse_contourc(TP);
 
-% ------------ Apply segment filter ------------------------------------------
-switch segment
-    case 'all',    keep = true(size(stable_mask));
-    case 'stable', keep = stable_mask;
-    case 'meta',   keep = ~stable_mask;
+    if isempty(T_eq)
+        if nacl_involved
+            error('SeaFreeze:noContour', ...
+                'No zero-crossing of G(%s)-G(%s) at m=%.3g mol/kg in the sampled grid.', ...
+                matA, matB, m_iter(k));
+        else
+            error('SeaFreeze:noContour', ...
+                'No zero-crossing of G(%s)-G(%s) found in the sampled (P, T) grid.', ...
+                matA, matB);
+        end
+    end
+
+    stable_mask = classify_stable(P_eq, T_eq, pair.stable_range);
+    switch segment
+        case 'all',    keep = true(size(stable_mask));
+        case 'stable', keep = stable_mask;
+        case 'meta',   keep = ~stable_mask;
+    end
+
+    r = struct();
+    r.matA          = matA;
+    r.matB          = matB;
+    r.P             = P_eq(keep);
+    r.T             = T_eq(keep);
+    r.stable        = stable_mask(keep);
+    r.segment       = segment;
+    if nacl_involved, r.m = m_iter(k); end
+    r.triple_points = pair.triple_points;
+    if isempty(results)
+        results = r;
+    else
+        results(k) = r;
+    end
 end
-
-% ------------ Build output struct -------------------------------------------
-out = struct();
-out.matA    = matA;
-out.matB    = matB;
-out.P       = P_eq(keep);
-out.T       = T_eq(keep);
-out.stable  = stable_mask(keep);
-out.segment = segment;
-if nacl_involved, out.m = m_val; end
-out.triple_points = pair.triple_points;   % Nx2 array, columns [T_K, P_MPa]
 
 % ------------ Optional plot -------------------------------------------------
 if do_plot
-    out.fig = render_plot(out);
+    fig = render_plot(results);
+    for k = 1:numel(results), results(k).fig = fig; end
+end
+
+% ------------ Return scalar struct for single curve, struct array for multi -
+if numel(results) == 1
+    out = results(1);
+else
+    out = results;
 end
 end
 
@@ -197,26 +221,72 @@ function stable = classify_stable(P_eq, T_eq, range)
 end
 
 
-function fig = render_plot(out)
+function fig = render_plot(results)
+    % Accepts either a scalar struct (single curve) or a struct array
+    % (one entry per molality, plotted with distinct colours and a legend).
     fig = figure;
     hold on;
-    if any(out.stable)
-        plot(out.P(out.stable), out.T(out.stable), '-r', 'LineWidth', 1.4);
+    n = numel(results);
+
+    if n == 1
+        out = results(1);
+        % Single-curve rendering: red solid (stable) + red dotted (meta).
+        if any(out.stable)
+            plot(out.P(out.stable), out.T(out.stable), '-r', 'LineWidth', 1.4);
+        end
+        if any(~out.stable)
+            plot(out.P(~out.stable), out.T(~out.stable), ':r', 'LineWidth', 1.0);
+        end
+        show_TPs = ~isfield(out,'m') || out.m <= 0.05;
+        if show_TPs && ~isempty(out.triple_points)
+            plot(out.triple_points(:,2), out.triple_points(:,1), 'bo', ...
+                 'MarkerFaceColor','b', 'MarkerSize', 5);
+        end
+        if isfield(out,'m')
+            title(sprintf('%s — %s (m = %.3g mol/kg)', out.matA, out.matB, out.m));
+        else
+            title(sprintf('%s — %s', out.matA, out.matB));
+        end
+    else
+        % Multi-curve rendering: one colour per molality, legend by m.
+        colors = lines(n);
+        legend_handles = gobjects(0);
+        legend_labels  = {};
+        for k = 1:n
+            r = results(k);
+            h_stable = []; h_meta = [];
+            if any(r.stable)
+                h_stable = plot(r.P(r.stable), r.T(r.stable), '-', ...
+                                'Color', colors(k,:), 'LineWidth', 1.4);
+            end
+            if any(~r.stable)
+                h_meta = plot(r.P(~r.stable), r.T(~r.stable), ':', ...
+                              'Color', colors(k,:), 'LineWidth', 1.0);
+            end
+            % Use the stable line as the legend handle if available, else meta.
+            if ~isempty(h_stable)
+                legend_handles(end+1) = h_stable; %#ok<AGROW>
+            elseif ~isempty(h_meta)
+                legend_handles(end+1) = h_meta; %#ok<AGROW>
+            end
+            legend_labels{end+1} = sprintf('m = %.3g mol/kg', r.m); %#ok<AGROW>
+        end
+        % Triple points: only show if every entry is below the threshold
+        % (effectively means all m are in the negligible-FPD regime).
+        all_low = all(arrayfun(@(r) ~isfield(r,'m') || r.m <= 0.05, results));
+        if all_low && ~isempty(results(1).triple_points)
+            h_tp = plot(results(1).triple_points(:,2), results(1).triple_points(:,1), ...
+                        'bo', 'MarkerFaceColor','b', 'MarkerSize', 5);
+            legend_handles(end+1) = h_tp;
+            legend_labels{end+1}  = 'triple points';
+        end
+        legend(legend_handles, legend_labels, 'Location','best', 'FontSize', 9);
+        title(sprintf('%s — %s (%d molalities)', ...
+                      results(1).matA, results(1).matB, n));
     end
-    if any(~out.stable)
-        plot(out.P(~out.stable), out.T(~out.stable), ':r', 'LineWidth', 1.0);
-    end
-    if ~isempty(out.triple_points)
-        plot(out.triple_points(:,2), out.triple_points(:,1), 'bo', ...
-             'MarkerFaceColor', 'b', 'MarkerSize', 5);
-    end
+
     xlabel('Pressure (MPa)');
     ylabel('Temperature (K)');
-    if isfield(out, 'm')
-        title(sprintf('%s — %s (m = %.3g mol/kg)', out.matA, out.matB, out.m));
-    else
-        title(sprintf('%s — %s', out.matA, out.matB));
-    end
     grid on;
     hold off;
 end

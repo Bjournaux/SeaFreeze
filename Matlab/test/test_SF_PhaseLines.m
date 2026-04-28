@@ -125,6 +125,31 @@ catch err
 end
 
 % =========================================================================
+% 4b. Multi-molality input — vector m returns struct array
+% =========================================================================
+try
+    m_vec = [0.5, 1.0, 2.0, 4.0];
+    arr = SF_PhaseLines('Ih','NaClaq','m', m_vec);
+    cond = numel(arr) == numel(m_vec) && ...
+           isequal([arr.m], m_vec) && ...
+           all(arrayfun(@(s) ~isempty(s.P) && ~isempty(s.T), arr));
+    [np, nf] = check('multi-m: returns struct array of correct length', cond, np, nf);
+
+    % Each curve at higher m should sit at lower T (FPD ordering) at low P
+    Ts_at_lowP = arrayfun(@(s) s.T(s.P == min(s.P)), arr);
+    cond_order = all(diff(Ts_at_lowP(:)') < 0);
+    [np, nf] = check('multi-m: FPD ordering monotone with m', cond_order, np, nf);
+
+    % Plot path returns one figure shared across the array
+    arr_plot = SF_PhaseLines('VI','NaClaq','m', [0.5 1.0],'plot',true);
+    cond_fig = isfield(arr_plot, 'fig') && all(arrayfun(@(s) ishandle(s.fig), arr_plot));
+    if cond_fig, close(arr_plot(1).fig); end
+    [np, nf] = check('multi-m: plot returns figure handle on every entry', cond_fig, np, nf);
+catch err
+    [np, nf] = check(['multi-m threw: ' err.message], false, np, nf);
+end
+
+% =========================================================================
 % 5. Error paths
 % =========================================================================
 [np, nf] = check_throws('unsupported pair (water1/water2)', ...

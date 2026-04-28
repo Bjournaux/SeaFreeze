@@ -6,9 +6,9 @@ The SeaFreeze package computes thermodynamic and elastic properties of water, ic
 
 ## What's new in 1.1.0
 - **Aqueous NaCl solutions** (`NaClaq`) via the same 3D (P,T,m) spline used by the Python version, including a corrected scatter-input mixing-quantities path that uses a per-row baseline at `m = cutoff` (previously broken with a runtime warning).
+- **New outputs**: `Js` (Joule-Thomson coefficient) and `gamma_Gruneisen` (Grüneisen parameter) for every phase; `m`, `xs`, `xw`, `f`, `mus`, `muw`,`Vm`, `Vw`, `Cpm`, `Va`, `Cpa`, `Vex`, `phi`, `aw` for `NaClaq` mixing (see table below)
 - **Selective property computation**: ask for only the properties you need (e.g. just `rho` or `{'G','Cp'}`) to save time.
 - **No Curve Fitting Toolbox required** for `SF_getprop` or `SF_PhaseLines`. A single evaluator (`fnGval` over `sp_val`) handles every phase, including the LBF-form spline used for ice VII/X. (`SF_WhichPhase` still calls `fnval` and so still needs the toolbox; tracked for a future port.)
-- **New outputs**: `Js` (Joule-Thomson coefficient) and `gamma_Gruneisen` (Grüneisen parameter) for every phase; `f`, `m`, `xs`, `xw`, `Vw` (partial molar volume of solvent) for `NaClaq` mixing.
 - **Optional `sp.Tc`** (dimensionless temperature, `tau = log(T/Tc)`) and **`sp.mask`** (validity-domain interpolation) supported by `fnGval` for new spline parametrizations.
 - **Cross-validation test suite** comparing the MATLAB output against the Python reference implementation: 14 cases including grid + scatter + edge molalities for NaCl, with per-case relative-tolerance overrides for known ice-V drifts and freshness/manifest checks on the reference `.mat`.
 
@@ -222,6 +222,17 @@ out = SF_PhaseLines('VI', 'water1', 'plot', true);
 out = SF_PhaseLines('Ih', 'NaClaq', 'm', 1.0);
 % At P=0, m=1, T ≈ 269.8 K (FPD ≈ 3.3 K including the van't Hoff factor)
 
+% Multiple molalities at once — returns a struct array, plots all curves
+% in distinct colours with a legend
+out = SF_PhaseLines('Ih', 'NaClaq', 'm', [1.0, 2, 4, 5], 'plot', true);
+%   numel(out)  == 4
+%   out(k).m    == [1, 2, 4, 5](k)
+%   out(k).fig  : shared figure handle on every entry
+```
+
+![Ih–NaClaq melting curves at multiple molalities](docs/SF_PhaseLines_Ih_NaClaq_multi_m.png)
+
+```matlab
 % Override the default sampling grid
 out = SF_PhaseLines('III', 'water1', 'P', 200:0.5:350, 'T', 240:0.1:260);
 ```
@@ -261,6 +272,7 @@ Stability prediction is considered valid down to 130 K (ice VI – ice XV transi
 * **Baptiste Journaux** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **J. Michael Brown** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Penny Espinoza** — *University of Washington, Earth and Space Sciences, Seattle, USA*
+* **Ula Jones** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Erica Clinton** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Tyler Gordon** — *University of Washington, Department of Astronomy, Seattle, USA*
 
