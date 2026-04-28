@@ -7,8 +7,7 @@ The SeaFreeze package computes thermodynamic and elastic properties of water, ic
 ## What's new in 1.1.0
 - **Aqueous NaCl solutions** (`NaClaq`) via the same 3D (P,T,m) spline used by the Python version, including a corrected scatter-input mixing-quantities path that uses a per-row baseline at `m = cutoff` (previously broken with a runtime warning).
 - **Selective property computation**: ask for only the properties you need (e.g. just `rho` or `{'G','Cp'}`) to save time.
-- `SF_getprop` **is now the preferec function for getting properties (replaces SeaFreeze)**, `SeaFreeze` still works for now but shows an deprecation message.
-- **No Curve Fitting Toolbox required** for `SF_getprop`. A single evaluator (`fnGval` over `sp_val`) handles every phase, including the LBF-form spline used for ice VII/X. (`SF_WhichPhase` and `SF_PhaseLines` still call `fnval` and so do still need the toolbox; tracked for a future port.)
+- **No Curve Fitting Toolbox required** for `SF_getprop` or `SF_PhaseLines`. A single evaluator (`fnGval` over `sp_val`) handles every phase, including the LBF-form spline used for ice VII/X. (`SF_WhichPhase` still calls `fnval` and so still needs the toolbox; tracked for a future port.)
 - **New outputs**: `Js` (Joule-Thomson coefficient) and `gamma_Gruneisen` (Grüneisen parameter) for every phase; `f`, `m`, `xs`, `xw`, `Vw` (partial molar volume of solvent) for `NaClaq` mixing.
 - **Optional `sp.Tc`** (dimensionless temperature, `tau = log(T/Tc)`) and **`sp.mask`** (validity-domain interpolation) supported by `fnGval` for new spline parametrizations.
 - **Cross-validation test suite** comparing the MATLAB output against the Python reference implementation: 14 cases including grid + scatter + edge molalities for NaCl, with per-case relative-tolerance overrides for known ice-V drifts and freshness/manifest checks on the reference `.mat`.
@@ -16,7 +15,7 @@ The SeaFreeze package computes thermodynamic and elastic properties of water, ic
 ## Getting started
 
 ### Prerequisites
-Tested on MATLAB R2018a and newer. `SF_getprop` is now toolbox-free — it uses an in-tree de-Boor evaluator (`sp_val.m`) for every phase. The phase-stability helper `SF_WhichPhase` and the phase-line plotter `SF_PhaseLines` still call `fnval` from the **Curve Fitting Toolbox** and require it to run; this will be removed in a future release.
+Tested on MATLAB R2018a and newer. `SF_getprop` and `SF_PhaseLines` are toolbox-free — they use an in-tree de-Boor evaluator (`sp_val.m`) for every phase, plus base-MATLAB `contourc` for the phase-line solver. The phase-stability helper `SF_WhichPhase` still calls `fnval` from the **Curve Fitting Toolbox** and requires it to run; this will be removed in a future release.
 
 ### Installing
 Add `SeaFreeze/Matlab` to your MATLAB path. The following data files must be on the path (they ship with this folder):
@@ -225,10 +224,36 @@ out = SF_WhichPhase({0:10:1000, 240:1:300, 2}, 'solute','NaCl');
 ```
 
 ### `SF_PhaseLines`
-Compute phase-boundary coordinates (melting or solid-solid) by intersecting Gibbs surfaces. Provides metastable extensions beyond published triple points.
+Compute the equilibrium curve between two phases by zero-contouring the Gibbs-energy difference (or, for ice ↔ NaClaq, the chemical-potential difference for water). Returns a struct with `(P, T)` along the curve, a stable-vs-metastable mask based on per-pair triple points, and the relevant triple-point coordinates. Optional rendering plots stable as solid red and metastable extensions as dotted red, with triple points marked.
+
+The default sampling grid is the **intersection** of both phases' spline knot domains (auto-derived via `SF_phase_range`); pass `'P'` and/or `'T'` to override.
+
+**Supported pairs (16):** the 11 pure-phase pairs of the original water phase diagram plus 5 ice ↔ NaClaq melting pairs.
+
 ```matlab
-SF_PhaseLines('Ih', 'water1', 'plot', 'meta')
+% Pure-water Ih melting curve, full curve including metastable extensions
+out = SF_PhaseLines('Ih', 'water1');
+%   out.P, out.T : (Nx1) curve coordinates
+%   out.stable   : (Nx1) logical, true on the thermodynamically stable portion
+%   out.triple_points : (Mx2) [T_K, P_MPa]
+
+% Stable portion only (no metastable extensions)
+out = SF_PhaseLines('Ih', 'water1', 'segment', 'stable');
+
+% Render the curve and triple points
+out = SF_PhaseLines('VI', 'water1', 'plot', true);
+
+% NaClaq melting curve at fixed molality (mol/kg)
+out = SF_PhaseLines('Ih', 'NaClaq', 'm', 1.0);
+% At P=0, m=1, T ≈ 269.8 K (FPD ≈ 3.3 K including the van't Hoff factor)
+
+% Override the default sampling grid
+out = SF_PhaseLines('III', 'water1', 'P', 200:0.5:350, 'T', 240:0.1:260);
 ```
+
+For `NaClaq` pairs, the entire curve is returned as `stable`; distinguishing stable from metastable for ice ↔ NaClaq requires triple points whose locations depend on molality (not currently supported).
+
+A frozen copy of the v1 (Clinton & Journaux 2020) implementation lives in `SF_PhaseLines_v1.m` for regression-comparison and is exercised by `test/test_SF_PhaseLines.m`. To produce side-by-side comparison figures, run `test/compare_SF_PhaseLines`.
 
 ### `SF_WPD`
 Plot the full water phase diagram.
@@ -257,7 +282,6 @@ Stability prediction is considered valid down to 130 K (ice VI – ice XV transi
 * **Baptiste Journaux** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **J. Michael Brown** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Penny Espinoza** — *University of Washington, Earth and Space Sciences, Seattle, USA*
-* **Ula Jones** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Erica Clinton** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Tyler Gordon** — *University of Washington, Department of Astronomy, Seattle, USA*
 
