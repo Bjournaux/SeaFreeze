@@ -256,6 +256,7 @@ Stability prediction is considered valid down to 130 K (ice VI – ice XV transi
 * **Baptiste Journaux** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **J. Michael Brown** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Penny Espinoza** — *University of Washington, Earth and Space Sciences, Seattle, USA*
+* **Ula Jones** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Erica Clinton** — *University of Washington, Earth and Space Sciences, Seattle, USA*
 * **Tyler Gordon** — *University of Washington, Department of Astronomy, Seattle, USA*
 
