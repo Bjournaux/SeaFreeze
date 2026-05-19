@@ -1,50 +1,116 @@
-function out=SF_WhichPhase(PT)
-% Version 0.9.2, 
-% Calculate which phase is stable at a given PT array
-% Returns a numerical value with
-% 0 = liquid
-% 1 = ice Ih
-% 2 = ice II
-% 3 = ice III
-% 5 = ice V
-% 6 = ice VI
-% returns NaN for PT values outside the range of all phases. Currently ice
-% VII does not work.
+function out = SF_WhichPhase(PT, varargin)
+% Version 1.1.0
+% Baptiste Journaux - 2026
+% Determine which supported phase is stable at given conditions.
 %
-%%% Example 
+% Usage:
+%   out = SF_WhichPhase({P,T})                       % default: pure water
+%   out = SF_WhichPhase([P T])                       % scatter form
+%   out = SF_WhichPhase({P,T,m}, 'solute','NaCl')    % NaCl(aq) liquid
+%   out = SF_WhichPhase([P T m], 'solute','NaCl')
 %
-% Indentify phase for every 10 MPa from 0 to 2300 MPa and every 1 K from
-% 200 to 355 K :
-% out = SF_WhichPhase({0:10:2300,200:355})
+% Returns a numerical phase code:
+%   0 = liquid  (pure water1 by default, NaCl(aq) when 'solute','NaCl')
+%   1 = ice Ih
+%   2 = ice II
+%   3 = ice III
+%   5 = ice V
+%   6 = ice VI
+%   NaN where (P,T[,m]) is outside the parametrization range of every phase.
 %
+% In NaCl mode the comparison is done on the chemical potential of water:
+% muw_solution (J/mol of H2O) vs G_ice * MW_H2O (J/mol). This accounts for
+% freezing-point depression by salt.
+%
+% Example:
+%   % Pure water, every 10 MPa from 0 to 2300 MPa, every 1 K from 200-355 K
+%   out = SF_WhichPhase({0:10:2300, 200:355});
+%
+%   % NaCl(aq) solution at 2 mol/kg, sweeping P,T
+%   out = SF_WhichPhase({0:10:1000, 240:1:300, 2}, 'solute','NaCl');
 
- 
-load('SeaFreeze_Gibbs.mat')
+p = inputParser;
+addParameter(p, 'solute', 'none', @(s) ischar(s) || (isstring(s) && isscalar(s)));
+parse(p, varargin{:});
+solute = char(p.Results.solute);
+if ~ismember(lower(solute), {'none','nacl','naclaq'})
+    error('SF_WhichPhase:badInput', ...
+          '''solute'' must be ''none'' or ''NaCl'' (got ''%s'').', solute);
+end
+is_nacl = strcmpi(solute, 'NaCl') || strcmpi(solute, 'NaClaq');
 
+% Validate PT against the implied material.
+if is_nacl, mat_check = 'NaClaq'; else, mat_check = 'water1'; end
+sf_validate_PT(PT, mat_check);
 
+G_iceIh         = sf_load_spline('Ih');
+G_iceII         = sf_load_spline('II');
+G_iceIII        = sf_load_spline('III');
+G_iceV          = sf_load_spline('V');
+G_iceVI         = sf_load_spline('VI');
+G_H2O_2GPa_500K = sf_load_spline('water1');
 
-out_Ih=fnval(G_iceIh,PT');
-out_II=fnval(G_iceII,PT');
-out_III=fnval(G_iceIII,PT');
-out_V=fnval(G_iceV,PT');
-out_VI=fnval(G_iceVI,PT');
-%out_VII=fnval(G_iceVII_X_French,PT');
-out_Bollengier=fnval(G_H2O_2GPa_500K,PT');
-%out_Brown=fnGval(G_H2O_100GPa_10000K,PT);
-% out_IAPWS=fnGval(G_H2O_IAPWS,PT);
-[np,nt]=size(out_Ih);
+defs = sf_material_defs();
+MW_H2O = defs.MW_H2O;
 
- 
+% --- prepare (P,T) coordinates for the ice splines and evaluate the liquid -
+if is_nacl
+    if iscell(PT)
+        if length(PT) ~= 3
+            error('SF_WhichPhase:badInput', ...
+                  'NaClaq mode requires PT = {P,T,m}');
+        end
+        PT_pt = {PT{1}(:)', PT{2}(:)'};
+        is_grid = true;
+        nm = numel(PT{3});
+    else
+        if size(PT,2) ~= 3
+            error('SF_WhichPhase:badInput', ...
+                  'NaClaq mode requires PT = [P T m] (N-by-3)');
+        end
+        PT_pt = PT(:,1:2);
+        is_grid = false;
+    end
+    sol  = SF_getprop(PT, 'NaClaq', 'muw');
+    Gliq = sol.muw;       % J/mol of H2O in solution
+    ice_scale = MW_H2O;   % convert ice G (J/kg) to J/mol of H2O
+else
+    if iscell(PT)
+        PT_pt = {PT{1}(:)', PT{2}(:)'};
+        is_grid = true;
+    else
+        PT_pt = PT(:,1:2);
+        is_grid = false;
+    end
+    Gliq = sp_val(G_H2O_2GPa_500K, PT_pt);   % J/kg
+    ice_scale = 1;
+end
 
+% --- evaluate ice phases on the (P,T) grid / scatter list -------------------
+Gih  = sp_val(G_iceIh,  PT_pt) * ice_scale;
+Gii  = sp_val(G_iceII,  PT_pt) * ice_scale;
+Giii = sp_val(G_iceIII, PT_pt) * ice_scale;
+Gv   = sp_val(G_iceV,   PT_pt) * ice_scale;
+Gvi  = sp_val(G_iceVI,  PT_pt) * ice_scale;
 
-  for i=1:np*nt
-            all_phaseG = [out_Bollengier(i) out_Ih(i) out_II(i) out_III(i) NaN out_V(i) out_VI(i)];
-            all_phaseG(find(all_phaseG == 0)) = NaN;
-            if all(isnan(all_phaseG))
-                out(i) = NaN;
-            else
-                [Y,I]=min(all_phaseG);
-                out(i)=I-1;
-            end
-  end
-   out=reshape(out,np,nt);  
+% --- broadcast ice values across the molality axis if needed ---------------
+if is_nacl && is_grid
+    expand = @(X) repmat(X, [1 1 nm]);
+    Gih  = expand(Gih);
+    Gii  = expand(Gii);
+    Giii = expand(Giii);
+    Gv   = expand(Gv);
+    Gvi  = expand(Gvi);
+end
+
+% --- pick the phase with minimum Gibbs energy / chemical potential ---------
+sz = size(Gliq);
+G  = [Gliq(:) Gih(:) Gii(:) Giii(:) Gv(:) Gvi(:)];
+G(G == 0) = NaN;          % preserve original out-of-range sentinel handling
+phase_codes = [0 1 2 3 5 6];
+
+[~, idx] = min(G, [], 2, 'omitnan');
+out = phase_codes(idx);
+out(all(isnan(G), 2)) = NaN;
+out = reshape(out, sz);
+end

@@ -1,274 +1,341 @@
 # SeaFreeze
 
-V1.0.2 (Matlab version)
+V1.1.0 (Matlab version)
 
-The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, III, V, VI and ice VII/ice X) in the 0-100 GPa and 220 - 10000K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
+The SeaFreeze package computes thermodynamic and elastic properties of water, ice polymorphs (Ih, II, III, V, VI, VII and X) and aqueous NaCl solutions in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their oceans in mind. It is based on Gibbs Local Basis Function (LBF) parametrizations (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in Brown (2018), Journaux et al. (2020), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019).
 
-## Getting Started
+## What's new in 1.1.0
+- **Aqueous NaCl solutions** (`NaClaq`) via the same 3D (P,T,m) spline used by the Python version, including a corrected scatter-input mixing-quantities path that uses a per-row baseline at `m = cutoff` (previously broken with a runtime warning).
+- **New outputs**: `Js` (Joule-Thomson coefficient) and `gamma_Gruneisen` (Grüneisen parameter) for every phase; `m`, `xs`, `xw`, `f`, `mus`, `muw`,`Vm`, `Vw`, `Cpm`, `Va`, `Cpa`, `Vex`, `phi`, `aw` for `NaClaq` mixing (see table below)
+- **Selective property computation**: ask for only the properties you need (e.g. just `rho` or `{'G','Cp'}`) to save time.
+- **No Curve Fitting Toolbox required** — the entire package (`SF_getprop`, `SF_PhaseLines`, `SF_WhichPhase`) is toolbox-free. A single in-tree de Boor evaluator (`sp_val`) handles every phase and all derivative orders.
+- **Optional `sp.Tc`** (dimensionless temperature, `tau = log(T/Tc)`) and **`sp.mask`** (validity-domain interpolation) supported by `fnGval` for new spline parametrizations.
+- **Cross-validation test suite** comparing the MATLAB output against the Python reference implementation: 14 cases including grid + scatter + edge molalities for NaCl, with per-case relative-tolerance overrides for known ice-V drifts and freshness/manifest checks on the reference `.mat`.
 
+## Getting started
 
 ### Prerequisites
-
-This Matlab version of SeaFreeze has been tested on MATLAB_R2018a. SeaFreeze does not need any other toolboxes to work. Nonetheless, the "Curve Fitting Toolbox" allows to run the code significantly faster when evaluating a list of points rather than a grid.
+Tested on MATLAB R2018a and newer. **No toolboxes required.** The entire package uses an in-tree de Boor evaluator (`sp_val.m`) for every phase and derivative order, plus base-MATLAB `contourc` for the phase-line solver.
 
 ### Installing
+Use `addpath` with `genpath` so that MATLAB also picks up the `internal/` helpers and the per-phase spline files inside `splines/`:
 
-To install SeaFreeze, either change your active directory to SeaFreeze/Matlab, or add that directory to your Matlab path.  In either case, the SeaFreeze_Gibbs.mat file must be in the same directory as the Matlab functions.
+```matlab
+addpath(genpath('/path/to/SeaFreeze/Matlab'))
+```
+
+All spline data files ship inside `Matlab/splines/` — no extra downloads required. You can verify the install with:
+
+```matlab
+SeaFreeze_version   % should print '1.1.0'
+```
 
 ## Running SeaFreeze
 
-### Inputs
-To run the `SeaFreeze` function you need to provide pressure (MPa) and temperature (K) coordinates and a material input:
-
-```Matlab
-out=SeaFreeze(PT,'material')
+```matlab
+out = SF_getprop(PT, material)           % all supported properties (default)
+out = SF_getprop(PT, material, props)    % only the requested properties
 ```
 
-PT is a structure (gridded output) or array (scatter output) containing pressure-temperature points (MPa and Kelvin).
+> **Deprecation note (1.1.0):** the legacy entry point `SeaFreeze(PT, material, ...)` still works and is kept as a thin alias for `SF_getprop`. It emits a one-time warning per MATLAB session. Suppress it with `warning('off','SeaFreeze:deprecated')`. Migrate calls to `SF_getprop` at your convenience; the alias will be removed in a future release.
 
-'material' defines which ice or water to use.  Possibilities:
+### Inputs
 
-- 'Ih' for ice Ih (Feistel and Wagner, 2006)
-- 'II' for ice II (Journaux et al. 2019)
-- 'III' for ice III (Journaux et al. 2019)
-- 'V' for ice V (Journaux et al. 2019)
-- 'VI' for ice VI (Journaux et al. 2019)
-- 'VII_X_French' for ice VII and ice X (French and Redmer 2015)
-- 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
-- 'water2' for the modified EOS in Brown 2018 extending to 100 GPa
-- 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
+**`PT`** — pressure–temperature (–molality) coordinates.
+- Pure phases: cell `{P,T}` (gridded output) or N×2 array `[P T]` (scatter output).
+- `NaClaq`: cell `{P,T,m}` (gridded) or N×3 array `[P T m]` (scatter).
+- Units: P in MPa, T in K, m in mol/kg. Points outside the parametrization return `NaN`.
+
+**`material`**
+| Name | Description |
+|------|-------------|
+| `Ih` | Ice Ih (Feistel and Wagner, 2006) |
+| `II`, `III`, `V`, `VI` | Ices II–VI (Journaux et al. 2020) |
+| `VII_X_French` | Ice VII / ice X (French and Redmer 2015) |
+| `water1` | Liquid water — Bollengier et al. 2019 (≤500 K, ≤2300 MPa) |
+| `water2` | Liquid water — Brown 2018 (up to 100 GPa) |
+| `water_IAPWS95` | IAPWS95 water (Wagner and Pruss, 2002) |
+| `NaClaq` | Aqueous NaCl — stitched LP+HP 2026, recommended (0–10000 MPa, 229–2001 K, 0–7 mol/kg) |
+| `NaClaq_LP` | NaCl(aq) low-P only (0–1000 MPa, 230–501 K) |
+| `NaClaq_HP` | NaCl(aq) high-P only (500–10000 MPa, 229–2001 K) |
+| `NaClaq_5GPa_2024` | NaCl(aq) Brown 2024 legacy (0–5000 MPa, 229–501 K) |
+
+**`props`** *(optional)* — a string or cell array of property names. Omit or pass `[]` to compute all supported properties.
 
 ### Outputs
-out is a structure containing all output quantities (SI units):
+`out` is a struct with the requested fields (SI units).
 
+Common to all materials:
 
-| Quantity        |  Symbol in SeaFreeze  |  Unit (SI)  |
-| --------------- |:---------------------:| :----------:|
-| Gibbs Energy           | `G` | J/kg |
-| Entropy                | `S` | J/K/kg |
-| Internal Energy        | `U` | J/kg |
-| Enthalpy               | `H` | J/kg |
-| Helmholtz free energy  | `A` | J/kg |
-| Density                |`rho`| kg/m^3 |
-|Specific heat capacity at constant pressure|`Cp`| J/kg/K |
-|Specific heat capacity at constant volume|`Cv`| J/kg/K |
-| Isothermal bulk modulus      |`Kt`| MPa |
-|Pressure derivative of the Isothermal bulk modulus|`Kp`| - |
-| Isoentropic bulk modulus     |`Ks`| MPa |
-| Thermal expansivity     |`alpha`| /K |
-| Shear modulus     |`shear`| MPa |
-| P wave velocity     |`Vp`| m/s |
-| S wave velocity     |`Vs`| m/s |
-| Bulk sound speed     |`vel`| m/s |
+| Quantity | Field | Unit |
+|----------|:-----:|:----:|
+| Gibbs energy | `G` | J/kg |
+| Entropy | `S` | J/K/kg |
+| Internal energy | `U` | J/kg |
+| Enthalpy | `H` | J/kg |
+| Helmholtz free energy | `A` | J/kg |
+| Density | `rho` | kg/m³ |
+| Isobaric heat capacity | `Cp` | J/kg/K |
+| Isochoric heat capacity | `Cv` | J/kg/K |
+| Isothermal bulk modulus | `Kt` | MPa |
+| Pressure derivative of `Kt` | `Kp` | – |
+| Isentropic bulk modulus | `Ks` | MPa |
+| Thermal expansivity | `alpha` | 1/K |
+| Bulk sound speed | `vel` | m/s |
+| Joule-Thomson coefficient | `Js` | K/MPa |
+| Grüneisen parameter | `gamma_Gruneisen` | – |
+| Pressure echo | `P` | MPa |
+| Temperature echo | `T` | K |
 
- **NaN values returned when out of parametrization boundaries.**
+`P` and `T` echo back the input coordinate arrays. They are present when all properties are requested (no `props` argument) and can also be requested explicitly, e.g. `SF_getprop(PT, 'VI', {'rho','P','T'})`.
 
+Solid phases additionally provide:
 
+| Quantity | Field | Unit |
+|----------|:-----:|:----:|
+| Shear modulus | `shear` | MPa |
+| P-wave velocity | `Vp` | m/s |
+| S-wave velocity | `Vs` | m/s |
 
+`NaClaq` additionally provides mixing properties:
 
-## Example
+| Quantity | Field | Unit |
+|----------|:-----:|:----:|
+| Molality echo | `m` | mol/kg |
+| Solute mole fraction | `xs` | – |
+| Solvent mole fraction | `xw` | – |
+| kg-of-solution per kg-of-water factor | `f` | – |
+| Solute chemical potential | `mus` | J/mol |
+| Solvent chemical potential | `muw` | J/mol |
+| Partial molar volume of solute | `Vm` | cm³/mol |
+| Partial molar volume of solvent | `Vw` | cm³/mol |
+| Partial molar heat capacity of solute | `Cpm` | J/mol/K |
+| Apparent molar volume | `Va` | cm³/mol |
+| Apparent molar heat capacity | `Cpa` | J/mol/K |
+| Excess volume | `Vex` | cm³/mol |
+| Osmotic coefficient | `phi` | – |
+| Water activity | `aw` | – |
 
-An executable matlab live script (Example_SeaFreeze.mlx) is provided allowing to run the following examples.
+## Examples
 
-### Single point input
-
-Single point for ice VI at 900 MPa and 255 K. This can be used to check returned thermodynamic properties values.
-```Matlab
-PT = {900,255};
-out=SeaFreeze(PT,'VI')
-```
-Output :
-```Matlab
-out = 
-
-  struct with fields:
-
-      rho: 1.3561e+03
-       Cp: 2.0054e+03
-        G: 7.4677e+05
-       Cv: 1.8762e+03
-      vel: 3.6759e+03
-       Kt: 1.7143e+04
-       Ks: 1.8323e+04
-       Kp: 6.2751
-        S: -1.3827e+03
-        U: -2.6951e+05
-        H: 8.3090e+04
-    alpha: 2.0020e-04
-       Vp: 4.5490e+03
-       Vs: 2.3207e+03
-    shear: 7.3033e+03
-```
-
-### Grid  input
-Grid of points for ice V every 2 MPa from 400 to 500 MPa and every 0.5 K from 220 to 250 K
-```Matlab
-PT = {400:2:500,240:0.5:250};
-out=SeaFreeze(PT,'V')
-```
-Output :
-```Matlab
-out = 
-
-  struct with fields:
-
-      rho: [51×21 double]
-       Cp: [51×21 double]
-        G: [51×21 double]
-       Cv: [51×21 double]
-      vel: [51×21 double]
-       Kt: [51×21 double]
-       Ks: [51×21 double]
-       Kp: [51×21 double]
-        S: [51×21 double]
-        U: [51×21 double]
-        H: [51×21 double]
-    alpha: [51×21 double]
-       Vp: [51×21 double]
-       Vs: [51×21 double]
-    shear: [51×21 double]
+### Single point (all properties)
+```matlab
+PT = [900 255];
+out = SF_getprop(PT, 'VI');
 ```
 
-
-### List  input
-List of 3 points for liquid water at 300K and 200, 223 and 225 MPa 
-```Matlab
-PT = ([200 300 ; 223 300 ; 225 300 ]);
-out=SeaFreeze(PT,'water1')
+### Grid input
+Ice V every 2 MPa from 400 to 500 MPa and every 0.5 K from 240 to 250 K:
+```matlab
+PT = {400:2:500, 240:0.5:250};
+out = SF_getprop(PT, 'V');
 ```
 
-```Matlab
-out = 
-
-  struct with fields:
-
-      rho: [3×1 double]
-       Cp: [3×1 double]
-        G: [3×1 double]
-       Cv: [3×1 double]
-      vel: [3×1 double]
-       Kt: [3×1 double]
-       Ks: [3×1 double]
-       Kp: [3×1 double]
-        S: [3×1 double]
-        U: [3×1 double]
-        H: [3×1 double]
-    alpha: [3×1 double]
+### Scatter input
+Three points for liquid water:
+```matlab
+PT = [200 300; 223 300; 225 300];
+out = SF_getprop(PT, 'water1');
 ```
 
-## Functions
-### `SeaFreeze_version` 
-Print the current version of SeaFreeze
-```Matlab
+### Selective properties (new in 1.1.0)
+Only density for an ice VI grid:
+```matlab
+out = SF_getprop({400:10:900, 240:5:270}, 'VI', 'rho');
+```
+G, ρ and Cp only:
+```matlab
+out = SF_getprop([900 255], 'VI', {'G','rho','Cp'});
+```
+Requesting shear/Vp/Vs pulls in the minimum dependencies automatically:
+```matlab
+out = SF_getprop([900 255], 'VI', 'Vp');   % returns only Vp
+```
+
+### Aqueous NaCl (new in 1.1.0)
+For `NaClaq`, `PT` is extended to `(P, T, m)` with molality `m` in mol/kg.
+
+Single point — osmotic coefficient, water activity and apparent properties at 200 MPa, 280 K, 0.5 mol/kg NaCl:
+```matlab
+PTm = [200 280 0.5];
+out = SF_getprop(PTm, 'NaClaq', {'phi','aw','Vex','Va','Cpa'});
+% out.phi   ≈ 0.9042   (osmotic coefficient)
+% out.aw    ≈ 0.9838   (water activity)
+% out.Vex   ≈ 0.444    (apparent excess volume, cm^3/mol)
+% out.Va    ≈ 23.12    (apparent molar volume, cm^3/mol)
+% out.Cpa   ≈ 15.37    (apparent molar heat capacity, J/mol/K)
+```
+
+Scatter list — three arbitrary (P,T,m) conditions:
+```matlab
+PTm = [100 298 0.5; 200 323 1.0; 500 373 3.0];
+out = SF_getprop(PTm, 'NaClaq', {'rho','Cp','mus','muw','aw'});
+% out.rho, out.Cp, out.aw, ...   each [3x1]
+```
+
+Grid input — sweep pressure 0.1–500 MPa, temperature 273–400 K, molality 0.1–3 mol/kg, all properties:
+```matlab
+P = 0.1:100:500;        % MPa
+T = 273:25:400;         % K
+m = [0.1 0.5 1.0 3.0];  % mol/kg
+out = SF_getprop({P,T,m}, 'NaClaq');
+% rows -> P, columns -> T, third dim -> m
+% e.g. out.rho is size [length(P) length(T) length(m)]
+```
+
+Subset for speed (e.g. only density and water activity on the same grid):
+```matlab
+out = SF_getprop({P,T,m}, 'NaClaq', {'rho','aw'});
+```
+
+`NaN` is returned outside the parametrization bounds (≤5000 MPa, 229–501 K, up to ~7 mol/kg).
+
+## Utility functions
+
+### `SeaFreeze_version`
+Return the current version string:
+```matlab
 SeaFreeze_version
-
-ans =
-
-    '0.9.3'
+% '1.1.0'
 ```
 
 ### `SF_WhichPhase`
-Function to determine which of the *supported* phases is stable under given pressure and temperature conditions. The `PT` input format is the same as the main `SeaFreeze` function.
-
-The output of the function is an array with an integer indicating the phase number corresponding to the `PT` input.  The phase number 0 means 
-liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.  
-
-#### Example
-Which phase is stable at 300 MPa and 300 K:
-```Matlab
-SF_WhichPhase({300,300})
-ans = 0
-```
-Liquid water (0) is predicted to be stable.
-
-
-### `SF_Phaselines`
-The `SF_PhaseLines` function calculates phase boundary coordinates (melting or solid-solid) for all phases included in SeaFreeze. It computes the interesection of Gibbs energies surfaces, and is able to provide metastable extentions beyound published tripple points (Journaux et al. 2020).
-#### Inputs
-
- Phaselines requires two phases input in any order, e.g. :
-```Matlab
-SF_PhaseLines('Ih', 'water1')
+Determine which supported phase is stable at a given (P,T). `PT` has the same format as `SeaFreeze`. Output integers: 0 = liquid, 1 = ice Ih, 2 = II, 3 = III, 5 = V, 6 = VI; `NaN` outside all parametrizations.
+```matlab
+SF_WhichPhase({300,300})   % -> 0 (liquid water)
 ```
 
- #### Options:
-```Matlab
-'plot','meta'
+By default the liquid is pure water (`water1`). Pass `'solute','NaCl'` to use aqueous NaCl as the liquid; `PT` then needs the molality axis as `{P,T,m}` or `[P T m]`. The comparison is made on the chemical potential of water (μw_solution vs `G_ice·M_H2O`), so it captures freezing-point depression by salt:
+```matlab
+% Stability map for a 2 mol/kg NaCl solution from 0-1000 MPa, 240-300 K
+out = SF_WhichPhase({0:10:1000, 240:1:300, 2}, 'solute','NaCl');
 ```
 
-`'plot'` graphically displays the requested phase equilibria coordinates 
-`'meta'` provides part of the metastable extensions. 
-These options can be used separately or in conjunction with each other.
-  #### Outputs
+### `SF_PhaseLines`
+Compute the equilibrium curve between two phases by zero-contouring the Gibbs-energy difference (or, for ice ↔ NaClaq, the chemical-potential difference for water). Returns a struct with `(P, T)` along the curve, a stable-vs-metastable mask based on per-pair triple points, and the relevant triple-point coordinates. Optional rendering plots stable as solid red and metastable extensions as dotted red, with triple points marked.
 
-  The output of `SF_Phaselines` is a series of Pressure (MPa) and Temperature (K) coordinates. Additionally, if 'plot' is selected, a figure appears with plotted coordinates.
+The default sampling grid is the **intersection** of both phases' spline knot domains (auto-derived via `SF_phase_range`); pass `'P'` and/or `'T'` to override.
 
-  #### Example
-Ice Ih melting curve with figure and metastable extention
-```Matlab
-Phaselines('Ih', 'water1','plot', 'meta')
+**Supported pairs (28):** the 11 pure-phase pairs of the original water phase diagram, 5 ice ↔ NaClaq melting pairs, **II ↔ water1** (entirely metastable), **VII_X_French ↔ water1 / water2 / water_IAPWS95** (high-pressure melting curve, stable above the VI–VII–water triple point at ~2216 MPa, 354 K), and the four low-P ice phases (Ih/III/V/VI) paired with **water2** and **water_IAPWS95** for cross-EOS comparison. Note: ice melt curves drift from the canonical water1-based ones at low P when paired with water2 or water_IAPWS95, since water1 is the SeaFreeze liquid optimised for that range.
+
+```matlab
+% Pure-water Ih melting curve, full curve including metastable extensions
+out = SF_PhaseLines('Ih', 'water1');
+%   out.P, out.T : (Nx1) curve coordinates
+%   out.stable   : (Nx1) logical, true on the thermodynamically stable portion
+%   out.triple_points : (Mx2) [T_K, P_MPa]
+
+% Stable portion only (no metastable extensions)
+out = SF_PhaseLines('Ih', 'water1', 'segment', 'stable');
+
+% Render the curve and triple points
+out = SF_PhaseLines('VI', 'water1', 'plot', true);
+
+% NaClaq melting curve at fixed molality (mol/kg)
+out = SF_PhaseLines('Ih', 'NaClaq', 'm', 1.0);
+% At P=0, m=1, T ≈ 269.8 K (FPD ≈ 3.3 K including the van't Hoff factor)
+
+% Multiple molalities at once — returns a struct array, plots all curves
+% in distinct colours with a legend
+out = SF_PhaseLines('Ih', 'NaClaq', 'm', [1.0, 2, 4, 5], 'plot', true);
+%   numel(out)  == 4
+%   out(k).m    == [1, 2, 4, 5](k)
+%   out(k).fig  : shared figure handle on every entry
 ```
+
+![Ih–NaClaq melting curves at multiple molalities](docs/SF_PhaseLines_Ih_NaClaq_multi_m.png)
+
+```matlab
+% Override the default sampling grid
+out = SF_PhaseLines('III', 'water1', 'P', 200:0.5:350, 'T', 240:0.1:260);
+
+% Compose multiple curves on the same figure: pass the figure handle
+% returned by a previous call as the 'plot' argument. Subsequent calls
+% overlay new curves without resetting axis labels, title or grid.
+o1 = SF_PhaseLines('Ih','water1','plot',true);                  % new figure
+SF_PhaseLines('III','water1','plot',o1.fig);                    % overlay
+SF_PhaseLines('VI','water1','plot',o1.fig);                     % overlay
+SF_PhaseLines('Ih','NaClaq','m',[1 2 3],'plot',o1.fig);         % overlay multi-m
+legend(gca(o1.fig), 'show', 'Location','best');                 % show legend
+```
+
+For `NaClaq` pairs, the entire curve is returned as `stable`; distinguishing stable from metastable for ice ↔ NaClaq requires triple points whose locations depend on molality (not currently supported).
+
+A frozen copy of the v1 (Clinton & Journaux 2020) implementation lives in `SF_PhaseLines_v1.m` for regression-comparison and is exercised by `test/test_SF_PhaseLines.m`. To produce side-by-side comparison figures, run `test/compare_SF_PhaseLines`.
 
 ### `SF_WPD`
-Plot the full water phase diagram
-```Matlab
-SF_WPD
+Plot the full H₂O water phase diagram, computed dynamically from Gibbs energy splines via `SF_PhaseLines`. Supports NaCl(aq) melting-curve overlays, metastable extensions, and phase-field labels.
+
+```matlab
+SF_WPD()                                        % pure water, new figure
+SF_WPD('solute','NaCl', 'm', [0.5 1 2 4])      % NaClaq melting-curve overlay
+SF_WPD('meta', false)                           % hide metastable extensions
+SF_WPD('labels', false)                         % hide phase-field labels
+SF_WPD('ax', gca)                               % overlay on existing axes
+fig = SF_WPD(...)                               % return figure handle
 ```
 
-## Important remarks 
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `'ax'` | `[]` (new figure) | Axes handle to plot onto |
+| `'solute'` | `'none'` | `'none'` or `'NaCl'` to overlay NaClaq melting curves |
+| `'m'` | `[]` | Scalar or vector of molality values (mol/kg) for NaClaq |
+| `'meta'` | `'default'` | `'default'` — only Ih–II and II–VI metastable extensions (matching v1); `true` / `'all'` — all pairs; `false` / `'none'` — none |
+| `'labels'` | `true` | Annotate stability fields with phase names |
+
+### `SF_phase_range`
+Return the knot-domain bounds (P, T, and optionally m) for any supported material. Used internally by `SF_PhaseLines` to auto-build the sampling grid, but also useful for checking validity ranges.
+
+```matlab
+rng = SF_phase_range('Ih');
+% rng.P  = [0.1, 2500]   (MPa)
+% rng.T  = [1, 400]      (K)
+
+rng = SF_phase_range('NaClaq');
+% rng.P, rng.T, rng.m    (m in mol/kg)
+```
+
+## Tests
+
+The MATLAB package ships with a function-style and classdef-style test suite plus a Python cross-validation harness. See [`test/README.md`](test/README.md) for how to run them, what each suite covers, and the documented tolerances / known differences.
+
+## Important remarks
+
 ### Water representation
-The ices Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parametrization wil lead to incorect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
+Ice Gibbs parametrizations are optimized for use with `water1` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will yield incorrect melting curves. `water2` and `water_IAPWS95` are provided for high-pressure extension and comparison only. Use `water1` for the 200–355 K, ≤2300 MPa range.
 
 ### Range of validity
-SeaFreeze stability prediction is currently considered valid down to 130K, which correspond to the ice VI - ice XV transition. The ice Ih - II transition is potentially valid down to 73.4 K (ice Ih - ice XI transition). The ice VII and ice X representation extend to 1TPa (1e6 MPa) and 2000K.
+Stability prediction is considered valid down to 130 K (ice VI – ice XV transition). The Ih–II transition may be valid down to 73.4 K (Ih – XI). The VII/X representation extends to 1 TPa (1e6 MPa) and 2000 K.
 
 ## References
-- [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501; doi: 10.1063/1.5097179](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
-- [Brown (2018) Fluid Phase Equilibria 463, pp. 18-31](https://www.sciencedirect.com/science/article/pii/S0378381218300530)
-- [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
-- [Journaux et al., (2019), in review (available on ArXiv)](https://arxiv.org/abs/1907.09598)
-- [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
-- [French and Redmer (2015), Physical Review B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
+- [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
+- [Brown (2018) Fluid Phase Equilibria 463, 18-31](https://www.sciencedirect.com/science/article/pii/S0378381218300530)
+- [Feistel and Wagner (2006) J. Phys. Chem. Ref. Data 35, 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
+- [Journaux et al. (2020) JGR: Planets 125, e2019JE006176](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019JE006176)
+- [Wagner and Pruss (2002) J. Phys. Chem. Ref. Data 31, 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
+- [French and Redmer (2015) Phys. Rev. B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
 
 ## Authors
 
-* **Baptiste Journaux** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **J. Michael Brown** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Penny Espinoza** - *University of Washington, Earth and Space Sciences Department, Seattle, USA* 
-* **Erica Clinton** - *University of Washington, Earth and Space Sciences Department, Seattle, USA*
-* **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
-
-
+* **Baptiste Journaux** — *University of Washington, Earth and Space Sciences, Seattle, USA*
+* **J. Michael Brown** — *University of Washington, Earth and Space Sciences, Seattle, USA*
+* **Penny Espinoza** — *University of Washington, Earth and Space Sciences, Seattle, USA*
+* **Ula Jones** — *University of Washington, Earth and Space Sciences, Seattle, USA*
+* **Erica Clinton** — *University of Washington, Earth and Space Sciences, Seattle, USA*
+* **Tyler Gordon** — *University of Washington, Department of Astronomy, Seattle, USA*
 
 ## License
 
-SeaFreeze is licensed under the GPL-3 License :
+SeaFreeze is licensed under the GPL-3 License:
 
 Copyright (c) 2019, B. Journaux
 
-This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, version 3.
-    
-This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, version 3.
 
- You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
-APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
-HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY
-OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM
-IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF
-ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ## Acknowledgments
 
-This work was produced with the financial support provided by the NASA Postdoctoral Program fellowship, by the NASA Solar System Workings Grant 80NSSC17K0775 and by the Icy Worlds node of NASA's Astrobiology Institute (08-NAI5-0021).
-
-
+This work was produced with the financial support of the NASA Postdoctoral Program fellowship, the NASA Solar System Workings Grant 80NSSC17K0775, and the Icy Worlds node of NASA's Astrobiology Institute (08-NAI5-0021).

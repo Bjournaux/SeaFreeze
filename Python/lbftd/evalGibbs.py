@@ -13,6 +13,8 @@ from inspect import getmembers
 log = logging.getLogger('lbftd')
 stream = logging.StreamHandler()
 stream.setFormatter(logging.Formatter('[LBFTD %(levelname)s] %(message)s'))
+log.addHandler(stream)
+log.setLevel(logging.WARNING)
 
 
 def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapolate=False, allowExtrapolations=False):

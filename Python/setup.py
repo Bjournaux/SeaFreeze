@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='SeaFreeze',
-    version='1.0.1',
+    version='1.1.0',
     author='Baptiste Journaux',
     author_email='bjournau@uw.edu',
     description='Thermodynamic properties of the phases of H2O and NaCl (aq)',
