@@ -9,7 +9,7 @@ V1.1.0
 
 
 The SeaFreeze package allows to compute the thermodynamic and elastic properties of pure water, ice polymorphs (Ih, II, 
-III, V VI and ice VII/ice X) up to 100 GPa and 10,000K and aqueous NaCl solution up to 8GPa and 2,000K. It is based on 
+III, V, VI and ice VII/ice X) up to 100 GPa and 10,000 K and aqueous NaCl solutions up to 8 GPa and 2,000 K. It is based on 
 the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each 
 phase, constructed to reproduce thermodynamic measurements. The formalism is described in more details in 
 [Journaux et al. (2020)](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2019JE006176), and in the liquid water 
@@ -25,7 +25,7 @@ Contact: bjournau (at) uw (dot) edu
 
 
 ### Installing
-Report to the README file for each version (Python or Matlab) for installing SeaFreeze.
+Refer to the README file for each version (Python or Matlab) for installing SeaFreeze.
 
 
 ## Running SeaFreeze
@@ -40,25 +40,27 @@ depending on the version used.
 To run the SeaFreeze function for ices and pure water you need to provide pressure (MPa) and temperature (K) coordinates and a material input:
 
 ```
-out=SeaFreeze(PT,'material')
+out = SF_getprop(PT, 'material')
 ```
 
 **For aqueous solutions**
 
-For obtaining properties aqueous solution of a given concentration in mol/kg, you need to provide pressure (MPa), temperature (K) and concentration coordinates (mol/kg):
+For obtaining properties of an aqueous solution of a given concentration in mol/kg, you need to provide pressure (MPa), temperature (K) and concentration coordinates (mol/kg):
 
 ```
-out=SeaFreeze(PTm,'material')
+out = SF_getprop(PTm, 'material')
 ```
 
 
 **For single properties**
 
-To improve computational efficiency, a list of specified thermodynamic variables can be calculated by specifying them as inputs to the SeaFreeze function:
+To improve computational efficiency, a list of specified thermodynamic variables can be calculated by specifying them as inputs:
 
 ```
-out=SeaFreeze(PT,'material', 'G', 'rho')
+out = SF_getprop(PT, 'material', {'G', 'rho'})
 ```
+
+> **Note:** The legacy entry point `SeaFreeze(PT, 'material', ...)` still works as a deprecated alias for `SF_getprop`.
 PT is a structure (gridded output) or array (scatter output) containing pressure-temperature points (MPa and Kelvin).
 
 * 'material' defines which ice, water, or solution to use.  Possibilities:
@@ -71,7 +73,7 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 * 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 * 'water2' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 * 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
-* 'aq_NaCl' for aqueous NaCl from JM Brown and B Journaux et al. (in prep.) 
+* 'NaClaq' for aqueous NaCl solution (Brown and Journaux et al., in prep.)
 
 
 ### Outputs
@@ -96,6 +98,8 @@ out is a structure containing all output quantities (SI units):
 | P wave velocity (only for solids)     |`Vp`| m/s |
 | S wave velocity (only for solids)     |`Vs`| m/s |
 | Bulk sound speed     |`vel`| m/s |
+| Joule-Thomson coefficient |`Js`| K/MPa |
+| Grüneisen parameter  |`gamma_Gruneisen`| - |
 
 
 | Quantity  (PTm only)      |  Symbol in SeaFreeze  |  Unit (SI)  |
@@ -109,8 +113,6 @@ out is a structure containing all output quantities (SI units):
 |Excess Volume|`Vex`| cc/mol |
 |Osmotic Coefficient|`phi`| -|
 | Water Activity      |`aw`| - |
-|Activity Coefficient|`gam`| - |
-| Excess Gibbs Energy     |`Gex`| J/kg |
 
 
  **NaN values returned when out of parametrization boundaries.**
@@ -126,7 +128,7 @@ An executable Matlab live script (Example_SeaFreeze.mlx) is provided allowing to
 Single point for ice VI at 900 MPa and 255 K. This can be used to check returned thermodynamic properties values.
 ```Matlab
 PT = {900,255};
-out=SeaFreeze(PT,'VI')
+out = SF_getprop(PT, 'VI')
 ```
 Output :
 ```Matlab
@@ -155,7 +157,7 @@ out =
 Grid of points for ice V every 2 MPa from 400 to 500 MPa and every 0.5 K from 220 to 250 K
 ```Matlab
 PT = {400:2:500,240:0.5:250};
-out=SeaFreeze(PT,'V')
+out = SF_getprop(PT, 'V')
 ```
 Output :
 ```Matlab
@@ -185,7 +187,7 @@ out =
 List of 3 points for liquid water at 300K and 200, 223 and 225 MPa 
 ```Matlab
 PT = ([200 300 ; 223 300 ; 225 300 ]);
-out=SeaFreeze(PT,'water1')
+out = SF_getprop(PT, 'water1')
 ```
 
 ```Matlab
@@ -216,7 +218,7 @@ Single point for NaCl(aq) of 0.5 M at 900 MPa and 280 K:
 
 ```Matlab
 PTm = {900, 280, 0.5};
-out=SeaFreeze(PTm,'aq_NaCl')
+out = SF_getprop(PTm, 'NaClaq')
 ```
 Output :
 
@@ -230,7 +232,6 @@ out =
            U: 1.7738e+04
            H: 7.3720e+05
            A: 5.7790e+04
-           F: 5.7790e+04
          rho: 1.2509e+03
           Cp: 3.7630e+03
           Cv: 3.3825e+03
@@ -246,10 +247,8 @@ out =
           Vm: 24.3212
           Vw: 14.6032
          Cpm: 149.3719
-         gam: 0.7631
          phi: 0.8174
          Vex: 0.2598
-         Gex: -204.1910
           aw: 0.9854
 ```
 
@@ -259,7 +258,7 @@ Grid of points every 10 MPa from 0.1 to 1000 MPa, every 2 K from 240 to 501 K, a
 
 ```Matlab
 PTm = {0.1:10:1000.2,240:2:501,1:0.5:6}; 
-out=SeaFreeze(PTm,'NaCl')
+out = SF_getprop(PTm, 'NaClaq')
 ```
 
 Output :
@@ -275,7 +274,6 @@ Output :
            U: [101×131×11 double]
            H: [101×131×11 double]
            A: [101×131×11 double]
-           F: [101×131×11 double]
          rho: [101×131×11 double]
           Cp: [101×131×11 double]
           Cv: [101×131×11 double]
@@ -291,13 +289,19 @@ Output :
           Vm: [101×131×11 double]
           Vw: [101×131×11 double]
          Cpm: [101×131×11 double]
-         gam: [101×131×11 double]
          phi: [101×131×11 double]
          Vex: [101×131×11 double]
-         Gex: [101×131×11 double]
           aw: [101×131×11 double]
 
 ```
+
+## Utility functions
+
+- **`SF_WhichPhase`** — Determine which phase is thermodynamically stable at given (P,T) coordinates. Supports NaCl(aq) for freezing-point depression.
+- **`SF_PhaseLines`** — Compute the equilibrium curve between any two phases by zero-contouring the Gibbs energy difference. Returns (P,T) coordinates with stable/metastable classification.
+- **`SF_WPD`** — Plot the full H2O water phase diagram with optional NaCl(aq) melting-curve overlays, metastable extensions, and phase-field labels.
+
+See the Python and Matlab READMEs for full documentation and usage examples.
 
 ## Important remarks 
 ### Water representations
@@ -307,7 +311,7 @@ specially for phase equilibrium calculation. Using other water parametrization w
 comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K 
 range and up to 2300 MPa.
 
-A Gibbs energy representation of French and Redmer (2015) ice VII and X equation of state is provided for comparison only. It should not be used for melting point or solid-solid phase boundaries predictions.
+A Gibbs energy representation of French and Redmer (2015) ice VII and X equation of state is included. The VII/X–water melting curve is stable above the VI–VII–water triple point (~2216 MPa, 354 K).
 
 ### Range of validity
 SeaFreeze stability prediction is currently considered valid down to 130K, which correspond to the ice VI - ice XV transition. The ice Ih - II transition is potentially valid down to 73.4 K (ice Ih - ice XI transition).
@@ -344,6 +348,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ## Change log
 
 ### Changes since 0.9.0
+- `1.1.0`: New entry point `SF_getprop` (replaces `SeaFreeze`). Added `Js`, `gamma_Gruneisen` outputs. Removed `gam`, `Gex` outputs. Dynamic phase diagram `SF_WPD` replaces static WPD.mat. Rewritten `SF_PhaseLines` with 28 supported pairs including ice VII/X melting curves. Material name `aq_NaCl` renamed to `NaClaq`. No Curve Fitting Toolbox required.
 - `1.0.2`: Fixed output for phaseline now coherent with the rest of the code as (P,T), bug fix with ice II-VI transition
 - `1.0.1`: updated and improved  NaCl aqueous solution EOS and concentration dependent thermodynamic variables. Reasonable stability for conditions in ocean worlds including Earth's crust.  NaN returned for values outside the range of the representation.
 - `1.0.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.  NaN returned for values outside the range of the representation.
@@ -356,11 +361,9 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 - `0.9.1`: add `whichphase` function to show which phase is stable at a PT coordinate.
 
 ### Planned updates
-- Ice VII and X [available here as a beta](https://github.com/Bjournaux/SeaFreeze/tree/new_tdvs) 
-- NaCl aqueous solutions  available as beta in main as of 1.0.0 
-- MgSO4, NasSO4 and MgCl2 aqueous solutions
-- NH_3 aqueous solutions
-- NaCl bearing solids (Halite and hydrohalite)
+- MgSO4, Na2SO4 and MgCl2 aqueous solutions
+- NH3 aqueous solutions
+- NaCl-bearing solids (halite and hydrohalite)
 
 
 ## License
@@ -392,7 +395,7 @@ ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
 
 ## Acknowledgments
 
-As of V1.0, SeaFreeze incorporates the mlbspline and lbftd packages originally developed by J. Michael Brown. Historical versions of these packages are no longer being updated and are available at https://github.com/jmichaelb/LocalBasisFunction. 
+As of V1.1.0, SeaFreeze incorporates the mlbspline and lbftd packages originally developed by J. Michael Brown. Historical versions of these packages are no longer being updated and are available at https://github.com/jmichaelb/LocalBasisFunction. 
 
 This work was produced with the financial support provided by the NASA Postdoctoral Program fellowship, by the NASA Solar System Workings Grant 80NSSC17K0775 and by the Icy Worlds node of NASA's Astrobiology Institute (08-NAI5-0021).
 
