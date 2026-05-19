@@ -1,7 +1,5 @@
 # SeaFreeze
 
-[For the Matlab beta version (1.1b) that allows to use the new aqueous NaCl equation of state, use this branch.](https://github.com/Bjournaux/SeaFreeze/tree/AgentAI/Matlab)
-
 [![License: GPL-3.0 License](https://img.shields.io/badge/License-GPL3-blue.svg?style=flat-square)](https://opensource.org/license/gpl-3-0/)
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
