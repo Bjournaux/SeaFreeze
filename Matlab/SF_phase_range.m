@@ -7,13 +7,17 @@ function rng = SF_phase_range(material)
 %
 % Usage:
 %   rng = SF_phase_range('Ih')
-%       rng.P = [0   400]    % MPa
-%       rng.T = [1   301]    % K
+%       rng.P = [0     400]    % MPa
+%       rng.T = [1     301]    % K
 %
-%   rng = SF_phase_range('NaClaq')
-%       rng.P = [0   5000.1] % MPa
-%       rng.T = [229 501]    % K
-%       rng.m = [0   7.01]   % mol/kg
+%   rng = SF_phase_range('NaClaq')         % stitched LP+HP 2026 (default)
+%       rng.P = [0     10001]  % MPa
+%       rng.T = [229   2001]   % K
+%       rng.m = [0     7.01]   % mol/kg
+%
+%   rng = SF_phase_range('NaClaq_LP')      % 2026 low-P spline only
+%   rng = SF_phase_range('NaClaq_HP')      % 2026 high-P spline only
+%   rng = SF_phase_range('NaClaq_5GPa_2024') % Brown 2024 legacy
 %
 % Materials follow SF_getprop's naming.
 
@@ -22,31 +26,33 @@ if ~(ischar(material) || (isstring(material) && isscalar(material)))
 end
 material = char(material);
 
-switch material
-    case 'Ih',           file = 'SeaFreeze_Gibbs.mat';                  var = 'G_iceIh';
-    case 'II',           file = 'SeaFreeze_Gibbs.mat';                  var = 'G_iceII';
-    case 'III',          file = 'SeaFreeze_Gibbs.mat';                  var = 'G_iceIII';
-    case 'V',            file = 'SeaFreeze_Gibbs.mat';                  var = 'G_iceV';
-    case 'VI',           file = 'SeaFreeze_Gibbs.mat';                  var = 'G_iceVI';
-    case 'VII_X_French', file = 'SeaFreeze_Gibbs.mat';                  var = 'G_iceVII_X_French';
-    case 'water1',       file = 'SeaFreeze_Gibbs.mat';                  var = 'G_H2O_2GPa_500K';
-    case 'water2',       file = 'SeaFreeze_Gibbs.mat';                  var = 'G_H2O_100GPa_10000K';
-    case 'water_IAPWS95',file = 'SeaFreeze_Gibbs.mat';                  var = 'G_H2O_IAPWS';
-    case 'NaClaq',       file = 'SeaFreeze_Gibbs_VII_NaCl5GPa.mat';     var = 'sp_NaCl_5GPa_500K';
-    otherwise
-        error('SeaFreeze:unknownMaterial', 'Unknown material ''%s''.', material);
+% Validate material name before attempting load
+defs = sf_material_defs();
+known_materials = defs.known_materials;
+if ~ismember(material, known_materials)
+    error('SeaFreeze:unknownMaterial', 'Unknown material ''%s''.', material);
 end
 
-S  = load(file, var);
-sp = S.(var);
-
-if ~iscell(sp.knots)
-    error('SeaFreeze:badInput', 'spline.knots is not a cell — unexpected layout for material %s.', material);
-end
-
-rng.P = [sp.knots{1}(1), sp.knots{1}(end)];
-rng.T = [sp.knots{2}(1), sp.knots{2}(end)];
-if length(sp.knots) >= 3
-    rng.m = [sp.knots{3}(1), sp.knots{3}(end)];
+if strcmp(material, 'NaClaq')
+    % Stitched: report the intersection domain for T/m (avoids LP extrapolation
+    % artifacts at phase boundaries), full P coverage LP_lo -> HP_hi.
+    spLP = sf_load_spline('NaClaq_LP');
+    spHP = sf_load_spline('NaClaq_HP');
+    rng.P = [spLP.knots{1}(1),  spHP.knots{1}(end)];
+    rng.T = [max(spLP.knots{2}(1), spHP.knots{2}(1)), ...
+             min(spLP.knots{2}(end), spHP.knots{2}(end))];
+    rng.m = [max(spLP.knots{3}(1), spHP.knots{3}(1)), ...
+             min(spLP.knots{3}(end), spHP.knots{3}(end))];
+else
+    sp = sf_load_spline(material);
+    if ~iscell(sp.knots)
+        error('SeaFreeze:badInput', ...
+              'spline.knots is not a cell — unexpected layout for material %s.', material);
+    end
+    rng.P = [sp.knots{1}(1), sp.knots{1}(end)];
+    rng.T = [sp.knots{2}(1), sp.knots{2}(end)];
+    if length(sp.knots) >= 3
+        rng.m = [sp.knots{3}(1), sp.knots{3}(end)];
+    end
 end
 end

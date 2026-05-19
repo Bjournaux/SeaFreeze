@@ -51,6 +51,63 @@ for k = 1:length(nacl_pairs)
     end
 end
 
+% New pairs added 2026-04-28: II↔water1, VII_X↔{water1,water2,IAPWS95},
+% and Ih/III/V/VI ↔ {water2, IAPWS95}.
+new_pairs = {
+    {'II','water1'}, ...
+    {'VII_X_French','water1'}, {'VII_X_French','water2'}, {'VII_X_French','water_IAPWS95'}, ...
+    {'Ih','water2'},  {'Ih','water_IAPWS95'}, ...
+    {'III','water2'}, {'III','water_IAPWS95'}, ...
+    {'V','water2'},   {'V','water_IAPWS95'}, ...
+    {'VI','water2'},  {'VI','water_IAPWS95'}};
+for k = 1:length(new_pairs)
+    p = new_pairs{k};
+    name = sprintf('smoke %s/%s', p{1}, p{2});
+    try
+        out = SF_PhaseLines(p{1}, p{2});
+        cond = ~isempty(out.P) && all(isfinite(out.P)) && all(isfinite(out.T));
+        [np, nf] = check(name, cond, np, nf);
+    catch err
+        [np, nf] = check([name, ' threw: ', err.message], false, np, nf);
+    end
+end
+
+% II↔water1: entirely metastable in the canonical phase diagram.
+try
+    o = SF_PhaseLines('II','water1');
+    [np, nf] = check('II/water1: all-metastable', all(~o.stable), np, nf);
+catch err
+    [np, nf] = check(['II/water1 all-meta threw: ' err.message], false, np, nf);
+end
+
+% VII_X_French↔water2: stable portion exists, sits above the VI–VII–water
+% triple point (P ≥ 2216 MPa), and spans a wide pressure range.
+% (Full monotonicity isn't checked because the contour at high T has
+% multiple branches in the spline-extrapolation regime.)
+try
+    o = SF_PhaseLines('VII_X_French','water2','segment','stable');
+    cond = ~isempty(o.P) && all(o.P >= 2200) && (max(o.P) - min(o.P)) > 1000;
+    [np, nf] = check(sprintf('VII_X/water2: stable above 2216 MPa, wide P (n=%d, span=%.0f MPa)', ...
+                             length(o.P), max(o.P)-min(o.P)), cond, np, nf);
+catch err
+    [np, nf] = check(['VII_X/water2 stable threw: ' err.message], false, np, nf);
+end
+
+% Cross-EOS: Ih↔water1 and Ih↔water2 should give close T at the same P
+% (both share the Ih spline; only the liquid EOS differs). Check at 200 MPa.
+try
+    o1 = SF_PhaseLines('Ih','water1','segment','stable');
+    o2 = SF_PhaseLines('Ih','water2','segment','stable');
+    Pquery = 100;
+    T1 = interp1(sort(o1.P), o1.T(arrayfun(@(p) find(o1.P == p, 1), sort(o1.P))), Pquery, 'linear', NaN);
+    T2 = interp1(sort(o2.P), o2.T(arrayfun(@(p) find(o2.P == p, 1), sort(o2.P))), Pquery, 'linear', NaN);
+    cond = isfinite(T1) && isfinite(T2) && abs(T1 - T2) < 1.0;
+    [np, nf] = check(sprintf('Ih cross-EOS at %g MPa: water1 vs water2 within 1 K (got |dT|=%.2g)', ...
+                             Pquery, abs(T1-T2)), cond, np, nf);
+catch err
+    [np, nf] = check(['cross-EOS check threw: ' err.message], false, np, nf);
+end
+
 % =========================================================================
 % 2. v1 regression — compare stable portions on pure pairs
 % =========================================================================

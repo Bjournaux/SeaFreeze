@@ -14,8 +14,10 @@ cases = {
     % --- Bad PT shape -------------------------------------------------------
     {'wrong cell length (water)', @() SF_getprop({100, 280, 0.5}, 'water1'),                 'SeaFreeze:badInput'}
     {'wrong cell length (NaCl)',  @() SF_getprop({100, 280}, 'NaClaq'),                      'SeaFreeze:badInput'}
+    {'wrong cell length (NaCl_LP)',@() SF_getprop({100, 280}, 'NaClaq_LP'),                  'SeaFreeze:badInput'}
     {'scatter wrong cols (water)',@() SF_getprop([100 280 0.5], 'water1'),                   'SeaFreeze:badInput'}
     {'scatter wrong cols (NaCl)', @() SF_getprop([100 280], 'NaClaq'),                       'SeaFreeze:badInput'}
+    {'scatter wrong cols (NaCl_HP)',@() SF_getprop([100 280], 'NaClaq_HP'),                  'SeaFreeze:badInput'}
     {'PT not numeric',            @() SF_getprop('hello', 'water1'),                         'SeaFreeze:badInput'}
     {'PT empty',                  @() SF_getprop(zeros(0,2), 'water1'),                      'SeaFreeze:badInput'}
     {'PT contains NaN',           @() SF_getprop([100 NaN], 'water1'),                       'SeaFreeze:badInput'}
@@ -52,7 +54,10 @@ end
 % --- Sanity: valid inputs still work --------------------------------------
 try
     SF_getprop([100 280], 'water1', 'rho');
-    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq', {'rho','Cp'});
+    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq',          {'rho','Cp'});
+    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq_LP',       {'rho','Cp'});
+    SF_getprop({1000:500:3000, 300:100:500, [0.1 0.5]}, 'NaClaq_HP',  {'rho','Cp'});
+    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq_5GPa_2024',{'rho','Cp'});
     SF_WhichPhase({0.1, 280});
     SF_WhichPhase({0.1, 280, 1.0}, 'solute', 'NaCl');
     fprintf('  [pass] valid inputs still work\n');

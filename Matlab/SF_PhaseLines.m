@@ -179,7 +179,8 @@ end
 
 
 function [Ga, Gb] = compute_surfaces(matA, matB, P, T, m)
-    MW_H2O = 0.018015268;     % kg/mol; matches fnGval / SF_WhichPhase
+    defs = sf_material_defs();
+    MW_H2O = defs.MW_H2O;
 
     Ga = phase_surface(matA, P, T, m, MW_H2O);
     Gb = phase_surface(matB, P, T, m, MW_H2O);
@@ -242,9 +243,21 @@ end
 
 
 function stable = classify_stable(P_eq, T_eq, range)
-    if isempty(range) || ~isstruct(range) || ...
-            (~isfinite(range.lo) && ~isfinite(range.hi))
-        % No bounds defined: treat the whole curve as stable.
+    if isempty(range) || ~isstruct(range)
+        stable = true(size(P_eq));
+        return;
+    end
+    if range.lo > range.hi
+        % Inverted bounds (e.g. lo=Inf, hi=-Inf) = "all metastable", used
+        % for pairs whose contour is entirely metastable in the canonical
+        % phase diagram (II ↔ water1). This branch must come before the
+        % "all-non-finite" check below because Inf/-Inf are both non-finite.
+        stable = false(size(P_eq));
+        return;
+    end
+    if ~isfinite(range.lo) && ~isfinite(range.hi)
+        % Both bounds non-finite (e.g. -Inf/Inf): treat whole curve as stable.
+        % Used by NaClaq pairs where m-dependent triple points are out of scope.
         stable = true(size(P_eq));
         return;
     end
@@ -358,6 +371,7 @@ function [pair, swapped] = lookup_pair(matA, matB)
     TP_IIVVI     = [201.934, 670.840];
     TP_IIIVLiq   = [256.164, 350.110];
     TP_VVILiq    = [273.407, 634.400];
+    TP_VIVIILiq  = [354.000, 2216.000];   % VI–VII–liquid (Bridgman 1937 / IAPWS R14-08)
     TP_atm       = [273.150, 0.000611];   % atmospheric ice-Ih melting
 
     % Per-pair definitions: stable range as bounds in T (or P), and the
@@ -375,6 +389,27 @@ function [pair, swapped] = lookup_pair(matA, matB)
         {'V',      'water1',    'T', TP_IIIVLiq(1),    TP_VVILiq(1),      [TP_IIIVLiq; TP_VVILiq]}
         {'VI',     'water1',    'T', TP_VVILiq(1),     1000.0,            [TP_VVILiq]}
         {'V',      'VI',        'T', TP_IIVVI(1),      TP_VVILiq(1),      [TP_IIVVI; TP_VVILiq]}
+        % II ↔ water1 — entirely metastable (II is surrounded by Ih/III/V/VI in
+        % the standard phase diagram and never directly equilibrates with the
+        % liquid). lo > hi triggers the "all-meta" branch in classify_stable.
+        {'II',     'water1',    'T', Inf,              -Inf,              [TP_IhIIIII; TP_IIIIIV]}
+        % VII_X_French ↔ liquid pairs. Stable above the VI–VII–water TP at
+        % T = 354 K, P = 2216 MPa.
+        {'VII_X_French','water1',         'P', TP_VIVIILiq(2), Inf,        [TP_VIVIILiq]}
+        {'VII_X_French','water2',         'P', TP_VIVIILiq(2), Inf,        [TP_VIVIILiq]}
+        {'VII_X_French','water_IAPWS95',  'P', TP_VIVIILiq(2), Inf,        [TP_VIVIILiq]}
+        % Cross-EOS: same physical stable ranges as the water1 versions.
+        % Useful for comparing alternative liquid parametrizations; results
+        % drift from water1 at low P because water2 / IAPWS95 are not
+        % optimised for the cold low-P regime.
+        {'Ih',     'water2',         'T', TP_IhLiqIII(1),   TP_atm(1),     [TP_IhLiqIII; TP_atm]}
+        {'Ih',     'water_IAPWS95',  'T', TP_IhLiqIII(1),   TP_atm(1),     [TP_IhLiqIII; TP_atm]}
+        {'III',    'water2',         'T', TP_IhLiqIII(1),   TP_IIIVLiq(1), [TP_IhLiqIII; TP_IIIVLiq]}
+        {'III',    'water_IAPWS95',  'T', TP_IhLiqIII(1),   TP_IIIVLiq(1), [TP_IhLiqIII; TP_IIIVLiq]}
+        {'V',      'water2',         'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
+        {'V',      'water_IAPWS95',  'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
+        {'VI',     'water2',         'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
+        {'VI',     'water_IAPWS95',  'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
         % NaClaq pairs — full curve marked stable by default. Distinguishing
         % stable vs metastable for ice ↔ NaClaq requires triple points that
         % depend on molality (out of scope for this rewrite). Triple-point

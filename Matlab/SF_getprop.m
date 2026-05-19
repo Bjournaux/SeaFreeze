@@ -3,8 +3,7 @@ function out = SF_getprop(PT, material, props)
 % Baptiste Journaux - 2026
 % Calculate thermodynamic quantities for water or ice polymorphs
 % (Ih, II, III, V, VI, VII and X) and for aqueous NaCl solution.
-% Needs SeaFreeze_Gibbs.mat (water/ices) and SeaFreeze_Gibbs_VII_NaCl5GPa.mat
-% (NaClaq) on the MATLAB path.
+% Splines are loaded from Matlab/splines/ via sf_load_spline.
 %
 % Reference publication: Journaux et al., (2020)
 %
@@ -30,6 +29,8 @@ function out = SF_getprop(PT, material, props)
 %       - Ks (MPa)           Isoentropic bulk modulus
 %       - alpha (1/K)        Thermal expansivity
 %       - vel (m/s)          Bulk sound speed
+%       - P (MPa)            Pressure echo (present in all-mode; requestable explicitly)
+%       - T (K)              Temperature echo (present in all-mode; requestable explicitly)
 %     For solid phases additionally (computed only if requested):
 %       - shear (MPa), Vp (m/s), Vs (m/s)
 %     For NaClaq additionally:
@@ -50,7 +51,14 @@ function out = SF_getprop(PT, material, props)
 %   water1                              Bollengier et al. 2019 (<=500 K, <=2300 MPa)
 %   water2                              Brown 2018 (up to 100 GPa)
 %   water_IAPWS95                       IAPWS95, Wagner & Pruss 2002
-%   NaClaq                              aqueous NaCl solution (3D LBF)
+%   NaClaq                              aqueous NaCl — stitched LP+HP 2026 (default, recommended)
+%                                         P=[0,10001] MPa, T=[229,2001] K, m=[0,7.01] mol/kg
+%   NaClaq_LP                           2026 low-P  NaCl(aq) LBF spline only
+%                                         P=[0,1001] MPa, T=[229.9,501] K
+%   NaClaq_HP                           2026 high-P NaCl(aq) LBF spline only
+%                                         P=[499.9,10001] MPa, T=[229,2001] K
+%   NaClaq_5GPa_2024                    Brown 2024 NaCl(aq) legacy spline
+%                                         P=[0,5000] MPa, T=[229,501] K
 %
 % The ice Gibbs parametrizations are optimized for use with 'water1'
 % (Bollengier et al. 2019) — use that for melting curves in 200-355 K
@@ -73,11 +81,13 @@ function out = SF_getprop(PT, material, props)
 %   French & Redmer (2015) Phys. Rev. B 91, 014308
 
 % ---- Resolve props argument and determine what to ask the evaluator for ----
-all_base_props = {'G','S','U','H','A','rho','Cp','Cv','Kt','Kp','Ks','alpha','vel','Js','gamma_Gruneisen'};
-shear_props    = {'shear','Vp','Vs'};
-mixing_props   = {'mus','muw','f','m','xs','xw','Va','Cpa','Vm','Vw','Cpm','phi','Vex','aw'};
-solid_phases   = {'Ih','II','III','V','VI','VII_X_French'};
-known_materials = [solid_phases, {'water1','water2','water_IAPWS95','NaClaq'}];
+defs = sf_material_defs();
+all_base_props  = defs.base_props;
+shear_props     = defs.shear_props;
+mixing_props    = defs.mixing_props;
+solid_phases    = defs.solid_phases;
+nacl_materials  = defs.nacl_materials;
+known_materials = defs.known_materials;
 
 % --- Validate material -----------------------------------------------------
 if ~(ischar(material) || (isstring(material) && isscalar(material)))
@@ -125,7 +135,7 @@ end
 % Build the set of valid property names for this material.
 if ismember(material, solid_phases)
     valid_props = [all_base_props, shear_props];
-elseif strcmp(material, 'NaClaq')
+elseif ismember(material, nacl_materials)
     valid_props = [all_base_props, mixing_props];
 else  % liquid waters: no shear, no mixing
     valid_props = all_base_props;
@@ -158,16 +168,34 @@ else
     end
 end
 
-% ---- NaClaq: 3D LBF spline ------------------------------------------------
-if strcmp(material,'NaClaq')
-    load('SeaFreeze_Gibbs_VII_NaCl5GPa.mat', 'sp_NaCl_5GPa_500K');
-    sp = sp_NaCl_5GPa_500K;
-    if ~isfield(sp,'MW'), sp.MW = 58.44e-3; end
-    if ~isfield(sp,'nu'), sp.nu = 2;        end
-    if isempty(eval_props)
-        out = fnGval(sp, PT);
-    else
-        out = fnGval(sp, PT, eval_props);
+% ---- NaClaq family: 3D LBF splines ----------------------------------------
+% 'NaClaq'         → stitched LP+HP 2026 via SF_NaCl_stitch (recommended)
+% 'NaClaq_LP'      → 2026 low-P spline only  (P ≤ 1001 MPa, T ≤ 501 K)
+% 'NaClaq_HP'      → 2026 high-P spline only (P ≥ 499.9 MPa, T ≤ 2001 K)
+% 'NaClaq_5GPa_2024' → Brown 2024 legacy spline (P ≤ 5000 MPa, T ≤ 501 K)
+if ismember(material, nacl_materials)
+    switch material
+        case 'NaClaq'
+            spLP = sf_load_spline('NaClaq_LP');
+            spHP = sf_load_spline('NaClaq_HP');
+            if ~isfield(spLP,'MW'), spLP.MW = 58.44e-3; end
+            if ~isfield(spLP,'nu'), spLP.nu = 2;        end
+            if ~isfield(spHP,'MW'), spHP.MW = 58.44e-3; end
+            if ~isfield(spHP,'nu'), spHP.nu = 2;        end
+            if isempty(eval_props)
+                out = SF_NaCl_stitch(spLP, spHP, PT);
+            else
+                out = SF_NaCl_stitch(spLP, spHP, PT, eval_props);
+            end
+        case {'NaClaq_LP','NaClaq_HP','NaClaq_5GPa_2024'}
+            sp = sf_load_spline(material);
+            if ~isfield(sp,'MW'), sp.MW = 58.44e-3; end
+            if ~isfield(sp,'nu'), sp.nu = 2;        end
+            if isempty(eval_props)
+                out = fnGval(sp, PT);
+            else
+                out = fnGval(sp, PT, eval_props);
+            end
     end
     if user_wants_F
         out.F = out.A;
@@ -180,29 +208,29 @@ end
 shear_mod = [];
 switch material
     case 'Ih'
-        load('SeaFreeze_Gibbs.mat', 'G_iceIh');            sp = G_iceIh;
+        sp = sf_load_spline('Ih');
         shear_mod = [3.1  -0.00462 0        -0.00657 1000 273.15];
     case 'II'
-        load('SeaFreeze_Gibbs.mat', 'G_iceII');            sp = G_iceII;
+        sp = sf_load_spline('II');
         shear_mod = [4.1   0.0175  0        -0.014   1100 273];
     case 'III'
-        load('SeaFreeze_Gibbs.mat', 'G_iceIII');           sp = G_iceIII;
+        sp = sf_load_spline('III');
         shear_mod = [2.57  0.0175  0        -0.014   1100 273];
     case 'V'
-        load('SeaFreeze_Gibbs.mat', 'G_iceV');             sp = G_iceV;
+        sp = sf_load_spline('V');
         shear_mod = [2.57  0.0175  0        -0.014   1100 273];
     case 'VI'
-        load('SeaFreeze_Gibbs.mat', 'G_iceVI');            sp = G_iceVI;
+        sp = sf_load_spline('VI');
         shear_mod = [2.57  0.0175  0        -0.014   1100 273];
     case 'VII_X_French'
-        load('SeaFreeze_Gibbs.mat', 'G_iceVII_X_French');  sp = G_iceVII_X_French;
+        sp = sf_load_spline('VII_X_French');
         shear_mod = [10    0.0033  0.000048 -0.014   1300 273];
     case 'water1'
-        load('SeaFreeze_Gibbs.mat', 'G_H2O_2GPa_500K');    sp = G_H2O_2GPa_500K;
+        sp = sf_load_spline('water1');
     case 'water2'
-        load('SeaFreeze_Gibbs.mat', 'G_H2O_100GPa_10000K');sp = G_H2O_100GPa_10000K;
+        sp = sf_load_spline('water2');
     case 'water_IAPWS95'
-        load('SeaFreeze_Gibbs.mat', 'G_H2O_IAPWS');        sp = G_H2O_IAPWS;
+        sp = sf_load_spline('water_IAPWS95');
     otherwise
         % unreachable: material was validated against known_materials above
         error('SeaFreeze:unknownMaterial', 'Unknown material ''%s''', material);

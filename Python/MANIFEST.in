@@ -1,2 +1,4 @@
 include LICENSE.txt
-include seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat
+recursive-include seafreeze/splines *.mat
+recursive-include mlbspline *.mat
+recursive-include lbftd *.mat

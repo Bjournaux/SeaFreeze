@@ -8,14 +8,14 @@ The SeaFreeze package computes thermodynamic and elastic properties of water, ic
 - **Aqueous NaCl solutions** (`NaClaq`) via the same 3D (P,T,m) spline used by the Python version, including a corrected scatter-input mixing-quantities path that uses a per-row baseline at `m = cutoff` (previously broken with a runtime warning).
 - **New outputs**: `Js` (Joule-Thomson coefficient) and `gamma_Gruneisen` (Grüneisen parameter) for every phase; `m`, `xs`, `xw`, `f`, `mus`, `muw`,`Vm`, `Vw`, `Cpm`, `Va`, `Cpa`, `Vex`, `phi`, `aw` for `NaClaq` mixing (see table below)
 - **Selective property computation**: ask for only the properties you need (e.g. just `rho` or `{'G','Cp'}`) to save time.
-- **No Curve Fitting Toolbox required** for `SF_getprop` or `SF_PhaseLines`. A single evaluator (`fnGval` over `sp_val`) handles every phase, including the LBF-form spline used for ice VII/X. (`SF_WhichPhase` still calls `fnval` and so still needs the toolbox; tracked for a future port.)
+- **No Curve Fitting Toolbox required** — the entire package (`SF_getprop`, `SF_PhaseLines`, `SF_WhichPhase`) is toolbox-free. A single in-tree de Boor evaluator (`sp_val`) handles every phase and all derivative orders.
 - **Optional `sp.Tc`** (dimensionless temperature, `tau = log(T/Tc)`) and **`sp.mask`** (validity-domain interpolation) supported by `fnGval` for new spline parametrizations.
 - **Cross-validation test suite** comparing the MATLAB output against the Python reference implementation: 14 cases including grid + scatter + edge molalities for NaCl, with per-case relative-tolerance overrides for known ice-V drifts and freshness/manifest checks on the reference `.mat`.
 
 ## Getting started
 
 ### Prerequisites
-Tested on MATLAB R2018a and newer. `SF_getprop` and `SF_PhaseLines` are toolbox-free — they use an in-tree de-Boor evaluator (`sp_val.m`) for every phase, plus base-MATLAB `contourc` for the phase-line solver. The phase-stability helper `SF_WhichPhase` still calls `fnval` from the **Curve Fitting Toolbox** and requires it to run; this will be removed in a future release.
+Tested on MATLAB R2018a and newer. **No toolboxes required.** The entire package uses an in-tree de Boor evaluator (`sp_val.m`) for every phase and derivative order, plus base-MATLAB `contourc` for the phase-line solver.
 
 ### Installing
 Add `SeaFreeze/Matlab` to your MATLAB path. The following data files must be on the path (they ship with this folder):
@@ -73,6 +73,10 @@ Common to all materials:
 | Bulk sound speed | `vel` | m/s |
 | Joule-Thomson coefficient | `Js` | K/MPa |
 | Grüneisen parameter | `gamma_Gruneisen` | – |
+| Pressure echo | `P` | MPa |
+| Temperature echo | `T` | K |
+
+`P` and `T` echo back the input coordinate arrays. They are present when all properties are requested (no `props` argument) and can also be requested explicitly, e.g. `SF_getprop(PT, 'VI', {'rho','P','T'})`.
 
 Solid phases additionally provide:
 
@@ -203,7 +207,7 @@ Compute the equilibrium curve between two phases by zero-contouring the Gibbs-en
 
 The default sampling grid is the **intersection** of both phases' spline knot domains (auto-derived via `SF_phase_range`); pass `'P'` and/or `'T'` to override.
 
-**Supported pairs (16):** the 11 pure-phase pairs of the original water phase diagram plus 5 ice ↔ NaClaq melting pairs.
+**Supported pairs (28):** the 11 pure-phase pairs of the original water phase diagram, 5 ice ↔ NaClaq melting pairs, **II ↔ water1** (entirely metastable), **VII_X_French ↔ water1 / water2 / water_IAPWS95** (high-pressure melting curve, stable above the VI–VII–water triple point at ~2216 MPa, 354 K), and the four low-P ice phases (Ih/III/V/VI) paired with **water2** and **water_IAPWS95** for cross-EOS comparison. Note: ice melt curves drift from the canonical water1-based ones at low P when paired with water2 or water_IAPWS95, since water1 is the SeaFreeze liquid optimised for that range.
 
 ```matlab
 % Pure-water Ih melting curve, full curve including metastable extensions
@@ -251,10 +255,24 @@ For `NaClaq` pairs, the entire curve is returned as `stable`; distinguishing sta
 A frozen copy of the v1 (Clinton & Journaux 2020) implementation lives in `SF_PhaseLines_v1.m` for regression-comparison and is exercised by `test/test_SF_PhaseLines.m`. To produce side-by-side comparison figures, run `test/compare_SF_PhaseLines`.
 
 ### `SF_WPD`
-Plot the full water phase diagram.
+Plot the full H₂O water phase diagram, computed dynamically from Gibbs energy splines via `SF_PhaseLines`. Supports NaCl(aq) melting-curve overlays, metastable extensions, and phase-field labels.
+
 ```matlab
-SF_WPD
+SF_WPD()                                        % pure water, new figure
+SF_WPD('solute','NaCl', 'm', [0.5 1 2 4])      % NaClaq melting-curve overlay
+SF_WPD('meta', false)                           % hide metastable extensions
+SF_WPD('labels', false)                         % hide phase-field labels
+SF_WPD('ax', gca)                               % overlay on existing axes
+fig = SF_WPD(...)                               % return figure handle
 ```
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `'ax'` | `[]` (new figure) | Axes handle to plot onto |
+| `'solute'` | `'none'` | `'none'` or `'NaCl'` to overlay NaClaq melting curves |
+| `'m'` | `[]` | Scalar or vector of molality values (mol/kg) for NaClaq |
+| `'meta'` | `'default'` | `'default'` — only Ih–II and II–VI metastable extensions (matching v1); `true` / `'all'` — all pairs; `false` / `'none'` — none |
+| `'labels'` | `true` | Annotate stability fields with phase names |
 
 ## Tests
 

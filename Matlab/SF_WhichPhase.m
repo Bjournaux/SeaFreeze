@@ -43,10 +43,15 @@ is_nacl = strcmpi(solute, 'NaCl') || strcmpi(solute, 'NaClaq');
 if is_nacl, mat_check = 'NaClaq'; else, mat_check = 'water1'; end
 sf_validate_PT(PT, mat_check);
 
-load('SeaFreeze_Gibbs.mat', 'G_iceIh','G_iceII','G_iceIII','G_iceV','G_iceVI', ...
-     'G_H2O_2GPa_500K');
+G_iceIh         = sf_load_spline('Ih');
+G_iceII         = sf_load_spline('II');
+G_iceIII        = sf_load_spline('III');
+G_iceV          = sf_load_spline('V');
+G_iceVI         = sf_load_spline('VI');
+G_H2O_2GPa_500K = sf_load_spline('water1');
 
-MW_H2O = 0.018015268;  % kg/mol
+defs = sf_material_defs();
+MW_H2O = defs.MW_H2O;
 
 % --- prepare (P,T) coordinates for the ice splines and evaluate the liquid -
 if is_nacl
@@ -77,16 +82,16 @@ else
         PT_pt = PT(:,1:2);
         is_grid = false;
     end
-    Gliq = fnval(G_H2O_2GPa_500K, PT_pt');   % J/kg
+    Gliq = sp_val(G_H2O_2GPa_500K, PT_pt);   % J/kg
     ice_scale = 1;
 end
 
 % --- evaluate ice phases on the (P,T) grid / scatter list -------------------
-Gih  = fnval(G_iceIh,  PT_pt') * ice_scale;
-Gii  = fnval(G_iceII,  PT_pt') * ice_scale;
-Giii = fnval(G_iceIII, PT_pt') * ice_scale;
-Gv   = fnval(G_iceV,   PT_pt') * ice_scale;
-Gvi  = fnval(G_iceVI,  PT_pt') * ice_scale;
+Gih  = sp_val(G_iceIh,  PT_pt) * ice_scale;
+Gii  = sp_val(G_iceII,  PT_pt) * ice_scale;
+Giii = sp_val(G_iceIII, PT_pt) * ice_scale;
+Gv   = sp_val(G_iceV,   PT_pt) * ice_scale;
+Gvi  = sp_val(G_iceVI,  PT_pt) * ice_scale;
 
 % --- broadcast ice values across the molality axis if needed ---------------
 if is_nacl && is_grid

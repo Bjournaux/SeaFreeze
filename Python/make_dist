@@ -8,7 +8,7 @@ if [ -d dist ]; then
   rm -r dist
 fi
 
-# copy LICENSE and spline file locally
+# copy LICENSE locally
 if [ -e LICENSE.txt ]; then
   DELL=0
 else
@@ -16,23 +16,12 @@ else
   cp ../LICENSE.txt .
 fi
 
-if [ -e seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat ]; then
-  DELSP=0
-else
-  DELSP=1
-  cp ../Matlab/SeaFreeze_Gibbs_VII_NaCl.mat seafreeze/
-fi
-
 # update tools then create src and wheel distributions
 python3 -m pip install --user --upgrade pip
 python3 -m pip install --user --upgrade setuptools wheel build
 python3 -m build
 
-# remove local license and spline files if copied just for the build
+# remove local license if copied just for the build
 if [ $DELL -eq 1 ]; then
   rm LICENSE.txt
-fi
-
-if [ $DELSP -eq 1 ]; then
-  rm seafreeze/SeaFreeze_Gibbs_VII_NaCl.mat
 fi

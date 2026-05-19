@@ -6,21 +6,11 @@ import seafreeze.seafreeze as sf
 class TestSeafreeze(ut.TestCase):
     def setup(self):
         warnings.simplefilter('ignore', category=ImportWarning)
-        self.NaClSplinePath = '../SeaFreeze_Gibbs_VII_NaCl.mat'
     def tearDown(self):
         pass
     #########################################
     ## _is_scatter
     #########################################
-    # def test_is_scatter_singlept_simple(self):
-    #     PT = (1,2)
-    #     self.assertTrue(sf._is_scatter(PT))
-    # def test_is_scatter_singlept_list1(self):
-    #     PT = np.array([(1,2)])
-    #     self.assertTrue(sf._is_scatter(PT))
-    # def test_is_scatter_single_grid(self):
-    #     PT = np.array([7, 8])
-    #     self.assertFalse(sf._is_scatter(PT))
     def test_is_scatter_singlept_preallocated(self):
         PT = np.empty((1,), object)
         PT[0] = (1, 2)
@@ -147,9 +137,8 @@ class TestSeafreeze(ut.TestCase):
     def test_getProp_singlept(self):
         PT = np.empty((1,), dtype=object)
         PT[0] = (900, 255)
-        out = sf.getProp(PT, 'VI', path='../SeaFreeze_Gibbs.mat')
+        out = sf.getProp(PT, 'VI')
         self.assertAlmostEqual(1.356072490993616e+03, out.rho[0])
-        # TODO: figure out why Ks varies so much from the Matlab output
         self.assertAlmostEqual(1.832349756691741e+04, out.Ks[0], places=0)
         self.assertAlmostEqual(7.303268592388283e+03, out.shear[0])
         self.assertAlmostEqual(4.548954381485812e+03, out.Vp[0], places=1)
@@ -158,7 +147,7 @@ class TestSeafreeze(ut.TestCase):
     def test_getProp_shear_mod_parms_point(self):
         PT = np.empty((1,), dtype=object)
         PT[0] = (227, 244)
-        out = sf.getProp(np.array(PT, dtype=object), 'III', '../SeaFreeze_Gibbs.mat', 'Vp', 'Vs', 'shear')
+        out = sf.getProp(np.array(PT, dtype=object), 'III', sf.defpath, 'Vp', 'Vs', 'shear')
         self.assertAlmostEqual(3.9989e+03, out.shear[0], places=1)
         self.assertAlmostEqual(3.6242e+03, out.Vp[0], places=1)
         self.assertAlmostEqual(1.8579e+03, out.Vs[0], places=1)
@@ -166,74 +155,63 @@ class TestSeafreeze(ut.TestCase):
     def test_getProp_III_pt(self):
         PT = np.empty((1,), dtype=object)
         PT[0] = (227, 244)
-        out = sf.getProp(PT, 'III', '../SeaFreeze_Gibbs_master.mat', 'G')
+        out = sf.getProp(PT, 'III', sf.defpath, 'G')
         self.assertAlmostEqual(2.01089e+05, out.G[0], places=0)
 
     def test_getProp_VII_pt(self):
         PT = np.empty((1,), dtype=object)
         PT[0] = (2500, 244)
-        out = sf.getProp(PT, 'VII_X_French', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'G')
+        out = sf.getProp(PT, 'VII_X_French', sf.defpath, 'G')
         self.assertAlmostEqual(1.899810e+06, out.G[0], places=0)
 
     def test_getProp_phi_pt(self):
         PT = np.empty((1,), dtype=object)
         PT[0] = (227, 280, 3)
-        out = sf.getProp(PT, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'phi')
-        self.assertAlmostEqual(1.0981, out.phi[0], places=1)
+        out = sf.getProp(PT, 'NaClaq', sf.defpath, 'phi')
+        self.assertAlmostEqual(1.0721, out.phi[0], places=1)
 
-    def test_getProp_gex_pt(self):
-        PT = np.empty((1,), dtype=object)
-        PT[0] = (200, 280, 0.5)
-        out = sf.getProp(PT, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'Vex', 'Gex')
-        self.assertAlmostEqual(1.2006, out.Vex[0], places=3)
-        self.assertAlmostEqual(.7059, out.gam[0], places=4)
-        self.assertAlmostEqual(-547.559, out.Gex[0], places=3)
-
-    def test_getProp_NaCl_Gex_scatterGridSameOutputForPoint(self):
+    def test_getProp_NaCl_scatterGridSameOutputForPoint(self):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (50.1, 250, 3.5)
-        out1 = sf.getProp(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
+        out1 = sf.getProp(PTm, 'NaClaq', sf.defpath, 'mus', 'Vex')
         P = np.arange(0.1, 1000.2, 10)
         T = np.arange(240, 501, 2)
         m = np.arange(1, 9, 0.5)
         PTM = np.array([P, T, m], dtype=object)
-        out2 = sf.getProp(PTM, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'gam', 'Gex')
+        out2 = sf.getProp(PTM, 'NaClaq', sf.defpath, 'mus', 'Vex')
         self.assertAlmostEqual(out2.G[5][5][5], out1.G[0], places=1)
-        self.assertAlmostEqual(out2.gam[5][5][5], out1.gam[0], places=1)
-        self.assertAlmostEqual(out2.Gex[5][5][5], out1.Gex[0], places=0)
+        self.assertAlmostEqual(out2.mus[5][5][5], out1.mus[0], places=1)
 
     def test_getProp_new_vars(self):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (900, 285, 3)
-        out = sf.getProp(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'aw', 'Va', 'Vex', 'Cpa')
-        self.assertAlmostEqual(1.4022e4, out.muw[0], places=0)
-        self.assertAlmostEqual(1.8064, out.Vex[0],  places=1)
-        self.assertAlmostEqual(26.4272, out.Va[0],  places=1)
-        self.assertAlmostEqual(3.4667e3, out.Cp[0], places=1)
-        self.assertAlmostEqual(81.3617, out.Cpa[0],  places=0)
-        self.assertAlmostEqual(1.1002, out.phi[0], places=1)
-        self.assertAlmostEqual(0.8879, out.aw[0], places=1)
+        out = sf.getProp(PTm, 'NaClaq', sf.defpath, 'aw', 'Va', 'Vex', 'Cpa', 'muw', 'Cp', 'phi')
+        self.assertAlmostEqual(14006.77, out.muw[0], places=0)
+        self.assertAlmostEqual(26.337, out.Va[0],  places=1)
+        self.assertAlmostEqual(3402.97, out.Cp[0], places=0)
+        self.assertAlmostEqual(88.525, out.Cpa[0],  places=0)
+        self.assertAlmostEqual(1.1497, out.phi[0], places=1)
+        self.assertAlmostEqual(0.8831, out.aw[0], places=1)
 
-    def test_getProp_NaCl_Gex_gridScatterProduceSameResults(self):
+    def test_getProp_NaCl_gridScatterProduceSameResults(self):
         P = np.arange(0.1, 1000.2, 10)
         T = np.arange(240, 501, 2)
         m = np.arange(1, 9, 0.5)
         PTm = np.array([P, T, m], dtype = object)
         PTM = np.empty((1,), dtype=object)
         PTM[0] = (140.1, 500, 6.5)
-        out2 = sf.getProp(PTM, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'Cp', 'Va', 'Vex', 'aw', 'rho', 'gam', 'Gex')
-        out1 = sf.getProp(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'Cp', 'Va', 'Vex', 'aw', 'rho', 'gam', 'Gex')
+        out2 = sf.getProp(PTM, 'NaClaq', sf.defpath, 'Cp', 'Va', 'Vex', 'aw', 'rho', 'mus')
+        out1 = sf.getProp(PTm, 'NaClaq', sf.defpath, 'Cp', 'Va', 'Vex', 'aw', 'rho', 'mus')
         self.assertAlmostEqual(out2.G[0], out1.G[14][-1][11], places=0)
-        self.assertAlmostEqual(out2.gam[0], out1.gam[14][-1][11], places=0)
-        self.assertAlmostEqual(out2.Gex[0], out1.Gex[14][-1][11], places=0)
+        self.assertAlmostEqual(out2.mus[0], out1.mus[14][-1][11], places=0)
 
     def test_getProp_aw_grid(self):
         P = np.arange(0.1, 1000.2, 10)
         T = np.arange(240, 501, 2)
         m = np.arange(0.0002, 9, 0.5)
         PTm = np.array([P, T, m], dtype=object)
-        out = sf.getProp(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'aw')
-        self.assertAlmostEqual(0.9716, out.aw[0][0][0], places=1)
+        out = sf.getProp(PTm, 'NaClaq', sf.defpath, 'aw')
+        self.assertAlmostEqual(1.0000, out.aw[0][0][0], places=1)
 
     def test_seafreeze_deprecation(self):
         P = np.arange(0.1, 1000.2, 10)
@@ -241,6 +219,4 @@ class TestSeafreeze(ut.TestCase):
         m = np.arange(0.0002, 9, 0.5)
         PTm = np.array([P, T, m], dtype=object)
         with self.assertWarns(DeprecationWarning):
-            out = sf.seafreeze(PTm, 'NaClaq', '../SeaFreeze_Gibbs_VII_NaCl.mat', 'aw')
-
-
+            out = sf.seafreeze(PTm, 'NaClaq', sf.defpath, 'aw')

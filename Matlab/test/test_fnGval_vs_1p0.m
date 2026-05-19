@@ -9,6 +9,7 @@ function test_fnGval_vs_1p0()
 here = fileparts(mfilename('fullpath'));
 addpath(fullfile(fileparts(here),'LocalBasisFunction'));
 addpath(fileparts(here));
+addpath(here);   % fnGval_1p0 lives in the test folder
 
 rtol = 1e-10;
 atol = 1e-12;
@@ -20,10 +21,8 @@ np = 0; nf = 0;
 % Relative drift for any nw-linear quantity is ~6.66e-7.
 rtol_overrides = struct('muw', 1e-6, 'aw', 1e-6);
 
-% Load splines once
-S_pure = load(fullfile(fileparts(here),'SeaFreeze_Gibbs.mat'));
-S_nacl = load(fullfile(fileparts(here),'SeaFreeze_Gibbs_VII_NaCl5GPa.mat'));
-sp_NaCl = S_nacl.sp_NaCl_5GPa_500K;
+% Load splines once via central loader
+sp_NaCl = sf_load_spline('NaClaq_5GPa_2024');
 if ~isfield(sp_NaCl,'MW'), sp_NaCl.MW = 58.44e-3; end
 if ~isfield(sp_NaCl,'nu'), sp_NaCl.nu = 2;        end
 sp_NaCl.Go = 1;
@@ -33,12 +32,12 @@ P_grid = 100:50:500; T_grid = 240:5:280;
 PT_scat = [100 250; 200 260; 300 270; 400 250; 500 280];
 
 cases_pure = {
-    S_pure.G_iceIh,           'iceIh',          {P_grid, T_grid}, PT_scat
-    S_pure.G_iceII,           'iceII',          {200:50:600, 200:5:260}, [200 240; 400 250; 600 230]
-    S_pure.G_iceIII,          'iceIII',         {200:20:340, 230:5:265}, [220 245; 280 250; 340 260]
-    S_pure.G_iceV,            'iceV',           {350:20:600, 240:5:275}, [400 250; 500 260; 600 270]
-    S_pure.G_iceVI,           'iceVI',          {700:50:1500, 240:5:300}, [800 255; 1000 260; 1200 280]
-    S_pure.G_H2O_2GPa_500K,   'water1',         {0.1:50:500, 250:5:350}, [100 280; 200 300; 400 320]
+    sf_load_spline('Ih'),    'iceIh',  {P_grid, T_grid}, PT_scat
+    sf_load_spline('II'),    'iceII',  {200:50:600, 200:5:260}, [200 240; 400 250; 600 230]
+    sf_load_spline('III'),   'iceIII', {200:20:340, 230:5:265}, [220 245; 280 250; 340 260]
+    sf_load_spline('V'),     'iceV',   {350:20:600, 240:5:275}, [400 250; 500 260; 600 270]
+    sf_load_spline('VI'),    'iceVI',  {700:50:1500, 240:5:300}, [800 255; 1000 260; 1200 280]
+    sf_load_spline('water1'),'water1', {0.1:50:500, 250:5:350}, [100 280; 200 300; 400 320]
 };
 
 % Properties the OLD fnGval supports — these are what we compare.

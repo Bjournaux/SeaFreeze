@@ -18,7 +18,7 @@ PT_grid   = {400:10:500, 240:5:260};  % grid for ice V
 PTm_nacl  = {0.1:50:200, 273:10:300, [0.1 0.5]};  % grid for NaClaq
 
 % Property reference sets (must match SF_getprop.m):
-BASE   = {'G','S','U','H','A','rho','Cp','Cv','Kt','Kp','Ks','alpha','vel','Js','gamma_Gruneisen'};
+BASE   = {'G','S','U','H','A','rho','Cp','Cv','Kt','Kp','Ks','alpha','vel','Js','gamma_Gruneisen','P','T'};
 SHEAR  = {'shear','Vp','Vs'};
 MIX    = {'mus','muw','f','m','xs','xw','Va','Cpa','Vm','Vw','Cpm','phi','Vex','aw'};
 
