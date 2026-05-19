@@ -1,6 +1,6 @@
 function Results = SF_NaCl_stitch(spLP, spHP, PT, props)
 % SF_NaCl_stitch  Evaluate NaCl(aq) properties from stitched LP + HP splines.
-% Version 1.0.0 — Baptiste Journaux — 2026
+% Version 1.1.0 — Baptiste Journaux — 2026
 %
 % Stitches two complementary NaCl(aq) Gibbs splines that cover different P
 % ranges:

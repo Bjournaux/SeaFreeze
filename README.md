@@ -4,7 +4,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-V1.0
+V1.1.0
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
@@ -16,7 +16,7 @@ phase, constructed to reproduce thermodynamic measurements. The formalism is des
 Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). 
 Aqueous NaCl equation of state publication is in preparation.
 
-Currently, the Python version is the most up to date. The Matlab version is still under beta for version 1.0.
+Both Python and Matlab versions are at 1.1.0.
 
 Contact: bjournau (at) uw (dot) edu
 
