@@ -146,7 +146,7 @@ def seafreeze(PTm, phase, path=defpath, *tdvSpec):
     return getProp(PTm, phase, path, *tdvSpec)
 
 
-def getProp(PTm, phase, path=defpath, *tdvSpec):
+def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
     """Calculates thermodynamic quantities for H2O water or ice polymorphs
     Ih, II, III, V, VI, VII/X and aqueous NaCl.
 
@@ -181,67 +181,74 @@ def getProp(PTm, phase, path=defpath, *tdvSpec):
     :param tdvSpec: Optional property names to compute; default = all supported.
     :return:        Object with computed properties as named attributes.
     """
+    lbftd_log = logging.getLogger('lbftd')
+    if not verbose:
+        lbftd_log.setLevel(logging.CRITICAL)
     try:
-        phasedesc = phases[phase]
-    except KeyError:
-        raise ValueError('The specified phase is not recognized.  Supported phases are ' +
-                         ', '.join(phases.keys()) + '.')
+        try:
+            phasedesc = phases[phase]
+        except KeyError:
+            raise ValueError('The specified phase is not recognized.  Supported phases are ' +
+                             ', '.join(phases.keys()) + '.')
 
-    isscatter = _is_scatter(PTm)
-    want_set  = set(tdvSpec)
-    want_all  = len(want_set) == 0
-    is_nacl   = phase.startswith('NaClaq')
-    is_stitched = (phase == 'NaClaq')
+        isscatter = _is_scatter(PTm)
+        want_set  = set(tdvSpec)
+        want_all  = len(want_set) == 0
+        is_nacl   = phase.startswith('NaClaq')
+        is_stitched = (phase == 'NaClaq')
 
-    # ---- Determine which derived props are relevant for this phase ----------
-    derived_known = _DERIVED_BASE | (_DERIVED_NACL if is_nacl else set())
+        # ---- Determine which derived props are relevant for this phase ----------
+        derived_known = _DERIVED_BASE | (_DERIVED_NACL if is_nacl else set())
 
-    # ---- Build the set of props to request from lbftd ----------------------
-    # V, gam, Gex are lbftd-internal and never exposed (matching Matlab).
-    if want_all:
-        lbftd_wants = _LBFTD_ALL_NACL if is_nacl else _LBFTD_ALL_WATER
-    else:
-        lbftd_wants = tuple(want_set - derived_known - {'shear', 'Vp', 'Vs'})
-        extra = set()
-        if 'Js'              in want_set: extra |= _PREREQS['Js']
-        if 'gamma_Gruneisen' in want_set: extra |= _PREREQS['gamma_Gruneisen']
-        if 'Vw'              in want_set: extra |= _PREREQS['Vw']
-        if want_set & {'shear', 'Vp', 'Vs'} and phasedesc.shear_mod_parms:
-            extra |= {'rho', 'Ks'}
-        lbftd_wants = tuple(set(lbftd_wants) | extra)
+        # ---- Build the set of props to request from lbftd ----------------------
+        # V, gam, Gex are lbftd-internal and never exposed (matching Matlab).
+        if want_all:
+            lbftd_wants = _LBFTD_ALL_NACL if is_nacl else _LBFTD_ALL_WATER
+        else:
+            lbftd_wants = tuple(want_set - derived_known - {'shear', 'Vp', 'Vs'})
+            extra = set()
+            if 'Js'              in want_set: extra |= _PREREQS['Js']
+            if 'gamma_Gruneisen' in want_set: extra |= _PREREQS['gamma_Gruneisen']
+            if 'Vw'              in want_set: extra |= _PREREQS['Vw']
+            if want_set & {'shear', 'Vp', 'Vs'} and phasedesc.shear_mod_parms:
+                extra |= {'rho', 'Ks'}
+            lbftd_wants = tuple(set(lbftd_wants) | extra)
 
-    # ---- Evaluate — either stitched LP+HP or single spline -----------------
-    if is_stitched:
-        sp = None  # no single spline for stitched mode
-        props = _nacl_stitch(PTm, isscatter, path, *lbftd_wants)
-    else:
-        sp = _load_spline(path, phase)
-        raw = _get_tdvs(sp, PTm, isscatter, *lbftd_wants)
-        # Use instance __dict__ to avoid lbftd class-level attribute fallback.
-        props = dict(vars(raw))
+        # ---- Evaluate — either stitched LP+HP or single spline -----------------
+        if is_stitched:
+            sp = None  # no single spline for stitched mode
+            props = _nacl_stitch(PTm, isscatter, path, *lbftd_wants)
+        else:
+            sp = _load_spline(path, phase)
+            raw = _get_tdvs(sp, PTm, isscatter, *lbftd_wants)
+            # Use instance __dict__ to avoid lbftd class-level attribute fallback.
+            props = dict(vars(raw))
 
-    # ---- Shear / Vp / Vs (solid phases only) --------------------------------
-    if phasedesc.shear_mod_parms and (want_all or want_set & {'shear', 'Vp', 'Vs'}):
-        Ks  = np.asarray(props['Ks'])
-        rho = np.asarray(props['rho'])
-        smg = _get_shear_mod_GPa(phasedesc.shear_mod_parms, rho, _get_T(PTm, isscatter))
-        if want_all or 'shear' in want_set: props['shear'] = 1e3 * smg
-        if want_all or 'Vp'    in want_set: props['Vp']    = _get_Vp(smg, rho, Ks)
-        if want_all or 'Vs'    in want_set: props['Vs']    = _get_Vs(smg, rho)
+        # ---- Shear / Vp / Vs (solid phases only) --------------------------------
+        if phasedesc.shear_mod_parms and (want_all or want_set & {'shear', 'Vp', 'Vs'}):
+            Ks  = np.asarray(props['Ks'])
+            rho = np.asarray(props['rho'])
+            smg = _get_shear_mod_GPa(phasedesc.shear_mod_parms, rho, _get_T(PTm, isscatter))
+            if want_all or 'shear' in want_set: props['shear'] = 1e3 * smg
+            if want_all or 'Vp'    in want_set: props['Vp']    = _get_Vp(smg, rho, Ks)
+            if want_all or 'Vs'    in want_set: props['Vs']    = _get_Vs(smg, rho)
+            if not want_all:
+                if 'Ks'  not in want_set: props.pop('Ks', None)
+                if 'rho' not in want_set: props.pop('rho', None)
+
+        # ---- Matlab-parity derived properties -----------------------------------
+        _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path)
+
+        # ---- Strip prerequisite props that were only added internally -----------
         if not want_all:
-            if 'Ks'  not in want_set: props.pop('Ks', None)
-            if 'rho' not in want_set: props.pop('rho', None)
+            for p in ('alpha', 'Cp', 'Cv', 'Kt', 'muw'):
+                if p not in want_set:
+                    props.pop(p, None)
 
-    # ---- Matlab-parity derived properties -----------------------------------
-    _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path)
-
-    # ---- Strip prerequisite props that were only added internally -----------
-    if not want_all:
-        for p in ('alpha', 'Cp', 'Cv', 'Kt', 'muw'):
-            if p not in want_set:
-                props.pop(p, None)
-
-    return types.SimpleNamespace(**props)
+        return types.SimpleNamespace(**props)
+    finally:
+        if not verbose:
+            lbftd_log.setLevel(logging.WARNING)
 
 
 def whichphase(PTm, solute='water1', path=defpath):
