@@ -1,4 +1,4 @@
 function ver=SeaFreeze_version
 % show the current version of SeaFreeze
-    ver = '1.1.0';
+    ver = '1.1.1';
 end

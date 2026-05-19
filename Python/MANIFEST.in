@@ -1,4 +1,5 @@
 include LICENSE.txt
 recursive-include seafreeze/splines *.mat
+recursive-include seafreeze/figures *.png
 recursive-include mlbspline *.mat
 recursive-include lbftd *.mat

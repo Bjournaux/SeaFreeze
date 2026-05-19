@@ -30,7 +30,7 @@ def evalMultivarSpline(spd, x, der=None, allowExtrapolations=True):
                 if True (default), extrapolations will be calculated according to the
                 spline's coefficients at its boundaries.  Not recommended, but used as default to preserve behavior.
     :return:    a Numpy n-D array. If x is a ndarray, then output.shape == x.shape.
-                If x is a tuple, then output.shape == tuple(np.ones(len(x), np.int)).
+                If x is a tuple, then output.shape == tuple(np.ones(len(x), int)).
     """
     if der is None:
         der = []

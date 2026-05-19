@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V1.1.0
+V1.1.1
 
 The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, II, III, V, VI and ice VII/ice X) in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
@@ -260,7 +260,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Ice Ih melting curves with NaCl](seafreeze/figures/phase_Ih_melting_NaCl.png)
+![Ice Ih melting curves with NaCl](https://raw.githubusercontent.com/Bjournaux/SeaFreeze/master/Python/seafreeze/figures/phase_Ih_melting_NaCl.png)
 
 ### Example — Full pure-water phase diagram
 
@@ -281,7 +281,7 @@ plt.show()
 fig = wpd(show_meta=False, phase_labels=True, solute='NaCl', m=[0.5, 2.0, 4.0])
 ```
 
-![Full water phase diagram](seafreeze/figures/WPD_python.png)
+![Full water phase diagram](https://raw.githubusercontent.com/Bjournaux/SeaFreeze/master/Python/seafreeze/figures/WPD_python.png)
 
 ---
 
@@ -312,6 +312,7 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 ## Change log
 
 ### Changes since 0.9.0
+- `1.1.1`: Added `matplotlib` to Python dependencies; removed `numpy<2` upper bound for NumPy 2.x compatibility.
 - `1.1.0`: added `seafreeze.phaselines` module — phase boundary computation (`phase_lines`, `phase_range`) and the full water phase diagram plotter (`wpd`); NaClaq melting curves for Ih, II, III, V, and VI; cross-validated against the Matlab SF_PhaseLines implementation to < 0.01 K. `getProp` output now matches Matlab `SF_getprop` exactly: added `Js`, `gamma_Gruneisen`, `P`/`T` echoes, NaClaq mixing properties (`m`, `xs`, `xw`, `f`, `Vw`); removed Python-only `V`, `gam`, `Gex` from default output; individual per-spline `.mat` files replace the monolithic spline archive.
 - `1.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.
 - `0.9.4`: Adjusted python readme syntax and package authorship info

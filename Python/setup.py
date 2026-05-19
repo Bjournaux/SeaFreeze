@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='SeaFreeze',
-    version='1.1.0',
+    version='1.1.1',
     author='Baptiste Journaux',
     author_email='bjournau@uw.edu',
     description='Thermodynamic properties of the phases of H2O and NaCl (aq)',
@@ -21,11 +21,13 @@ setuptools.setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Operating System :: OS Independent'
     ],
+    python_requires='>=3.11',
     include_package_data=True,
     install_requires=[
         'h5py >= 3.10',
         'hdf5storage >= 0.1.19',
-        'numpy >= 1.26.3, <2',
+        'matplotlib >= 3.8',
+        'numpy >= 1.26.3',
         'scipy >= 1.12',
         'psutil >= 5.9.8'
     ]

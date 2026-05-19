@@ -1,6 +1,6 @@
 function fig = SF_WPD(varargin)
 % SF_WPD  Draw the H2O Water Phase Diagram.
-% Version 1.1.0
+% Version 1.1.1
 % Baptiste Journaux - 2026
 %
 % Computes all phase boundaries dynamically from Gibbs energy splines

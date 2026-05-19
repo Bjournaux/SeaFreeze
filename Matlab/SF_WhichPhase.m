@@ -1,5 +1,5 @@
 function out = SF_WhichPhase(PT, varargin)
-% Version 1.1.0
+% Version 1.1.1
 % Baptiste Journaux - 2026
 % Determine which supported phase is stable at given conditions.
 %
