@@ -18,9 +18,17 @@ The SeaFreeze package computes thermodynamic and elastic properties of water, ic
 Tested on MATLAB R2018a and newer. **No toolboxes required.** The entire package uses an in-tree de Boor evaluator (`sp_val.m`) for every phase and derivative order, plus base-MATLAB `contourc` for the phase-line solver.
 
 ### Installing
-Add `SeaFreeze/Matlab` to your MATLAB path. The following data files must be on the path (they ship with this folder):
-- `SeaFreeze_Gibbs.mat` — all ice and pure-water splines
-- `SeaFreeze_Gibbs_VII_NaCl5GPa.mat` — aqueous NaCl 3D spline (shared with the Python version)
+Use `addpath` with `genpath` so that MATLAB also picks up the `internal/` helpers and the per-phase spline files inside `splines/`:
+
+```matlab
+addpath(genpath('/path/to/SeaFreeze/Matlab'))
+```
+
+All spline data files ship inside `Matlab/splines/` — no extra downloads required. You can verify the install with:
+
+```matlab
+SeaFreeze_version   % should print '1.1.0'
+```
 
 ## Running SeaFreeze
 
@@ -47,7 +55,10 @@ out = SF_getprop(PT, material, props)    % only the requested properties
 | `water1` | Liquid water — Bollengier et al. 2019 (≤500 K, ≤2300 MPa) |
 | `water2` | Liquid water — Brown 2018 (up to 100 GPa) |
 | `water_IAPWS95` | IAPWS95 water (Wagner and Pruss, 2002) |
-| `NaClaq` | Aqueous NaCl solution (3D LBF) |
+| `NaClaq` | Aqueous NaCl — stitched LP+HP 2026, recommended (0–10000 MPa, 229–2001 K, 0–7 mol/kg) |
+| `NaClaq_LP` | NaCl(aq) low-P only (0–1000 MPa, 230–501 K) |
+| `NaClaq_HP` | NaCl(aq) high-P only (500–10000 MPa, 229–2001 K) |
+| `NaClaq_5GPa_2024` | NaCl(aq) Brown 2024 legacy (0–5000 MPa, 229–501 K) |
 
 **`props`** *(optional)* — a string or cell array of property names. Omit or pass `[]` to compute all supported properties.
 
@@ -106,8 +117,6 @@ Solid phases additionally provide:
 | Water activity | `aw` | – |
 
 ## Examples
-
-An executable live script (`Example_SeaFreeze.mlx`) is provided.
 
 ### Single point (all properties)
 ```matlab
@@ -273,6 +282,18 @@ fig = SF_WPD(...)                               % return figure handle
 | `'m'` | `[]` | Scalar or vector of molality values (mol/kg) for NaClaq |
 | `'meta'` | `'default'` | `'default'` — only Ih–II and II–VI metastable extensions (matching v1); `true` / `'all'` — all pairs; `false` / `'none'` — none |
 | `'labels'` | `true` | Annotate stability fields with phase names |
+
+### `SF_phase_range`
+Return the knot-domain bounds (P, T, and optionally m) for any supported material. Used internally by `SF_PhaseLines` to auto-build the sampling grid, but also useful for checking validity ranges.
+
+```matlab
+rng = SF_phase_range('Ih');
+% rng.P  = [0.1, 2500]   (MPa)
+% rng.T  = [1, 400]      (K)
+
+rng = SF_phase_range('NaClaq');
+% rng.P, rng.T, rng.m    (m in mol/kg)
+```
 
 ## Tests
 

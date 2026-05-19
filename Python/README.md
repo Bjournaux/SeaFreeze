@@ -2,26 +2,32 @@
 
 V1.1.0
 
-The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, III, V, VI and ice VII/ice X) in the 0-100 GPa and 220 - 10000K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
+The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, II, III, V, VI and ice VII/ice X) in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
 
 ## Installation
 This package will install SeaFreeze, LBFTD, and MLBspline and their dependencies.
 
-Run the following command to install
+Requires **Python ≥ 3.11**.
 
-`pip install SeaFreeze`
+Run the following command to install:
 
-To upgrade to the latest version, use
+```
+pip install SeaFreeze
+```
 
-`pip install --upgrade SeaFreeze`
+To upgrade to the latest version:
+
+```
+pip install --upgrade SeaFreeze
+```
 
 
-### `seafreeze.getProps`:
-Calculates thermodynamic and elastic properties of a phase of water or solution
+### `getProp`
+Calculates thermodynamic and elastic properties of a phase of water or solution.
 
 ### Usage
-The main function of SeaFreeze is `seafreeze.getProps`*, which has the following parameters:
+The main function of SeaFreeze is `getProp`, which has the following parameters:
 - `PT`: the pressure (MPa) and temperature (K) conditions at which the thermodynamic quantities should be
   calculated -- note that these are required units, as conversions are built into several calculations
   This parameter can have one of the following formats:
@@ -45,9 +51,11 @@ The main function of SeaFreeze is `seafreeze.getProps`*, which has the following
   - `'NaClaq_HP'` — 2026 high-P NaCl(aq) spline only, P=[500, 10001] MPa
   - `'NaClaq_5GPa_2024'` — legacy Brown 2024 NaCl(aq) spline, P=[0, 5000] MPa
 
-  *Note seafreeze.seafreeze is currently deprecated and will remain so for 2 years as per Python guidelines
-
 The output of `getProp` is a `SimpleNamespace` object whose attributes match those of the Matlab `SF_getprop` function exactly.
+
+Pass `verbose=True` to print lbftd diagnostic warnings (e.g. extrapolation outside the spline domain); silent by default.
+
+> **Deprecation note:** `seafreeze.seafreeze()` (the old function name) still works but emits a `DeprecationWarning` and will be removed after 2026-06-21. Use `getProp` instead.
 
 **All phases** (pure water/ice and NaClaq):
 
@@ -140,26 +148,27 @@ out.shear   # shear modulus
 ## `seafreeze.whichphase`: determining the stable phase of water
 
 ### Usage
-Seafreeze also includes a function to determine which of the *supported* phases is stable
-under the given pressure and temperature conditions. 
-The function `whichphase` has a single parameter, `PT`, 
-which requires the same format as in the `seafreeze` function.
+SeaFreeze includes a function to determine which of the *supported* phases is stable
+under the given pressure and temperature conditions.
 
-The output of the function is a [Numpy array](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
-with an integer indicating the phase number corresponding to the `PT` input.  The phase number 0 means 
-liquid water, phase number 1 means ice Ih, phase number 3 means ice III, etc.  Points outside the range
-of all phases will return `numpy.nan`.
-- for a list of scattered (P,T) conditions, each value corresponds to the same index in the input
-- for a grid of PT conditions, each row corresponds to a pressure and each column to a temperature from the input.
+```python
+whichphase(PTm, solute='water1', path=defpath)
+```
 
-`seafreeze.phasenum2phase` can be used to map output phase numbers to a phase.  
-Each item in this dictionary has the phase number as its key and the phase as the value. 
+- `PTm` — same format as `getProp` (`PT` for pure water, `PTm` for NaCl solutions)
+- `solute` — optional; set to `'NaCl'` to use NaClaq as the liquid phase, enabling freezing-point-depression phase maps; `PTm` then requires a molality axis `[P, T, m]`
+
+The output is a NumPy array of integers: 0 = liquid, 1 = ice Ih, 2 = II, 3 = III, 5 = V, 6 = VI; `numpy.nan` outside all parametrizations.
+- Scattered (P,T): each value corresponds to the same index in the input
+- Grid: each row corresponds to a pressure and each column to a temperature
+
+`phasenum2phase(phaseInt)` converts an integer phase number back to a material string.
 
 ### Example
 
 ```python
 import numpy as np
-from seafreeze.seafreeze import seafreeze as sf
+from seafreeze import seafreeze as sf
 
 # determine the phase of water at 900 MPa and 255 K
 PT = np.empty((1,), dtype=object)
@@ -168,7 +177,6 @@ out = sf.whichphase(PT)
 # map to a phase using phasenum2phase
 sf.phasenum2phase(out[0])
 
-
 # determine phase for three separate (P,T) conditions
 PT = np.empty((3,), dtype=object)
 PT[0] = (100, 200)
@@ -176,13 +184,18 @@ PT[1] = (400, 250)
 PT[2] = (1000, 300)
 out = sf.whichphase(PT)
 # show phase for each (P,T)
-[(PT, sf.phasenum2phase(pn)) for (PT, pn) in zip(PT, out)]
+[(pt, sf.phasenum2phase(pn)) for (pt, pn) in zip(PT, out)]
 
 # find the likely phases at pressures 0-5 MPa and temperatures 240-300 K
 P = np.arange(0, 5, 0.1)
 T = np.arange(240, 300)
 PT = np.array([P, T], dtype=object)
 out = sf.whichphase(PT)
+
+# phase map for a 2 mol/kg NaCl solution (freezing-point depression)
+PTm = np.array([np.arange(0, 500, 10), np.arange(240, 300, 0.6),
+                np.full(50, 2.0)], dtype=object)
+out = sf.whichphase(PTm, solute='NaCl')
 ```
 
 ---
@@ -203,7 +216,7 @@ SeaFreeze 1.1.0 adds a dedicated module for computing and plotting phase boundar
 
 | Parameter | Default | Description |
 |---|---|---|
-| `matA`, `matB` | — | Phase names (same as `getProps`; order does not matter) |
+| `matA`, `matB` | — | Phase names (same as `getProp`; order does not matter) |
 | `m` | `None` | Molality (mol/kg) — required when one phase is `'NaClaq'`; accepts a scalar or list; `m=0` gives the pure-water limit via the NaClaq EoS |
 | `T` | auto | 1-D array of temperatures (K) to use as the evaluation grid |
 | `segment` | `'all'` | `'all'`, `'stable'`, or `'meta'` — which part of the curve to return |
@@ -214,6 +227,7 @@ The `PhaseLineResult` object has attributes `matA`, `matB`, `P` (MPa), `T` (K), 
 
 | Parameter | Default | Description |
 |---|---|---|
+| `ax` | `None` (new figure) | Matplotlib Axes to plot onto; creates a new figure if omitted |
 | `solute` | `'none'` | `'NaCl'` to overlay NaClaq melting curves |
 | `m` | `None` | Molality list for the NaCl overlay |
 | `show_meta` | `True` | Show metastable extensions as dashed gray lines |
@@ -221,10 +235,9 @@ The `PhaseLineResult` object has attributes `matA`, `matB`, `P` (MPa), `T` (K), 
 
 ### Example — Ice Ih melting curves with NaCl
 
-The two panels below show the **stable** melting curve (left) and the full curve including **metastable extensions** (right). `m=0` uses the NaClaq EoS at the pure-water limit, covering the full temperature range of the spline.
+`m=0` uses the NaClaq EoS at the pure-water limit. Higher concentration depresses the melting temperature across the entire pressure range.
 
 ```python
-import warnings
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import numpy as np
@@ -234,93 +247,20 @@ m_vals   = [0.0, 0.5, 1.0, 2.0, 4.0]
 m_labels = ['0 (pure water)', '0.5', '1.0', '2.0', '4.0']
 colors   = cm.viridis(np.linspace(0.0, 0.85, len(m_vals)))
 
-fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
-
-for ax, segment, title in zip(axes,
-                               ['stable', 'all'],
-                               ['Stable only',
-                                'Stable + metastable extensions']):
-    for m, lbl, c in zip(m_vals, m_labels, colors):
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            r = phase_lines('Ih', 'NaClaq', m=m, segment=segment)
-        stab = r.stable
-        if stab.any():
-            ax.plot(r.P[stab],  r.T[stab],  '-',  color=c, lw=2,
-                    label=f'm = {lbl} mol/kg')
-        if (~stab).any():
-            ax.plot(r.P[~stab], r.T[~stab], '--', color=c, lw=1.5,
-                    alpha=0.7, label='_nolegend_')
-    ax.set_xlabel('Pressure (MPa)')
-    ax.set_title(title)
-    ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=9)
-
-axes[0].set_ylabel('Temperature (K)')
-fig.suptitle('Ice Ih melting curves (NaClaq EoS)')
+fig, ax = plt.subplots(figsize=(7, 5))
+for m, lbl, c in zip(m_vals, m_labels, colors):
+    r = phase_lines('Ih', 'NaClaq', m=m, segment='stable')
+    ax.plot(r.P, r.T, '-', color=c, lw=2, label=f'm = {lbl} mol/kg')
+ax.set_xlabel('Pressure (MPa)')
+ax.set_ylabel('Temperature (K)')
+ax.set_title('Ice Ih melting curves (NaClaq EoS)')
+ax.legend(fontsize=9)
+ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 ```
 
 ![Ice Ih melting curves with NaCl](seafreeze/figures/phase_Ih_melting_NaCl.png)
-
-Higher NaCl concentration depresses the melting temperature across the entire pressure range.
-
-### Example — Ice VI melting curves with NaCl
-
-```python
-fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
-
-for ax, segment, title in zip(axes,
-                               ['stable', 'all'],
-                               ['Stable only',
-                                'Stable + metastable extensions']):
-    for m, lbl, c in zip(m_vals, m_labels, colors):
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            r = phase_lines('VI', 'NaClaq', m=m, segment=segment)
-        stab = r.stable
-        if stab.any():
-            ax.plot(r.P[stab],  r.T[stab],  '-',  color=c, lw=2,
-                    label=f'm = {lbl} mol/kg')
-        if (~stab).any():
-            ax.plot(r.P[~stab], r.T[~stab], '--', color=c, lw=1.5,
-                    alpha=0.7, label='_nolegend_')
-    ax.set_xlabel('Pressure (MPa)')
-    ax.set_title(title)
-    ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=9)
-
-axes[0].set_ylabel('Temperature (K)')
-fig.suptitle('Ice VI melting curves (NaClaq EoS)')
-plt.tight_layout()
-plt.show()
-```
-
-![Ice VI melting curves with NaCl](seafreeze/figures/phase_VI_melting_NaCl.png)
-
-### Example — Ice V / Ice VI phase boundary (pure water)
-
-```python
-with warnings.catch_warnings():
-    warnings.simplefilter('ignore')
-    r_s = phase_lines('V', 'VI', segment='stable')
-    r_m = phase_lines('V', 'VI', segment='meta')
-
-fig, ax = plt.subplots(figsize=(6, 5))
-ax.plot(r_s.P, r_s.T, 'k-',  lw=2, label='Stable')
-if r_m.P.size:
-    ax.plot(r_m.P, r_m.T, '--', color='gray', lw=1.5, alpha=0.7,
-            label='Metastable')
-ax.set_xlabel('Pressure (MPa)')
-ax.set_ylabel('Temperature (K)')
-ax.set_title('Ice V – Ice VI phase boundary')
-ax.legend()
-plt.tight_layout()
-plt.show()
-```
-
-![Ice V–VI phase boundary](seafreeze/figures/phase_V_VI.png)
 
 ### Example — Full pure-water phase diagram
 
@@ -347,7 +287,7 @@ fig = wpd(show_meta=False, phase_labels=True, solute='NaCl', m=[0.5, 2.0, 4.0])
 
 ## Important remarks 
 ### Water representation
-The ices Gibbs parameterizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), specially for phase equilibrium calculation. Using other water parameterization wil lead to incorrect melting curves. 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extention (up to 100 GPa) and comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K range and up to 2300 MPa.
+The ice Gibbs parametrizations are optimized to be used with `water1` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will lead to incorrect melting curves. `water2` (Brown 2018) and `water_IAPWS95` (IAPWS-95) are provided for high-pressure extension (up to 100 GPa) and comparison only. The authors recommend `water1` for any application in the 200–355 K range and up to 2300 MPa.
 
 ### Range of validity
 SeaFreeze stability prediction is currently considered valid down to 130K, which correspond to the ice VI - ice XV transition. The ice Ih - II transition is potentially valid down to 73.4 K (ice Ih - ice XI transition). The ice VII and ice X representation extend to 1TPa (1e6 MPa) and 2000K.
@@ -356,7 +296,7 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 - [Bollengier, Brown and Shaw (2019) J. Chem. Phys. 151, 054501; doi: 10.1063/1.5097179](https://aip.scitation.org/doi/abs/10.1063/1.5097179)
 - [Brown (2018) Fluid Phase Equilibria 463, pp. 18-31](https://www.sciencedirect.com/science/article/pii/S0378381218300530)
 - [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
-- [Journaux et al., (2019), in review in JGR: Planets (available on ArXiv)](https://arxiv.org/abs/1907.09598)
+- [Journaux et al. (2020) JGR: Planets 125, e2019JE006176](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019JE006176)
 - [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
 - [French and Redmer (2015), Physical Review B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
 
