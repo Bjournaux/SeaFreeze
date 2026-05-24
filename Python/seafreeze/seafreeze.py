@@ -655,8 +655,10 @@ def _get_tdvs(sp, PTm, is_scatter, *tdvSpec):
 
 
 def _get_shear_mod_GPa(sm, rho, T):
-    return None if sm is None else (
-        sm[0] + sm[1] * (rho - sm[4]) + sm[2] * (rho - sm[4]) ** 2 + sm[3] * (T - sm[5]))
+    if sm is None:
+        return None
+    T = np.asarray(T, dtype=float)
+    return sm[0] + sm[1] * (rho - sm[4]) + sm[2] * (rho - sm[4]) ** 2 + sm[3] * (T - sm[5])
 
 
 def _get_Vp(smg, rho, Ks):
