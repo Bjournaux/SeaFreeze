@@ -7,6 +7,8 @@
 V1.1.2
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
+> **🌊 Try SeaFreeze online:** [seafreeze.streamlit.app](https://seafreeze.streamlit.app/)
+> ⚠️ *Beta version — the web GUI is under active development and may contain bugs. For production use, please install the Python or Matlab package directly.*
 
 The SeaFreeze package allows to compute the thermodynamic and elastic properties of pure water, ice polymorphs (Ih, II, 
 III, V, VI and ice VII/ice X) up to 100 GPa and 10,000 K and aqueous NaCl solutions up to 8 GPa and 2,000 K. It is based on 
