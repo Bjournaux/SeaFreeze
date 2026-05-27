@@ -6,7 +6,7 @@
 
 V1.1.2
 
-<img src="assets/logo.png" alt="UW Planetary Mineral Physics Laboratory" width="400"/>
+<a href="https://bjournaux.wordpress.com/" target="_blank"><img src="assets/logo.png" alt="UW Planetary Mineral Physics Laboratory" width="400"/></a>
 
 ![SeaFreeze cover](assets/cover.png)
 

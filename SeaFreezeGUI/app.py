@@ -114,7 +114,14 @@ def _add_phase_boundaries(fig, phase_bounds, var1_name, var2_name, mode="2d"):
 with st.sidebar:
     logo_path = _asset("logo.png")
     if os.path.exists(logo_path):
-        st.image(logo_path, width=230)
+        import base64 as _b64
+        with open(logo_path, "rb") as _f:
+            _logo_b64 = _b64.b64encode(_f.read()).decode()
+        st.markdown(
+            f'<a href="https://bjournaux.wordpress.com/" target="_blank">'
+            f'<img src="data:image/png;base64,{_logo_b64}" width="230"></a>',
+            unsafe_allow_html=True,
+        )
     st.caption(
         "Developed by **Baptiste Journaux**  \n"
         "University of Washington"

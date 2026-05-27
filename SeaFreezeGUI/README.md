@@ -4,9 +4,6 @@ Interactive web and desktop application for computing thermodynamic properties o
 
 Built with [Streamlit](https://streamlit.io/) and [Plotly](https://plotly.com/python/).
 
-> **🌊 Try SeaFreeze online:** [seafreeze.streamlit.app](https://seafreeze.streamlit.app/)
-> ⚠️ *Beta version — the web GUI is under active development and may contain bugs. For production use, please install the Python or Matlab package directly.*
-
 ---
 
 ## Features
