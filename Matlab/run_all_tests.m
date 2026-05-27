@@ -7,7 +7,7 @@ nfail = 0;
 
 % --- Script-based tests (print their own pass/fail counts) ----------------
 scripts = {'test_fnGval_vs_1p0', 'test_general', 'test_input_validation', ...
-           'test_selective_props', 'test_SF_PhaseLines'};
+           'test_selective_props', 'test_SF_PhaseLines', 'test_SF_rho2P'};
 for k = 1:numel(scripts)
     fprintf('\n=== %s ===\n', scripts{k});
     try

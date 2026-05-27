@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V1.1.2
+V1.1.3
 
 The SeaFreeze package allows to compute the thermodynamic and elastic properties of water and ice polymorphs (Ih, II, III, V, VI and ice VII/ice X) in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their ocean in mind. It is based on the evaluation of Gibbs Local Basis Functions parametrization (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in more details in Brown (2018), Journaux et al. (2019), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). 
 
@@ -285,6 +285,60 @@ fig = wpd(show_meta=False, phase_labels=True, solute='NaCl', m=[0.5, 2.0, 4.0])
 
 ---
 
+## EOS inversion: `seafreeze.rho2P`
+
+`rho2P` inverts the SeaFreeze EOS to find pressure P (MPa) such that `rho(P, T) == rho_target` for any supported material. Uses Newton-Raphson with the isothermal bulk modulus `Kt` and a bisection fallback for robustness; returns `NaN` where no solution exists within the spline domain.
+
+### Signature
+
+```python
+from seafreeze import rho2P
+
+P = rho2P(rho_target, T, phase)
+P = rho2P(rho_target, T, phase, m=1.0)          # NaClaq: molality in mol/kg
+P = rho2P(rho_target, T, phase, P0=500.0)        # optional initial guess (MPa)
+P = rho2P(rho_target, T, phase, tol=1e-4)        # convergence tolerance (default 0.01 MPa)
+```
+
+| Parameter | Description |
+|---|---|
+| `rho_target` | Target density in kg/m³ — scalar or array-like |
+| `T` | Temperature in K — scalar broadcasts against `rho_target` |
+| `phase` | Any material code accepted by `getProp` |
+| `m` | Molality in mol/kg — required for NaClaq phases |
+| `P0` | Optional initial pressure guess in MPa |
+| `tol` | Convergence tolerance in MPa (default `0.01`) |
+
+Returns a NumPy array of the same shape as `rho_target`. `NaN` is returned where no solution was found (density out of range at the given T, or T outside the spline domain).
+
+### Example
+
+```python
+import numpy as np
+from seafreeze import rho2P
+
+# Pure water near ambient conditions
+P = rho2P(997.0, 298.0, 'water1')          # ≈ 0.1 MPa
+
+# Ice Ih at 1 bar — works at 0.1 MPa (low-P fix in 1.1.3)
+P = rho2P(918.6, 260.0, 'Ih')              # ≈ 0.1 MPa
+
+# Ice VI — three scatter points
+P = rho2P([1310., 1350., 1390.], [255., 260., 265.], 'VI')
+
+# NaClaq at 1 mol/kg
+P = rho2P(1050.0, 300.0, 'NaClaq', m=1.0)
+
+# Round-trip check: compute rho with getProp, recover P with rho2P
+import numpy as np, warnings
+from seafreeze import getProp, rho2P
+PTm = np.empty(1, dtype=object); PTm[0] = (500., 300.)
+rho = getProp(PTm, 'water1').rho.flat[0]
+P_rec = rho2P(rho, 300., 'water1')         # should recover ≈ 500 MPa
+```
+
+---
+
 ## Important remarks 
 ### Water representation
 The ice Gibbs parametrizations are optimized to be used with `water1` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will lead to incorrect melting curves. `water2` (Brown 2018) and `water_IAPWS95` (IAPWS-95) are provided for high-pressure extension (up to 100 GPa) and comparison only. The authors recommend `water1` for any application in the 200–355 K range and up to 2300 MPa.
@@ -312,6 +366,7 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 ## Change log
 
 ### Changes since 0.9.0
+- `1.1.3`: Added `rho2P` — EOS pressure-from-density inversion via Newton-Raphson + bisection fallback, supporting all phases including NaClaq. Fixed low-pressure convergence for all ice phases (Ih, II, III, V, VI).
 - `1.1.2`: Fixed bug in `_get_shear_mod_GPa` where temperature was not cast to a numpy array, causing `np.sqrt` to fail on 2-D grid inputs for solid phases. All shear-wave properties (`shear`, `Vp`, `Vs`) on grids now compute correctly.
 - `1.1.1`: Added `matplotlib` to Python dependencies; removed `numpy<2` upper bound for NumPy 2.x compatibility.
 - `1.1.0`: added `seafreeze.phaselines` module — phase boundary computation (`phase_lines`, `phase_range`) and the full water phase diagram plotter (`wpd`); NaClaq melting curves for Ih, II, III, V, and VI; cross-validated against the Matlab SF_PhaseLines implementation to < 0.01 K. `getProp` output now matches Matlab `SF_getprop` exactly: added `Js`, `gamma_Gruneisen`, `P`/`T` echoes, NaClaq mixing properties (`m`, `xs`, `xw`, `f`, `Vw`); removed Python-only `V`, `gam`, `Gex` from default output; individual per-spline `.mat` files replace the monolithic spline archive.

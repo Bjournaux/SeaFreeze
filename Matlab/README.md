@@ -1,8 +1,11 @@
 # SeaFreeze
 
-V1.1.2 (Matlab version)
+V1.1.3 (Matlab version)
 
 The SeaFreeze package computes thermodynamic and elastic properties of water, ice polymorphs (Ih, II, III, V, VI, VII and X) and aqueous NaCl solutions in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their oceans in mind. It is based on Gibbs Local Basis Function (LBF) parametrizations (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in Brown (2018), Journaux et al. (2020), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019).
+
+## What's new in 1.1.3
+- **`SF_rho2P`** — New utility function that inverts the EOS to find pressure (MPa) from a target density (kg/m³) and temperature (K), for any supported material. Uses Newton-Raphson iteration with the isothermal bulk modulus `Kt` and a bisection fallback for robustness. Fixed a low-P convergence issue that caused NaN results for all ice phases (Ih, II, III, V, VI) near the 0.1 MPa lower domain boundary.
 
 ## What's new in 1.1.0
 - **Aqueous NaCl solutions** (`NaClaq`) via the same 3D (P,T,m) spline used by the Python version, including a corrected scatter-input mixing-quantities path that uses a per-row baseline at `m = cutoff` (previously broken with a runtime warning).
@@ -27,7 +30,7 @@ addpath(genpath('/path/to/SeaFreeze/Matlab'))
 All spline data files ship inside `Matlab/splines/` — no extra downloads required. You can verify the install with:
 
 ```matlab
-SeaFreeze_version   % should print '1.1.2'
+SeaFreeze_version   % should print '1.1.3'
 ```
 
 ## Running SeaFreeze
@@ -196,7 +199,7 @@ out = SF_getprop({P,T,m}, 'NaClaq', {'rho','aw'});
 Return the current version string:
 ```matlab
 SeaFreeze_version
-% '1.1.2'
+% '1.1.3'
 ```
 
 ### `SF_WhichPhase`
@@ -293,6 +296,32 @@ rng = SF_phase_range('Ih');
 
 rng = SF_phase_range('NaClaq');
 % rng.P, rng.T, rng.m    (m in mol/kg)
+```
+
+### `SF_rho2P`
+Invert the SeaFreeze EOS: find P (MPa) such that `rho(P,T) == rho_target` for any supported material. Uses Newton-Raphson with the isothermal bulk modulus `Kt` and a bisection fallback; returns `NaN` where no solution exists within the spline domain.
+
+```matlab
+P = SF_rho2P(rho_target, T, material)
+P = SF_rho2P(rho_target, T, material, m)              % NaClaq: molality (mol/kg)
+P = SF_rho2P(rho_target, T, material, 'P0', Pguess)   % initial guess (MPa)
+P = SF_rho2P(rho_target, T, material, 'tol', 0.001)   % convergence tol (default 0.01 MPa)
+```
+
+`rho_target` and `T` may be scalar or arrays; scalar `T` broadcasts against `rho_target`. Output is the same shape as `rho_target`.
+
+```matlab
+% Pure water near ambient conditions (≈ 0.1 MPa)
+P = SF_rho2P(997, 298, 'water1')
+
+% Ice Ih at 1 bar — works at 0.1 MPa (low-P fix in 1.1.3)
+P = SF_rho2P(918.6, 260, 'Ih')
+
+% Ice VI scatter
+P = SF_rho2P([1310 1350 1390], [255 260 265], 'VI')
+
+% NaClaq at 1 mol/kg, with tight tolerance
+P = SF_rho2P(1050, 300, 'NaClaq', 1.0, 'tol', 1e-4)
 ```
 
 ## Tests
