@@ -4,7 +4,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-V1.1.1
+V1.1.2
 ![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
 
 
@@ -16,7 +16,7 @@ phase, constructed to reproduce thermodynamic measurements. The formalism is des
 Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). 
 Aqueous NaCl equation of state publication is in preparation.
 
-Both Python and Matlab versions are at 1.1.1.
+Both Python and Matlab versions are at 1.1.2.
 
 Contact: bjournau (at) uw (dot) edu
 
@@ -348,6 +348,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ## Change log
 
 ### Changes since 0.9.0
+- `1.1.2`: Fixed bug in `_get_shear_mod_GPa` where temperature was not cast to a numpy array, causing `np.sqrt` to fail on 2-D grid inputs for solid phases (ice Ih, II, III, V, VI, VII/X). All shear-wave properties (`shear`, `Vp`, `Vs`) on grids now compute correctly.
 - `1.1.1`: Added `matplotlib` to Python dependencies; removed `numpy<2` upper bound for NumPy 2.x compatibility.
 - `1.1.0`: New entry point `SF_getprop` (replaces `SeaFreeze`). Added `Js`, `gamma_Gruneisen` outputs. Removed `gam`, `Gex` outputs. Dynamic phase diagram `SF_WPD` replaces static WPD.mat. Rewritten `SF_PhaseLines` with 28 supported pairs including ice VII/X melting curves. Material name `aq_NaCl` renamed to `NaClaq`. No Curve Fitting Toolbox required.
 - `1.0.2`: Fixed output for phaseline now coherent with the rest of the code as (P,T), bug fix with ice II-VI transition

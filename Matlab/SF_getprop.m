@@ -1,5 +1,5 @@
 function out = SF_getprop(PT, material, props)
-% Version 1.1.1 ; Journaux et al. 2025
+% Version 1.1.2 ; Journaux et al. 2025
 % Baptiste Journaux - 2026
 % Calculate thermodynamic quantities for water or ice polymorphs
 % (Ih, II, III, V, VI, VII and X) and for aqueous NaCl solution.

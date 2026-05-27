@@ -1,6 +1,6 @@
 # SeaFreeze
 
-V1.1.1 (Matlab version)
+V1.1.2 (Matlab version)
 
 The SeaFreeze package computes thermodynamic and elastic properties of water, ice polymorphs (Ih, II, III, V, VI, VII and X) and aqueous NaCl solutions in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their oceans in mind. It is based on Gibbs Local Basis Function (LBF) parametrizations (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in Brown (2018), Journaux et al. (2020), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019).
 
@@ -27,7 +27,7 @@ addpath(genpath('/path/to/SeaFreeze/Matlab'))
 All spline data files ship inside `Matlab/splines/` — no extra downloads required. You can verify the install with:
 
 ```matlab
-SeaFreeze_version   % should print '1.1.1'
+SeaFreeze_version   % should print '1.1.2'
 ```
 
 ## Running SeaFreeze
@@ -196,7 +196,7 @@ out = SF_getprop({P,T,m}, 'NaClaq', {'rho','aw'});
 Return the current version string:
 ```matlab
 SeaFreeze_version
-% '1.1.1'
+% '1.1.2'
 ```
 
 ### `SF_WhichPhase`

@@ -514,17 +514,20 @@ def _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path
     # Derivation: Js = −(∂²G/∂P∂T) / (∂²G/∂T²) = α·d1P / (Cp/T)
     #   with d1P = 1e6/ρ → Js = α·T·1e6 / (ρ·Cp)
     if want('Js'):
-        T_for_Js = props['T'] if 'T' in props else T_arr
-        props['Js'] = (np.asarray(T_for_Js) *
-                       np.asarray(props['alpha']) /
-                       (np.asarray(props['rho']) * np.asarray(props['Cp'])) * 1e6)
+        T_for_Js = np.asarray(props['T'] if 'T' in props else T_arr, dtype=float)
+        denom_Js = np.asarray(props['rho'], dtype=float) * np.asarray(props['Cp'], dtype=float)
+        props['Js'] = np.where(denom_Js == 0, np.nan,
+                               T_for_Js * np.asarray(props['alpha'], dtype=float)
+                               / np.where(denom_Js == 0, 1, denom_Js) * 1e6)
 
     # γ_Grüneisen = α·Kt·1e6 / (ρ·Cv)   [dimensionless]
     # (1e6 converts Kt from MPa to Pa so units cancel)
     if want('gamma_Gruneisen'):
-        props['gamma_Gruneisen'] = (1e6 * np.asarray(props['alpha']) *
-                                    np.asarray(props['Kt']) /
-                                    (np.asarray(props['rho']) * np.asarray(props['Cv'])))
+        denom_gr = np.asarray(props['rho'], dtype=float) * np.asarray(props['Cv'], dtype=float)
+        props['gamma_Gruneisen'] = np.where(denom_gr == 0, np.nan,
+                                            1e6 * np.asarray(props['alpha'], dtype=float) *
+                                            np.asarray(props['Kt'], dtype=float) /
+                                            np.where(denom_gr == 0, 1, denom_gr))
 
     # --- NaClaq-only ---
     is_nacl = phase.startswith('NaClaq')

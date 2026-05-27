@@ -1,0 +1,5 @@
+SeaFreeze>=1.1.1
+streamlit>=1.39
+plotly>=5.20
+pandas>=2.1
+numpy>=1.26
