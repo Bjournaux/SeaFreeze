@@ -42,7 +42,11 @@
 		</data>
 		<key>Resources/app.py</key>
 		<data>
-		a6pYHwrQbYuWDEfFNk1Vrp8KIv8=
+		mbcFq7rFskk+yJrgB97Z9mS0ciA=
+		</data>
+		<key>Resources/assets/logo.png</key>
+		<data>
+		2nCheNrTIu2a6FjuG1V93ou/oUQ=
 		</data>
 		<key>Resources/attrs-26.1.0.dist-info/INSTALLER</key>
 		<data>
@@ -66,7 +70,7 @@
 		</data>
 		<key>Resources/base_library.zip</key>
 		<data>
-		eeFCs062yk6A8fmpXd9xwtSE1ZA=
+		Zth8opwLwybCiMFWD5gLnGWUaFc=
 		</data>
 		<key>Resources/certifi/cacert.pem</key>
 		<data>
@@ -86,19 +90,19 @@
 		</data>
 		<key>Resources/core/__pycache__/compute.cpython-313.pyc</key>
 		<data>
-		dLS/3vcSjow57XKe9E7zXlqGtaU=
+		A3Sw9XxFcVNokme2XIszosr3Otk=
 		</data>
 		<key>Resources/core/__pycache__/constants.cpython-313.pyc</key>
 		<data>
-		g7w6JhKB7IBjCgz1cW1N8KwZVx8=
+		5UdlJ4YdpwPRvJwk+cAfVDmimqI=
 		</data>
 		<key>Resources/core/compute.py</key>
 		<data>
-		M08sz+2hVs1DW5vw2DY2vaUJnuM=
+		t+cs67RKUjhAOnxyk2fXcIXt7KI=
 		</data>
 		<key>Resources/core/constants.py</key>
 		<data>
-		XQOzmHIRrBnWeYRyY1yEZv7/uQg=
+		h/VrOWWKoynkfCKgHhNAutszjiE=
 		</data>
 		<key>Resources/cryptography-46.0.3.dist-info/INSTALLER</key>
 		<data>
@@ -6345,6 +6349,11 @@
 			<key>symlink</key>
 			<string>../Resources/app.py</string>
 		</dict>
+		<key>Frameworks/assets</key>
+		<dict>
+			<key>symlink</key>
+			<string>../Resources/assets</string>
+		</dict>
 		<key>Frameworks/attrs-26.1.0.dist-info</key>
 		<dict>
 			<key>symlink</key>
@@ -9640,7 +9649,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			xu8B3W15ZTo0umF/aCLv04F3y/65rP5gd5hU5XTdzwM=
+			snvzvd+t+BuVak0gtFZ/+0oPOu25ZRZGzDaPr7rAyEY=
+			</data>
+		</dict>
+		<key>Resources/assets/logo.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			7HTF8pgW69hWZalcI7yBxRAjyzvBSeg9De0Vsv4/K3A=
 			</data>
 		</dict>
 		<key>Resources/attrs-26.1.0.dist-info/INSTALLER</key>
@@ -9682,7 +9698,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			WQ9hbxEobaW7lom2gyZtUrA77vK2P/6um+X5I5zt6Yk=
+			Wm3xz/GxXAdylDjig9eN6BYPG9mYsygRIrKgx8PLRlo=
 			</data>
 		</dict>
 		<key>Resources/brotlicffi</key>
@@ -9722,28 +9738,28 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			H9DTJo2FHDmM99mIs5lPGKN0zOOEJ6eTdCAc+6zzvjc=
+			ml6Bbvci7lOL4C6FN8SSUOHdGI9Eq3jt244ZhR1vSAE=
 			</data>
 		</dict>
 		<key>Resources/core/__pycache__/constants.cpython-313.pyc</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			B2S2w9/f++ZriPlkgusaV5dTVobSFguTH7KrbzLq2+U=
+			S1hLQBh1IkPX2E71IhuPweC5HnBJSmriyRcIpMuMDf0=
 			</data>
 		</dict>
 		<key>Resources/core/compute.py</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			G9DkbUCptB7gDo0uY9Dh9X6sWda/fMpijjQkV74jJ6s=
+			ZLZwEagixmlnPbPsufeO30+XGf3+9czxWG20CYX4/O0=
 			</data>
 		</dict>
 		<key>Resources/core/constants.py</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			eCCv+tXlvfupYw+BWkCxSRcLHOoCh5eyYzEAqu9vl70=
+			uIscB4p+igFXzZkXuezjRz6oYQGOiUUhIDbZ5HLdP9M=
 			</data>
 		</dict>
 		<key>Resources/cryptography</key>

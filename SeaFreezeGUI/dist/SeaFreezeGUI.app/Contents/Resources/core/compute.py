@@ -6,6 +6,23 @@ from seafreeze import getProp as _getProp, phase_range as _phase_range, phase_li
 from seafreeze.seafreeze import defpath as _defpath
 from seafreeze.phaselines import _PAIRS
 
+# ── Monkey-patch for SeaFreeze <= 1.1.1 shear modulus bug ────────────────────
+# The PyPI version's _get_shear_mod_GPa receives T as a dtype=object array
+# from meshgrid, so np.sqrt(T) fails with "loop of ufunc does not support
+# argument 0 of type float which has no callable sqrt method".
+# Fix: ensure T is cast to float before any ufunc operations.
+import seafreeze.seafreeze as _sf_mod
+
+_orig_shear = getattr(_sf_mod, "_get_shear_mod_GPa", None)
+
+if _orig_shear is not None:
+    def _patched_shear_mod_GPa(material, T, rho_kgm3):
+        T = np.asarray(T, dtype=float)
+        rho_kgm3 = np.asarray(rho_kgm3, dtype=float)
+        return _orig_shear(material, T, rho_kgm3)
+
+    _sf_mod._get_shear_mod_GPa = _patched_shear_mod_GPa
+
 
 def _extract_results(out):
     """Pull all numpy array attributes from a SimpleNamespace into a dict."""

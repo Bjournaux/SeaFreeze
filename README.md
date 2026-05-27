@@ -5,7 +5,10 @@
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
 V1.1.2
-![Logo](https://bjournaux.files.wordpress.com/2019/07/cover.002.png)
+
+<img src="assets/logo.png" alt="UW Planetary Mineral Physics Laboratory" width="400"/>
+
+![SeaFreeze cover](assets/cover.png)
 
 > **🌊 Try SeaFreeze online:** [seafreeze.streamlit.app](https://seafreeze.streamlit.app/)
 > ⚠️ *Beta version — the web GUI is under active development and may contain bugs. For production use, please install the Python or Matlab package directly.*
@@ -322,7 +325,7 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 
 
 The following figure shows the prediction of phase transitions from SeaFreeze (melting & solid-solid) and comparison with experimental data:
-![Logo](https://bjournaux.files.wordpress.com/2019/10/phase-diagram.png)
+![SeaFreeze phase diagram vs experimental data](assets/Phase_diagram_exp_data.png)
 
 
 

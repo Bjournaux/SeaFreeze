@@ -19,7 +19,7 @@ if hasattr(sys, "_MEIPASS") and sys._MEIPASS not in sys.path:
     sys.path.insert(0, sys._MEIPASS)
 
 from core.constants import (
-    ALL_MATERIALS, MATERIAL_LABELS,
+    ALL_MATERIALS, MATERIAL_LABELS, MATERIAL_SHORT_LABELS,
     available_properties, categorized_properties, is_nacl, is_solid,
 )
 from core.compute import (
@@ -38,11 +38,27 @@ st.set_page_config(
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Asset path resolution (works for both `streamlit run` and PyInstaller bundle)
+# ─────────────────────────────────────────────────────────────────────────────
+_ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
+
+def _asset(name):
+    if hasattr(sys, "_MEIPASS"):
+        return os.path.join(sys._MEIPASS, "assets", name)
+    return os.path.join(_ASSETS_DIR, name)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _label(material):
+    """Full citation label — used in selectors and page headers."""
     return MATERIAL_LABELS.get(material, material)
+
+def _short_label(material):
+    """Short label — used in plot legends to keep trace names compact."""
+    return MATERIAL_SHORT_LABELS.get(material, material)
 
 def _fmt_range(lo, hi, unit):
     return f"{lo:.1f} – {hi:.1f} {unit}"
@@ -93,9 +109,24 @@ def _add_phase_boundaries(fig, phase_bounds, var1_name, var2_name, mode="2d"):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Sidebar branding — shown on every page
+# ─────────────────────────────────────────────────────────────────────────────
+with st.sidebar:
+    logo_path = _asset("logo.png")
+    if os.path.exists(logo_path):
+        st.image(logo_path, width=230)
+    st.caption(
+        "Developed by **Baptiste Journaux**  \n"
+        "University of Washington"
+    )
+    st.divider()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Page selector (top of main area)
 # ─────────────────────────────────────────────────────────────────────────────
-page = st.pills("Navigation", ["Property Calculator", "Phase Diagram"],
+page = st.pills("Navigation",
+                ["Property Calculator", "Phase Diagram", "About"],
                 default="Property Calculator",
                 key="page_select", label_visibility="collapsed")
 
@@ -612,7 +643,7 @@ def page_phase_diagram():
         cols = st.columns(3)
         for i, phase in enumerate(_ALL_PHASES):
             with cols[i % 3]:
-                if st.checkbox(_label(phase), value=(phase in ("Ih", "water1")),
+                if st.checkbox(_short_label(phase), value=(phase in ("Ih", "water1")),
                                key=f"pd_{phase}"):
                     checked_phases.append(phase)
 
@@ -668,7 +699,7 @@ def page_phase_diagram():
                 x=P_line, y=T_line,
                 mode="lines",
                 line=dict(color=color, width=2.5, dash=dash),
-                name=f"{_label(matA)} – {_label(matB)}",
+                name=f"{_short_label(matA)} – {_short_label(matB)}",
                 hovertemplate=(
                     "P: %{x:.1f} MPa<br>"
                     "T: %{y:.1f} K"
@@ -697,7 +728,7 @@ def page_phase_diagram():
                         x=P_line, y=T_line,
                         mode="lines",
                         line=dict(color=color, width=2, dash="dot"),
-                        name=f"{_label(matA)} – NaCl(aq) m={m_val}",
+                        name=f"{_short_label(matA)} – NaCl(aq) m={m_val}",
                         hovertemplate=(
                             f"m = {m_val} mol/kg<br>"
                             "T: %{x:.1f} K<br>"
@@ -740,10 +771,125 @@ def page_phase_diagram():
                                mime="text/csv")
 
 
+# ═════════════════════════════════════════════════════════════════════════════
+# PAGE 3 — About & References
+# ═════════════════════════════════════════════════════════════════════════════
+
+def page_about():
+    st.title("SeaFreeze — About & References")
+
+    # ── About ─────────────────────────────────────────────────────────────────
+    st.header("About")
+    st.markdown("""
+    **SeaFreeze GUI** is an interactive web application for computing thermodynamic
+    and elastic properties of water, ice polymorphs (Ih, II, III, V, VI, VII/X), and
+    NaCl aqueous solutions, built on the
+    [SeaFreeze](https://github.com/Bjournaux/SeaFreeze) library.
+
+    SeaFreeze is based on the evaluation of Gibbs Local Basis Function (LBF)
+    parametrizations for each phase, constructed to reproduce thermodynamic measurements
+    across a wide range of pressures and temperatures relevant to planetary interiors and
+    high-pressure geophysics.
+
+    **Try it online:** [seafreeze.streamlit.app](https://seafreeze.streamlit.app/)
+    ⚠️ *Beta — under active development.*
+    """)
+
+    # ── Supported phases & validity ranges ───────────────────────────────────
+    st.header("Supported Phases & Validity Ranges")
+    rows = []
+    for mat in ALL_MATERIALS:
+        try:
+            P_rng, T_rng, m_rng = get_phase_range(mat)
+            row = {
+                "Material": MATERIAL_LABELS[mat],
+                "P range (MPa)": f"{P_rng[0]:.0f} – {P_rng[1]:.0f}",
+                "T range (K)":   f"{T_rng[0]:.0f} – {T_rng[1]:.0f}",
+            }
+            if m_rng is not None:
+                row["m range (mol/kg)"] = f"{m_rng[0]:.1f} – {m_rng[1]:.1f}"
+            rows.append(row)
+        except Exception:
+            pass
+    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+
+    st.caption(
+        "NaN values are returned outside the parametrization boundaries. "
+        "Stability predictions are considered valid down to 130 K (ice VI–XV transition). "
+        "The ice Ih–II transition is potentially valid down to 73.4 K."
+    )
+
+    # ── Phase diagram validation ──────────────────────────────────────────────
+    st.header("Phase Diagram — Validation Against Experimental Data")
+    fig_path = _asset("Phase_diagram_exp_data.png")
+    if os.path.exists(fig_path):
+        st.image(fig_path,
+                 caption="SeaFreeze computed phase boundaries vs. experimental data.",
+                 use_container_width=True)
+    else:
+        st.info("Phase diagram figure not available in this environment.")
+
+    st.markdown("""
+    The ice Ih–VII/X melting curve above the VI–VII–water triple point (~2216 MPa, 354 K)
+    uses the Gibbs energy representation of French & Redmer (2015).
+
+    For phase equilibrium calculations, **water1** (Bollengier et al., 2019) is recommended
+    over water2 or IAPWS95, as the ice Gibbs parametrizations are optimized against it.
+    """)
+
+    # ── Contributors ─────────────────────────────────────────────────────────
+    st.header("Contributors")
+    st.markdown("""
+    - **Baptiste Journaux** *(Lead)* — University of Washington, Earth & Space Sciences
+    - **J. Michael Brown** — University of Washington, Earth & Space Sciences
+    - **Penny Espinoza** — University of Washington, Earth & Space Sciences
+    - **Ula Jones** — University of Washington, Earth & Space Sciences
+    - **Erica Clinton** — University of Washington, Earth & Space Sciences
+    - **Tyler Gordon** — University of Washington, Department of Astronomy
+    - **Matthew J. Powell-Palm** — Texas A&M University, Mechanical Engineering
+    - **Steven D. Vance** — NASA Jet Propulsion Laboratory, Caltech
+    """)
+
+    # ── References ───────────────────────────────────────────────────────────
+    st.header("References")
+    st.markdown("""
+    1. **Journaux et al. (2020)** — Holistic Approach for Studying Planetary Hydrospheres:
+       Gibbs Representation of Ices Thermodynamics, Elasticity, and the Water Phase Diagram
+       to 2300 MPa. *JGR Planets* 125(1), e2019JE006176.
+       [DOI: 10.1029/2019JE006176](https://doi.org/10.1029/2019JE006176)
+
+    2. **Bollengier, Brown & Shaw (2019)** — Thermodynamics of pure liquid water to 2300 MPa
+       and 500 K from a new Gibbs parametrization.
+       *J. Chem. Phys.* 151, 054501.
+       [DOI: 10.1063/1.5097179](https://doi.org/10.1063/1.5097179)
+
+    3. **Brown (2018)** — Seismic wave anisotropy in the inner core and its relation to
+       high-pressure solid phase transitions.
+       *Fluid Phase Equilibria* 463, 18–31.
+       [DOI: 10.1016/j.fluid.2018.02.001](https://doi.org/10.1016/j.fluid.2018.02.001)
+
+    4. **Feistel & Wagner (2006)** — A New Equation of State for H₂O Ice Ih.
+       *J. Phys. Chem. Ref. Data* 35, 1021–1047.
+
+    5. **Wagner & Pruss (2002)** — The IAPWS Formulation 1995 for the Thermodynamic
+       Properties of Ordinary Water Substance for General and Scientific Use.
+       *J. Phys. Chem. Ref. Data* 31, 387–535.
+
+    6. **French & Redmer (2015)** — Electronic band structure and optical properties of
+       ice VII and X.
+       *Physical Review B* 91, 014308.
+       [DOI: 10.1103/PhysRevB.91.014308](https://doi.org/10.1103/PhysRevB.91.014308)
+
+    7. **Brown et al. (under review)** — NaCl aqueous solution equation of state.
+    """)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Route to the selected page
 # ─────────────────────────────────────────────────────────────────────────────
 if page == "Property Calculator":
     page_property_calculator()
-else:
+elif page == "Phase Diagram":
     page_phase_diagram()
+else:
+    page_about()
