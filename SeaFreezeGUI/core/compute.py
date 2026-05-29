@@ -133,3 +133,20 @@ def get_phase_line(matA, matB, segment="stable", m=None):
     except Exception:
         pass
     return None
+
+
+@st.cache_data(show_spinner="Computing phase line...")
+def get_phase_line_full(matA, matB, segment="all", m=None):
+    """Return (P, T, stable_mask, triple_points) for the equilibrium line.
+
+    stable_mask is a bool array aligned with P/T (True = thermodynamically
+    stable portion). triple_points is an Nx2 array of [P_MPa, T_K]. Returns
+    None if no contour was found.
+    """
+    try:
+        res = _phase_lines(matA, matB, segment=segment, m=m)
+        if res.P is not None and len(res.P) > 0:
+            return res.P, res.T, res.stable, res.triple_points
+    except Exception:
+        pass
+    return None

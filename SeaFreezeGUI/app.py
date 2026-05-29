@@ -24,7 +24,7 @@ from core.constants import (
 )
 from core.compute import (
     compute_properties, get_phase_range, get_stability_boundaries,
-    get_phase_line,
+    get_phase_line, get_phase_line_full,
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -614,6 +614,11 @@ _PHASE_COLORS = {
     "water1":       "#17becf",
 }
 
+# Phase-transition line colors: stable = black, metastable = dark grey
+_STABLE_COLOR = "#000000"
+_META_COLOR = "#777777"
+_LABEL_COLOR = "#404040"   # dark grey for phase-region labels
+
 _NACL_COLORS = [
     "#e377c2", "#bcbd22", "#7f7f7f", "#aec7e8",
     "#ffbb78", "#98df8a", "#ff9896", "#c5b0d5",
@@ -637,6 +642,157 @@ _NACL_PAIRS = [
 # All phases that can be toggled
 _ALL_PHASES = ["Ih", "II", "III", "V", "VI", "water1"]
 
+# Representative (P_MPa, T_K) interior points + short text for region labels.
+_PHASE_LABEL = {
+    "Ih":     (60.0,   235.0, "Ih"),
+    "II":     (300.0,  218.0, "II"),
+    "III":    (285.0,  249.0, "III"),
+    "V":      (490.0,  248.0, "V"),
+    "VI":     (1500.0, 290.0, "VI"),
+    "water1": (250.0,  335.0, "Liquid"),
+}
+
+
+_LIQUIDS = {"water1", "NaClaq"}
+
+
+def _add_boundary_traces(fig, P, T, stable, color, name, custom_row,
+                         segment, base_width=1.75):
+    """Add the boundary line(s) for one phase pair.
+
+    - segment == 'stable': single solid line (P/T already stable-only).
+    - segment == 'all': full curve drawn as a thin dashed line (the
+      metastable extension) with the stable portion overlaid as a thick
+      solid line on top — so there are no gaps at the stable/meta junction.
+    Returns the number of traces added.
+    """
+    P = np.asarray(P, dtype=float)
+    T = np.asarray(T, dtype=float)
+    cd = [custom_row] * len(P)
+    hover = "P: %{x:.1f} MPa<br>T: %{y:.1f} K<extra></extra>"
+    meta_width = max(0.6, base_width * 0.6)
+    n = 0
+
+    if segment != "all":
+        fig.add_trace(go.Scatter(
+            x=P, y=T, mode="lines",
+            line=dict(color=color, width=base_width, dash="solid"),
+            name=name, customdata=cd, hovertemplate=hover,
+        ))
+        return 1
+
+    stab = (np.asarray(stable, dtype=bool) if stable is not None
+            else np.ones(len(P), dtype=bool))
+    has_stable = bool(np.any(stab))
+    has_meta = bool(not np.all(stab))
+
+    # Full curve as a thin dashed line (continuous underlay = no gaps).
+    fig.add_trace(go.Scatter(
+        x=P, y=T, mode="lines",
+        line=dict(color=_META_COLOR, width=meta_width, dash="dash"),
+        opacity=0.85,
+        name=(name if not has_stable else f"{name} (meta)"),
+        showlegend=(not has_stable),
+        customdata=cd, hovertemplate=hover,
+    ))
+    n += 1
+
+    # Stable portion overlaid as a solid line.
+    if has_stable:
+        Ps = np.where(stab, P, np.nan)
+        Ts = np.where(stab, T, np.nan)
+        fig.add_trace(go.Scatter(
+            x=Ps, y=Ts, mode="lines",
+            line=dict(color=color, width=base_width, dash="solid"),
+            name=name, customdata=cd, hovertemplate=hover,
+        ))
+        n += 1
+    return n
+
+
+def _render_transition_jump(event):
+    """Compute and display ΔV / ΔS / ΔH (final − initial) for the clicked point.
+
+    Convention:
+      - Melting (ice ↔ liquid): final = liquid, initial = ice.
+      - Solid–solid (ice ↔ ice): final = denser (higher-P) phase.
+    All values are specific (per-kg), so V = 1/rho.
+    """
+    try:
+        pts = (event.selection or {}).get("points", []) if event else []
+    except Exception:
+        pts = []
+    if not pts:
+        return
+
+    pt = pts[0]
+    try:
+        P_clk = float(pt["x"])
+        T_clk = float(pt["y"])
+        matA, matB, kind, m_str = pt["customdata"]
+        if kind == "tp":      # triple-point marker — no transition to compute
+            return
+        m_val = float(m_str) if m_str else None
+    except (KeyError, ValueError, TypeError):
+        st.warning("Could not read the clicked point — try clicking directly "
+                   "on a boundary curve.")
+        return
+
+    def _props(mat):
+        m_arg = (m_val,) if mat == "NaClaq" else None
+        res = compute_properties((P_clk,), (T_clk,), m_arg, mat,
+                                 ("rho", "S", "H"), "scatter")
+        return (float(np.ravel(res["rho"])[0]),
+                float(np.ravel(res["S"])[0]),
+                float(np.ravel(res["H"])[0]))
+
+    try:
+        rhoA, SA, HA = _props(matA)
+        rhoB, SB, HB = _props(matB)
+    except Exception as e:
+        st.warning(f"Could not compute properties at this point: {e}")
+        return
+
+    if any(not np.isfinite(v) for v in (rhoA, SA, HA, rhoB, SB, HB)):
+        st.warning("One of the phases is outside its valid domain at this "
+                   "point — no transition jump available here.")
+        return
+
+    # Decide final vs initial
+    a_liq = matA in _LIQUIDS
+    b_liq = matB in _LIQUIDS
+    if a_liq != b_liq:           # melting: liquid is final
+        if a_liq:
+            final, initial = (matA, rhoA, SA, HA), (matB, rhoB, SB, HB)
+        else:
+            final, initial = (matB, rhoB, SB, HB), (matA, rhoA, SA, HA)
+    else:                        # solid–solid: denser phase is final
+        if rhoA >= rhoB:
+            final, initial = (matA, rhoA, SA, HA), (matB, rhoB, SB, HB)
+        else:
+            final, initial = (matB, rhoB, SB, HB), (matA, rhoA, SA, HA)
+
+    matF, rhoF, SF_, HF = final
+    matI, rhoI, SI, HI = initial
+    dV = 1.0 / rhoF - 1.0 / rhoI
+    dS = SF_ - SI
+    dH = HF - HI
+
+    st.divider()
+    st.subheader("Transition jump (final − initial)")
+    st.markdown(
+        f"At **P = {P_clk:.1f} MPa**, **T = {T_clk:.2f} K** &nbsp;—&nbsp; "
+        f"**{_short_label(matI)} → {_short_label(matF)}**")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("ΔV (m³/kg)", f"{dV:.4e}")
+    c2.metric("ΔS (J/kg/K)", f"{dS:.2f}")
+    c3.metric("ΔH (J/kg)", f"{dH:.4e}", help=f"{dH / 1000.0:.2f} kJ/kg")
+    if kind == "nacl":
+        st.caption(
+            f"NaCl(aq) end-member values: pure ice {_short_label(matI)} vs "
+            f"NaCl(aq) solution at m = {m_val} mol/kg. Specific (per-kg) "
+            "quantities for each end-member at the clicked (P, T).")
+
 
 def page_phase_diagram():
     st.title("SeaFreeze — Phase Diagram")
@@ -650,15 +806,26 @@ def page_phase_diagram():
         cols = st.columns(3)
         for i, phase in enumerate(_ALL_PHASES):
             with cols[i % 3]:
-                if st.checkbox(_short_label(phase), value=(phase in ("Ih", "water1")),
+                if st.checkbox(_short_label(phase), value=True,
                                key=f"pd_{phase}"):
                     checked_phases.append(phase)
 
         st.divider()
         st.header("Segment")
-        segment = st.radio("Segment", ["stable", "all", "metastable"],
+        segment = st.radio("Segment", ["stable", "all"],
                             horizontal=True, key="pd_segment",
+                            format_func=lambda s: ("stable + metastable"
+                                                   if s == "all" else "stable"),
                             label_visibility="collapsed")
+        show_triple_points = st.checkbox("Show triple points",
+                                         value=False, key="pd_show_tp")
+
+        st.divider()
+        st.header("Style")
+        line_width = st.slider("Line width", min_value=0.5, max_value=4.0,
+                               value=1.75, step=0.25, key="pd_lw")
+        show_labels = st.checkbox("Show phase labels", value=True,
+                                  key="pd_labels")
 
         st.divider()
         st.header("NaCl(aq) melting curves")
@@ -679,41 +846,43 @@ def page_phase_diagram():
 
         st.divider()
         st.header("Axis ranges")
-        P_lo = st.number_input("P min (MPa)", value=0.0, step=50.0, key="pd_Plo")
-        P_hi = st.number_input("P max (MPa)", value=2500.0, step=50.0, key="pd_Phi")
-        T_lo = st.number_input("T min (K)", value=200.0, step=10.0, key="pd_Tlo")
-        T_hi = st.number_input("T max (K)", value=400.0, step=10.0, key="pd_Thi")
+        auto_axes = st.checkbox("Auto-fit axes to selected phases",
+                                value=True, key="pd_autoaxes")
+        P_lo = P_hi = T_lo = T_hi = None
+        if not auto_axes:
+            P_lo = st.number_input("P min (MPa)", value=0.0, step=50.0, key="pd_Plo")
+            P_hi = st.number_input("P max (MPa)", value=2500.0, step=50.0, key="pd_Phi")
+            T_lo = st.number_input("T min (K)", value=200.0, step=10.0, key="pd_Tlo")
+            T_hi = st.number_input("T max (K)", value=400.0, step=10.0, key="pd_Thi")
 
     # ── Build plot ────────────────────────────────────────────────────────
     fig = go.Figure()
     traces_added = 0
+    all_P, all_T = [], []
+    triple_pts = {}   # (P_round, T_round) -> (P, T), deduped
 
     # Pure-water phase boundaries between checked phases
     for matA, matB in _PURE_PAIRS:
         if matA not in checked_phases or matB not in checked_phases:
             continue
         try:
-            res = get_phase_line(matA, matB, segment=segment)
+            res = get_phase_line_full(matA, matB, segment=segment)
             if res is None:
                 continue
-            P_line, T_line = res
+            P_line, T_line, stable, tps = res
             if len(P_line) == 0:
                 continue
 
-            dash = "solid" if segment != "metastable" else "dash"
-            color = _PHASE_COLORS.get(matA, "#888888")
-            fig.add_trace(go.Scatter(
-                x=P_line, y=T_line,
-                mode="lines",
-                line=dict(color=color, width=2.5, dash=dash),
-                name=f"{_short_label(matA)} – {_short_label(matB)}",
-                hovertemplate=(
-                    "P: %{x:.1f} MPa<br>"
-                    "T: %{y:.1f} K"
-                    "<extra></extra>"
-                ),
-            ))
-            traces_added += 1
+            name = f"{_short_label(matA)} – {_short_label(matB)}"
+            traces_added += _add_boundary_traces(
+                fig, P_line, T_line, stable, _STABLE_COLOR, name,
+                [matA, matB, "pure", ""], segment, base_width=line_width)
+            all_P.extend(P_line); all_T.extend(T_line)
+
+            # Collect triple points (only those within the plotted curve span)
+            if tps is not None and len(tps) > 0:
+                for p_tp, t_tp in np.asarray(tps, dtype=float):
+                    triple_pts[(round(p_tp, 2), round(t_tp, 2))] = (p_tp, t_tp)
         except Exception:
             pass
 
@@ -734,22 +903,50 @@ def page_phase_diagram():
                     fig.add_trace(go.Scatter(
                         x=P_line, y=T_line,
                         mode="lines",
-                        line=dict(color=color, width=2, dash="dot"),
+                        line=dict(color=color, width=line_width, dash="dot"),
                         name=f"{_short_label(matA)} – NaCl(aq) m={m_val}",
+                        customdata=[[matA, "NaClaq", "nacl", str(m_val)]] * len(P_line),
                         hovertemplate=(
                             f"m = {m_val} mol/kg<br>"
-                            "T: %{x:.1f} K<br>"
-                            "P: %{y:.1f} MPa"
+                            "P: %{x:.1f} MPa<br>"
+                            "T: %{y:.1f} K"
                             "<extra></extra>"
                         ),
                     ))
                     traces_added += 1
+                    all_P.extend(P_line); all_T.extend(T_line)
                 except Exception:
                     pass
+
+    # Triple points — markers shared by the drawn pure-phase boundaries
+    if show_triple_points and triple_pts:
+        tp_P = [v[0] for v in triple_pts.values()]
+        tp_T = [v[1] for v in triple_pts.values()]
+        fig.add_trace(go.Scatter(
+            x=tp_P, y=tp_T, mode="markers",
+            marker=dict(symbol="triangle-up", size=11, color="black",
+                        line=dict(width=0.5, color="white")),
+            name="Triple points",
+            customdata=[["", "", "tp", ""]] * len(tp_P),
+            hovertemplate=(
+                "Triple point<br>P: %{x:.2f} MPa<br>T: %{y:.2f} K"
+                "<extra></extra>"
+            ),
+        ))
 
     if traces_added == 0:
         st.info("Select at least two phases to display phase boundaries.")
     else:
+        if auto_axes and all_P:
+            def _pad(lo, hi, frac=0.05, floor=None):
+                span = max(hi - lo, 1e-9)
+                pad = max(span * frac, 1e-9)
+                lo2 = lo - pad
+                if floor is not None:
+                    lo2 = max(lo2, floor)
+                return lo2, hi + pad
+            P_lo, P_hi = _pad(min(all_P), max(all_P), floor=0.0)
+            T_lo, T_hi = _pad(min(all_T), max(all_T))
         fig.update_layout(
             xaxis_title="Pressure (MPa)",
             yaxis_title="Temperature (K)",
@@ -757,10 +954,33 @@ def page_phase_diagram():
             yaxis=dict(range=[T_lo, T_hi]),
             template="plotly_white",
             height=700,
+            clickmode="event+select",
+            dragmode=False,
             legend=dict(orientation="h", yanchor="bottom",
                         y=1.02, xanchor="left", x=0),
         )
-        st.plotly_chart(fig, use_container_width=True)
+
+        # Phase region labels (only for checked phases inside the visible axes)
+        if show_labels:
+            for phase in checked_phases:
+                if phase not in _PHASE_LABEL:
+                    continue
+                Px, Tx, txt = _PHASE_LABEL[phase]
+                if not (P_lo <= Px <= P_hi and T_lo <= Tx <= T_hi):
+                    continue
+                fig.add_annotation(
+                    x=Px, y=Tx, text=f"<b>{txt}</b>", showarrow=False,
+                    font=dict(size=20, color=_LABEL_COLOR),
+                )
+
+        st.caption("Click a point on any boundary curve to compute the "
+                   "thermodynamic jump (ΔV, ΔS, ΔH) across the transition.")
+        event = st.plotly_chart(
+            fig, use_container_width=True,
+            on_select="rerun", selection_mode="points", key="pd_chart")
+
+        # ── Transition jump (ΔV / ΔS / ΔH) on click ───────────────────────
+        _render_transition_jump(event)
 
         # Export button
         export_rows = []
