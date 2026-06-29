@@ -311,11 +311,11 @@ P = SF_rho2P(rho_target, T, material, 'tol', 0.001)   % convergence tol (default
 `rho_target` and `T` may be scalar or arrays; scalar `T` broadcasts against `rho_target`. Output is the same shape as `rho_target`.
 
 ```matlab
-% Pure water near ambient conditions (≈ 0.1 MPa)
-P = SF_rho2P(997, 298, 'water1')
+% Compressed liquid water (≈ 300 MPa)
+P = SF_rho2P(1100, 300, 'water1')
 
-% Ice Ih at 1 bar — works at 0.1 MPa (low-P fix in 1.1.3)
-P = SF_rho2P(918.6, 260, 'Ih')
+% Ice Ih (≈ 104 MPa)
+P = SF_rho2P(930, 255, 'Ih')
 
 % Ice VI scatter
 P = SF_rho2P([1310 1350 1390], [255 260 265], 'VI')

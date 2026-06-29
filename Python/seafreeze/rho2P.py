@@ -64,8 +64,8 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
     --------
     >>> import numpy as np
     >>> import seafreeze as sf
-    >>> sf.rho2P(997.0, 298.0, 'water1')        # ≈ 0.1 MPa
-    array([0.1...])
+    >>> sf.rho2P(1100.0, 300.0, 'water1')       # ≈ 300 MPa
+    array(299.5...)
 
     >>> # Ice VI scatter
     >>> sf.rho2P([1310., 1350., 1390.], [255., 260., 265.], 'VI')

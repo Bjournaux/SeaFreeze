@@ -39,8 +39,8 @@ function P_out = SF_rho2P(rho_target, T, material, varargin)
 %   are returned as NaN.
 %
 % Examples:
-%   % Pure water near ambient
-%   P = SF_rho2P(997, 298, 'water1')        % ≈ 0.1 MPa
+%   % Compressed liquid water
+%   P = SF_rho2P(1100, 300, 'water1')       % ≈ 300 MPa
 %
 %   % Ice VI scatter
 %   P = SF_rho2P([1310 1350 1390], [255 260 265], 'VI')

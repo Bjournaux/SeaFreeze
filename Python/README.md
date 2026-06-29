@@ -317,11 +317,11 @@ Returns a NumPy array of the same shape as `rho_target`. `NaN` is returned where
 import numpy as np
 from seafreeze import rho2P
 
-# Pure water near ambient conditions
-P = rho2P(997.0, 298.0, 'water1')          # ≈ 0.1 MPa
+# Compressed liquid water
+P = rho2P(1100.0, 300.0, 'water1')         # ≈ 300 MPa
 
-# Ice Ih at 1 bar — works at 0.1 MPa (low-P fix in 1.1.3)
-P = rho2P(918.6, 260.0, 'Ih')              # ≈ 0.1 MPa
+# Ice Ih
+P = rho2P(930.0, 255.0, 'Ih')              # ≈ 104 MPa
 
 # Ice VI — three scatter points
 P = rho2P([1310., 1350., 1390.], [255., 260., 265.], 'VI')

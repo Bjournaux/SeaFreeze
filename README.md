@@ -126,7 +126,7 @@ out is a structure containing all output quantities (SI units):
 
 ## Examples for pure compound (pure water and ices)
 
-An executable Matlab live script (Example_SeaFreeze.mlx) is provided allowing to run the following examples.
+An executable Matlab live script (Matlab/examples/SeaFreeze_examples.mlx) is provided allowing to run the following examples.
 
 ### Single point input
 
