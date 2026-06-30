@@ -66,11 +66,20 @@ def compute_properties(P, T, m, material, props, mode):
             for i in range(len(P_arr)):
                 PTm[i] = (P_arr[i], T_arr[i])
     else:  # grid
+        # Build a 1-D length-2/3 object array of float axes by explicit
+        # assignment.  Do NOT use np.array([P_arr, T_arr], dtype=object): when
+        # the axes have equal length NumPy collapses that into a 2-D (2, N)
+        # object array, leaving each axis as an object-dtype row.  Old/bundled
+        # seafreeze then feeds those object axes into spline evaluation and
+        # NumPy 2.x raises "Cannot cast array data from dtype('O') to
+        # dtype('float64') ... 'safe'".
         if m is not None:
             m_arr = np.array(m, dtype=float)
-            PTm = np.array([P_arr, T_arr, m_arr], dtype=object)
+            PTm = np.empty(3, dtype=object)
+            PTm[0], PTm[1], PTm[2] = P_arr, T_arr, m_arr
         else:
-            PTm = np.array([P_arr, T_arr], dtype=object)
+            PTm = np.empty(2, dtype=object)
+            PTm[0], PTm[1] = P_arr, T_arr
 
     # Always call getProp with NO selective props — let it compute all,
     # then filter the result.  This avoids a bug in getProp's selective
