@@ -25,8 +25,15 @@ function fig = SF_WPD(varargin)
 % See also: SF_PhaseLines, SF_WhichPhase
 
 p = inputParser;
-addParameter(p, 'ax',      [],      @(x) isempty(x) || isgraphics(x, 'axes'));
-addParameter(p, 'solute',  'none',  @(s) ischar(s) || (isstring(s) && isscalar(s)));
+% Require exact option names. Octave's inputParser does partial matching by
+% default and resolves an ambiguous abbreviation to the wrong parameter
+% silently: in SF_WPD, 'm' is a prefix of 'meta', and its value was being
+% handed to the validator for 'ax'. MATLAB prefers exact matches so it never
+% saw this, but turning partial matching off is valid on both (R2013b+) and
+% makes option resolution identical on either interpreter.
+p.PartialMatching = false;
+addParameter(p, 'ax',      [],      @(x) isempty(x) || sf_ishandle_type(x, 'axes'));
+addParameter(p, 'solute',  'none',  @sf_ischarlike);
 addParameter(p, 'm',       [],      @(x) isnumeric(x) && (isempty(x) || isvector(x)));
 addParameter(p, 'meta',    'default', @valid_meta);
 addParameter(p, 'labels',  true,    @(x) islogical(x) || (isnumeric(x) && isscalar(x)));
@@ -41,7 +48,7 @@ is_nacl   = ismember(solute, {'nacl','naclaq'});
 
 % Parse meta option: 'default' | true/'all' | false/'none'
 DEFAULT_META_PAIRS = {'Ih','II'; 'II','VI'};
-if ischar(meta_arg) || isstring(meta_arg)
+if sf_istextlike(meta_arg)
     switch lower(char(meta_arg))
         case 'default', meta_mode = 1;   % only Ih-II and II-VI
         case 'all',     meta_mode = 2;   % all pairs
@@ -62,7 +69,7 @@ end
 % --- Create or reuse axes -----------------------------------------------------
 if isempty(ax_in)
     fig = figure('Position', [100 100 900 650]);
-    ax  = axes(fig);
+    ax  = axes('Parent', fig);
 else
     ax  = ax_in;
     fig = ancestor(ax, 'figure');
@@ -94,7 +101,7 @@ end
 % --- NaClaq melting-curve overlay ---------------------------------------------
 if is_nacl
     nm = numel(m_arr);
-    cmap = parula(max(nm, 2));
+    cmap = sf_parula(max(nm, 2));
     ice_phases = {'Ih', 'III', 'V', 'VI'};
     for j = 1:nm
         for ic = 1:numel(ice_phases)
@@ -103,15 +110,25 @@ if is_nacl
             catch
                 continue
             end
-            lbl = '';
+            % One legend entry per molality: label the first ice phase and
+            % hide the rest with HandleVisibility, as plot_runs does above.
+            % An empty DisplayName is not enough -- MATLAB omits such a line
+            % from the legend, but Octave auto-names it 'dataN' and shows it,
+            % which filled the legend with spurious entries.
             if ic == 1
-                lbl = sprintf('m = %g mol/kg', m_arr(j));
+                plot(ax, r.P, r.T, '-', 'Color', cmap(j,:), 'LineWidth', 1.2, ...
+                     'DisplayName', sprintf('m = %g mol/kg', m_arr(j)));
+            else
+                plot(ax, r.P, r.T, '-', 'Color', cmap(j,:), 'LineWidth', 1.2, ...
+                     'HandleVisibility', 'off');
             end
-            plot(ax, r.P, r.T, '-', 'Color', cmap(j,:), ...
-                 'LineWidth', 1.2, 'DisplayName', lbl);
         end
     end
-    legend(ax, 'show', 'Location', 'northeast', 'FontSize', 9);
+    % Set the properties on the returned handle rather than passing them to
+    % legend(): Octave ignores any argument after 'show' (and warns), so the
+    % inline form silently dropped Location and FontSize there.
+    lg = legend(ax, 'show');
+    set(lg, 'Location', 'northeast', 'FontSize', 9);
 end
 
 % --- Axis formatting ----------------------------------------------------------
@@ -148,7 +165,7 @@ end
 function tf = valid_meta(x)
     if islogical(x) || (isnumeric(x) && isscalar(x))
         tf = true;
-    elseif ischar(x) || (isstring(x) && isscalar(x))
+    elseif sf_ischarlike(x)
         tf = ismember(lower(char(x)), {'default','all','none'});
     else
         tf = false;

@@ -52,7 +52,7 @@ function P_out = SF_rho2P(rho_target, T, material, varargin)
 
 % ---- Validate material -------------------------------------------------------
 defs = sf_material_defs();
-if ~(ischar(material) || (isstring(material) && isscalar(material)))
+if ~sf_ischarlike(material)
     error('SF_rho2P:badInput', '''material'' must be a string or char vector.');
 end
 material = char(material);
@@ -73,6 +73,7 @@ if is_nacl && ~isempty(varargin) && isnumeric(varargin{1})
 end
 
 p = inputParser;
+p.PartialMatching = false;   % exact option names (see SF_WPD.m)
 addParameter(p, 'P0',      [],   @(x) isnumeric(x) && all(isfinite(x(:))));
 addParameter(p, 'tol',     0.01, @(x) isnumeric(x) && isscalar(x) && x > 0);
 addParameter(p, 'maxiter', 30,   @(x) isnumeric(x) && isscalar(x) && x >= 1);

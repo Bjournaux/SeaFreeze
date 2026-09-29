@@ -30,7 +30,8 @@ function out = SF_WhichPhase(PT, varargin)
 %   out = SF_WhichPhase({0:10:1000, 240:1:300, 2}, 'solute','NaCl');
 
 p = inputParser;
-addParameter(p, 'solute', 'none', @(s) ischar(s) || (isstring(s) && isscalar(s)));
+p.PartialMatching = false;   % exact option names (see SF_WPD.m)
+addParameter(p, 'solute', 'none', @sf_ischarlike);
 parse(p, varargin{:});
 solute = char(p.Results.solute);
 if ~ismember(lower(solute), {'none','nacl','naclaq'})
@@ -109,7 +110,9 @@ G  = [Gliq(:) Gih(:) Gii(:) Giii(:) Gv(:) Gvi(:)];
 G(G == 0) = NaN;          % preserve original out-of-range sentinel handling
 phase_codes = [0 1 2 3 5 6];
 
-[~, idx] = min(G, [], 2, 'omitnan');
+% Both MATLAB and Octave ignore NaN in min by default; the 'omitnan'
+% flag is MATLAB-only. All-NaN rows are handled on the next line but one.
+[~, idx] = min(G, [], 2);
 out = phase_codes(idx);
 out(all(isnan(G), 2)) = NaN;
 out = reshape(out, sz);

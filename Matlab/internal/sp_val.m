@@ -225,7 +225,7 @@ npts   = numel(x);
 
 % Find piece index for each point: piece p means breaks(p) <= x < breaks(p+1)
 % Clamp to [1, l] so boundary points land in the last piece.
-p = min(discretize(x, breaks), l);
+p = min(sf_discretize(x, breaks), l);
 
 % Handle points at or beyond the right boundary
 p(isnan(p) | p < 1) = 1;    % left of domain -> piece 1 (will zero out below)
@@ -298,7 +298,7 @@ for i = m:-1:1
     xi = x(:, i);
 
     % Piece index (1-based, clamped) and local coordinate
-    p  = min(discretize(xi, br), li);
+    p  = min(sf_discretize(xi, br), li);
     p(isnan(p) | p < 1) = 1;
     dx = xi(:) - reshape(br(p(:)), [], 1);   % (npts x 1)
 

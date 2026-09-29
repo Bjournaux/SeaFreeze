@@ -34,8 +34,9 @@ function out = SF_PhaseLines(matA, matB, varargin)
 
 % ------------ Parse inputs --------------------------------------------------
 p = inputParser;
-addRequired(p, 'matA', @(s) ischar(s) || (isstring(s) && isscalar(s)));
-addRequired(p, 'matB', @(s) ischar(s) || (isstring(s) && isscalar(s)));
+p.PartialMatching = false;   % exact option names (see SF_WPD.m)
+addRequired(p, 'matA', @sf_ischarlike);
+addRequired(p, 'matB', @sf_ischarlike);
 addParameter(p, 'm',       NaN,    @(x) isnumeric(x) && (isscalar(x) || isvector(x)));
 addParameter(p, 'P',       [],     @(x) isnumeric(x) && isvector(x));
 addParameter(p, 'T',       [],     @(x) isnumeric(x) && isvector(x));
@@ -51,7 +52,7 @@ segment = lower(char(p.Results.segment));
 % 'plot' may be a logical/scalar (true => new figure, false => no plot),
 % or an existing figure handle to overlay onto.
 plot_arg   = p.Results.plot;
-if isgraphics(plot_arg, 'figure')
+if sf_ishandle_type(plot_arg, 'figure')
     do_plot    = true;
     target_fig = plot_arg;
 else
@@ -219,7 +220,7 @@ end
 function tf = valid_plot_arg(x)
     % 'plot' accepts: logical / scalar (true|false) or a figure handle.
     tf = islogical(x) || (isnumeric(x) && isscalar(x)) || ...
-         isgraphics(x, 'figure');
+         sf_ishandle_type(x, 'figure');
 end
 
 
@@ -277,11 +278,11 @@ function fig = render_plot(results, target_fig)
 
     if isempty(target_fig)
         fig = figure;
-        ax  = gca(fig);
+        ax  = sf_gca(fig);
         new_axes = true;
     else
         fig = target_fig;
-        ax  = gca(fig);
+        ax  = sf_gca(fig);
         new_axes = false;
     end
     hold(ax, 'on');
@@ -315,7 +316,7 @@ function fig = render_plot(results, target_fig)
         end
     else
         colors = lines(n);
-        legend_handles = gobjects(0);
+        legend_handles = [];
         legend_labels  = {};
         for k = 1:n
             r = results(k);

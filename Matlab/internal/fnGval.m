@@ -146,7 +146,7 @@ function Results = fnGval(sp, input, props)
     if nargin < 3 || isempty(props)
         req = all_props;
     else
-        if ischar(props) || isstring(props)
+        if sf_istextlike(props)
             props = cellstr(props);
         end
         unknown = setdiff(props, all_props);
@@ -450,33 +450,29 @@ function derivs = get_derivatives(sp, sp_arg, mu_flg, need)
 %   transparently, so no gridded/scattered branching is needed here.
 %   Unused fields are set to [] so downstream code can detect them.
 
-    function v = ev(dv)
-        v = sp_val(sp, dv, sp_arg);
-    end
-
     if ~mu_flg
         % 2-D derivatives: [dP, dT] order
-        if need.G,   derivs.G   = ev([0 0]); else, derivs.G   = []; end
-        if need.d1T, derivs.d1T = ev([0 1]); else, derivs.d1T = []; end
-        if need.d2T, derivs.d2T = ev([0 2]); else, derivs.d2T = []; end
-        if need.dPT, derivs.dPT = ev([1 1]); else, derivs.dPT = []; end
-        if need.d1P, derivs.d1P = ev([1 0]); else, derivs.d1P = []; end
-        if need.d2P, derivs.d2P = ev([2 0]); else, derivs.d2P = []; end
-        if need.d3P, derivs.d3P = ev([3 0]); else, derivs.d3P = []; end
+        if need.G,   derivs.G   = sp_val(sp, [0 0], sp_arg); else, derivs.G   = []; end
+        if need.d1T, derivs.d1T = sp_val(sp, [0 1], sp_arg); else, derivs.d1T = []; end
+        if need.d2T, derivs.d2T = sp_val(sp, [0 2], sp_arg); else, derivs.d2T = []; end
+        if need.dPT, derivs.dPT = sp_val(sp, [1 1], sp_arg); else, derivs.dPT = []; end
+        if need.d1P, derivs.d1P = sp_val(sp, [1 0], sp_arg); else, derivs.d1P = []; end
+        if need.d2P, derivs.d2P = sp_val(sp, [2 0], sp_arg); else, derivs.d2P = []; end
+        if need.d3P, derivs.d3P = sp_val(sp, [3 0], sp_arg); else, derivs.d3P = []; end
         derivs.d1Tm = []; derivs.d2Tm = []; derivs.dPm = []; derivs.dGdm = [];
     else
         % 3-D derivatives: [dP, dT, dm] order
-        if need.G,    derivs.G    = ev([0 0 0]); else, derivs.G    = []; end
-        if need.d1T,  derivs.d1T  = ev([0 1 0]); else, derivs.d1T  = []; end
-        if need.d2T,  derivs.d2T  = ev([0 2 0]); else, derivs.d2T  = []; end
-        if need.dPT,  derivs.dPT  = ev([1 1 0]); else, derivs.dPT  = []; end
-        if need.d1P,  derivs.d1P  = ev([1 0 0]); else, derivs.d1P  = []; end
-        if need.d2P,  derivs.d2P  = ev([2 0 0]); else, derivs.d2P  = []; end
-        if need.d3P,  derivs.d3P  = ev([3 0 0]); else, derivs.d3P  = []; end
-        if need.d1Tm, derivs.d1Tm = ev([0 1 1]); else, derivs.d1Tm = []; end
-        if need.d2Tm, derivs.d2Tm = ev([0 2 1]); else, derivs.d2Tm = []; end
-        if need.dPm,  derivs.dPm  = ev([1 0 1]); else, derivs.dPm  = []; end
-        if need.dGdm, derivs.dGdm = ev([0 0 1]); else, derivs.dGdm = []; end
+        if need.G,    derivs.G    = sp_val(sp, [0 0 0], sp_arg); else, derivs.G    = []; end
+        if need.d1T,  derivs.d1T  = sp_val(sp, [0 1 0], sp_arg); else, derivs.d1T  = []; end
+        if need.d2T,  derivs.d2T  = sp_val(sp, [0 2 0], sp_arg); else, derivs.d2T  = []; end
+        if need.dPT,  derivs.dPT  = sp_val(sp, [1 1 0], sp_arg); else, derivs.dPT  = []; end
+        if need.d1P,  derivs.d1P  = sp_val(sp, [1 0 0], sp_arg); else, derivs.d1P  = []; end
+        if need.d2P,  derivs.d2P  = sp_val(sp, [2 0 0], sp_arg); else, derivs.d2P  = []; end
+        if need.d3P,  derivs.d3P  = sp_val(sp, [3 0 0], sp_arg); else, derivs.d3P  = []; end
+        if need.d1Tm, derivs.d1Tm = sp_val(sp, [0 1 1], sp_arg); else, derivs.d1Tm = []; end
+        if need.d2Tm, derivs.d2Tm = sp_val(sp, [0 2 1], sp_arg); else, derivs.d2Tm = []; end
+        if need.dPm,  derivs.dPm  = sp_val(sp, [1 0 1], sp_arg); else, derivs.dPm  = []; end
+        if need.dGdm, derivs.dGdm = sp_val(sp, [0 0 1], sp_arg); else, derivs.dGdm = []; end
     end
 end
 

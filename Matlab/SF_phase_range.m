@@ -21,7 +21,7 @@ function rng = SF_phase_range(material)
 %
 % Materials follow SF_getprop's naming.
 
-if ~(ischar(material) || (isstring(material) && isscalar(material)))
+if ~sf_ischarlike(material)
     error('SeaFreeze:badInput', '''material'' must be a string or character vector.');
 end
 material = char(material);

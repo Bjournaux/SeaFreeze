@@ -80,6 +80,11 @@ function out = SF_getprop(PT, material, props)
 %   Wagner & Pruss (2002) J. Phys. Chem. Ref. Data 31, 387-535
 %   French & Redmer (2015) Phys. Rev. B 91, 014308
 
+% One-shot deprecation flag for the 'F' property alias. Declared here rather
+% than inside the `if user_wants_F` block below: a conditional `persistent`
+% declaration is tolerated by MATLAB but is a parse error in Octave.
+persistent warned_F
+
 % ---- Resolve props argument and determine what to ask the evaluator for ----
 defs = sf_material_defs();
 all_base_props  = defs.base_props;
@@ -90,7 +95,7 @@ nacl_materials  = defs.nacl_materials;
 known_materials = defs.known_materials;
 
 % --- Validate material -----------------------------------------------------
-if ~(ischar(material) || (isstring(material) && isscalar(material)))
+if ~sf_ischarlike(material)
     error('SeaFreeze:badInput', '''material'' must be a string or character vector.');
 end
 material = char(material);
@@ -107,7 +112,7 @@ sf_validate_PT(PT, material);
 if nargin < 3 || isempty(props)
     user_props = {};   % empty => request all (and evaluator will return all)
 else
-    if ischar(props) || isstring(props)
+    if sf_istextlike(props)
         user_props = cellstr(props);
     elseif iscell(props)
         user_props = props;
@@ -122,7 +127,6 @@ end
 user_wants_F = ~isempty(user_props) && any(strcmp(user_props, 'F'));
 user_wants_A = ~isempty(user_props) && any(strcmp(user_props, 'A'));
 if user_wants_F
-    persistent warned_F %#ok<TLEV>
     if isempty(warned_F)
         warning('SeaFreeze:deprecatedProperty', ...
             ['Property name ''F'' is deprecated; use ''A'' (Helmholtz energy) instead. ' ...
