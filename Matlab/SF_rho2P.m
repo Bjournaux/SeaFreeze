@@ -32,7 +32,8 @@ function P_out = SF_rho2P(rho_target, T, material, varargin)
 %            density range at T, or T outside the spline domain).
 %
 % Method:
-%   Newton-Raphson using the isothermal bulk modulus Kt (MPa):
+%   Helmholtz materials (water_F): P = rho^2 dF/drho evaluated directly.
+%   Gibbs materials: Newton-Raphson using the isothermal bulk modulus Kt (MPa):
 %     P_{n+1} = P_n + (rho_target - rho(P_n,T)) * Kt(P_n,T) / rho(P_n,T)
 %   Bisection fallback for points that stall. Convergence is verified by a
 %   final residual check; points whose |rho_final - rho_target| > 100*tol
@@ -121,6 +122,13 @@ if is_nacl
     end
 else
     m_flat = [];
+end
+
+% ---- Helmholtz materials: P = rho^2 dF/drho is explicit, no iteration -------
+if ismember(material, defs.helmholtz_phases)
+    out   = SF_getprop([rho_flat, T_flat], material, 'P', 'input', 'rhoT');
+    P_out = reshape(out.P, sz);
+    return
 end
 
 % ---- Domain bounds -----------------------------------------------------------

@@ -24,8 +24,9 @@ import numpy as np
 
 from mlbspline import load as mlb_load
 from lbftd import evalGibbs as eg
+from lbftd import evalHelmholtz as eh
 
-from .seafreeze import phases, defpath, _load_spline
+from .seafreeze import phases, defpath, _load_spline, helmholtz_phases, pure_water_liquids
 
 
 # Use the same MW_H2O as the Matlab SF_PhaseLines/SF_WhichPhase code so that
@@ -34,8 +35,8 @@ from .seafreeze import phases, defpath, _load_spline
 MW_H2O = 0.018015268  # kg/mol
 
 
-PhaseRange = namedtuple('PhaseRange', ['P', 'T', 'm'])
-PhaseRange.__new__.__defaults__ = (None,)  # m defaults to None for 2D phases
+PhaseRange = namedtuple('PhaseRange', ['P', 'T', 'm', 'rho'])
+PhaseRange.__new__.__defaults__ = (None, None)  # m: NaClaq only; rho: Helmholtz only
 
 
 @dataclass
@@ -67,8 +68,11 @@ def phase_range(material: str, path: str = defpath) -> PhaseRange:
 
     Returns
     -------
-    PhaseRange(P, T, m) namedtuple with each element a 2-tuple
-    (lo, hi). For 2D phases m is None.
+    PhaseRange(P, T, m, rho) namedtuple with each element a 2-tuple
+    (lo, hi). For 2D phases m is None.  For Helmholtz materials (water3)
+    rho is the density range and P is the extent of P(rho,T) over the
+    spline box where dP/drho > 0 (not every (P,T) in that box is reachable;
+    getProp returns NaN where it is not).
     """
     if material not in phases:
         raise ValueError(
@@ -87,6 +91,8 @@ def phase_range(material: str, path: str = defpath) -> PhaseRange:
         m_hi = min(float(sp_lp['knots'][2][-1]), float(sp_hp['knots'][2][-1]))
         return PhaseRange(P=P, T=T, m=(m_lo, m_hi))
     sp = _load_spline(path, material)
+    if material in helmholtz_phases:
+        return _helmholtz_range(sp)
     knots = sp['knots']
     P = (float(knots[0][0]), float(knots[0][-1]))
     T = (float(knots[1][0]), float(knots[1][-1]))
@@ -94,6 +100,24 @@ def phase_range(material: str, path: str = defpath) -> PhaseRange:
     if len(knots) > 2:
         m = (float(knots[2][0]), float(knots[2][-1]))
     return PhaseRange(P=P, T=T, m=m)
+
+
+def _helmholtz_range(sp):
+    (r_lo, r_hi), (T_lo, T_hi) = eh.domain(sp)
+    if 'Prange' in sp:
+        pr = np.asarray(sp['Prange'], float).ravel()
+        P = (float(pr[0]), float(pr[1]))
+    else:
+        if eh.is_psi(sp):
+            tx = eh._knots(sp)[0]
+            r = float(eh._scalar(sp, 'rhoc')) * np.exp(3 * np.linspace(tx[0], tx[-1], 200))
+        else:
+            r = np.linspace(r_lo, r_hi, 200)
+        T = np.linspace(T_lo, T_hi, 100)
+        out = eh.evalHelmholtzGrid(sp, np.array([r, T], dtype=object), 'P', 'Kt', rhoT=True)
+        ok = (out.Kt > 0) & np.isfinite(out.P)
+        P = (float(np.min(out.P[ok])), float(np.max(out.P[ok])))
+    return PhaseRange(P=P, T=(float(T_lo), float(T_hi)), rho=(float(r_lo), float(r_hi)))
 
 
 # ---------------------------------------------------------------------------
@@ -141,6 +165,17 @@ _PAIRS = [
         _tps(_TP_IIVVI, _TP_VVILiq)),
     # II <-> water1 is entirely metastable (lo > hi triggers all-meta branch).
     ('II',  'water1', 'T', np.inf,           -np.inf,
+        _tps(_TP_IhIIIII, _TP_IIIIIV)),
+    # Helmholtz liquid water3: same stable ranges as the water1 pairs
+    ('Ih',  'water3', 'T', _TP_IhLiqIII[0], _TP_atm[0],
+        _tps(_TP_IhLiqIII, _TP_atm)),
+    ('III', 'water3', 'T', _TP_IhLiqIII[0],  _TP_IIIVLiq[0],
+        _tps(_TP_IhLiqIII, _TP_IIIVLiq)),
+    ('V',   'water3', 'T', _TP_IIIVLiq[0],   _TP_VVILiq[0],
+        _tps(_TP_IIIVLiq, _TP_VVILiq)),
+    ('VI',  'water3', 'T', _TP_VVILiq[0],    1000.0,
+        _tps(_TP_VVILiq)),
+    ('II',  'water3', 'T', np.inf,           -np.inf,
         _tps(_TP_IhIIIII, _TP_IIIIIV)),
     # NaClaq pairs - whole curve marked stable (m-dependent triple points
     # out of scope for this rewrite, matching Matlab v1.1.x).
@@ -318,7 +353,10 @@ def _g_pure(material, P, T, path):
     PTm = np.array([P, T], dtype=object)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        out = eg.evalSolutionGibbsGrid(sp, PTm, 'G', allowExtrapolations=False)
+        if material in helmholtz_phases:
+            out = eh.evalHelmholtzGrid(sp, PTm, 'G')
+        else:
+            out = eg.evalSolutionGibbsGrid(sp, PTm, 'G', allowExtrapolations=False)
     return np.asarray(out.G) * MW_H2O
 
 
@@ -430,6 +468,7 @@ def wpd(ax=None,
         m: Optional[Union[float, np.ndarray]] = None,
         show_meta: bool = True,
         phase_labels: bool = False,
+        liquid: str = 'water1',
         path: str = defpath):
     """Draw the H2O Water Phase Diagram.
 
@@ -448,6 +487,9 @@ def wpd(ax=None,
     phase_labels : bool, optional
         If True, annotate each stability field with its phase name (Ih, II,
         III, V, VI, Liquid).
+    liquid : str, optional
+        Pure-water liquid used for the melting curves: 'water1' (default)
+        or 'water3' (Helmholtz psi surface).
     path : str, optional
         Path to the splines/ directory (default: package splines folder).
 
@@ -462,8 +504,12 @@ def wpd(ax=None,
     else:
         fig = ax.figure
 
+    if liquid not in ('water1', 'water3'):
+        raise ValueError(f"liquid must be 'water1' or 'water3' (got {liquid!r}).")
+
     # Pure-water / ice pairs
     for matA, matB in _WPD_PAIRS:
+        matB = liquid if matB == 'water1' else matB
         try:
             r = phase_lines(matA, matB, segment='all', path=path)
         except (RuntimeError, ValueError):

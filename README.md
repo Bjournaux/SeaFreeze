@@ -78,6 +78,7 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 * 'water1' for Bollengier et al. (2019) LBF extending to 500 K and 2300 MPa
 * 'water2' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 * 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
+* 'water3' for fluid water from a Helmholtz energy surface F(ρ,T) (psi-spline stage5_18f, lbf-thermo 2026): liquid, vapour and supercritical fluid, 230 K – 150 000 K, up to 16 000 kg/m³. Accepts (P,T) or (ρ,T) input; at (P,T) the stable branch (lower Gibbs energy) is returned unless `branch` = 'liquid' / 'vapor' is requested
 * 'NaClaq' for aqueous NaCl solution (Brown and Journaux et al., in prep.)
 
 
@@ -305,7 +306,10 @@ Output :
 - **`SF_WhichPhase`** — Determine which phase is thermodynamically stable at given (P,T) coordinates. Supports NaCl(aq) for freezing-point depression.
 - **`SF_PhaseLines`** — Compute the equilibrium curve between any two phases by zero-contouring the Gibbs energy difference. Returns (P,T) coordinates with stable/metastable classification.
 - **`SF_WPD`** — Plot the full H2O water phase diagram with optional NaCl(aq) melting-curve overlays, metastable extensions, and phase-field labels.
-- **`SF_rho2P` / `rho2P`** — Invert the EOS: given a target density (kg/m³) and temperature (K), return the pressure (MPa) for any supported material. Uses Newton-Raphson with isothermal bulk modulus Kt and a bisection fallback. Returns NaN where no solution exists within the phase's domain.
+- **`SF_rho2P` / `rho2P`** — Invert the EOS: given a target density (kg/m³) and temperature (K), return the pressure (MPa) for any supported material. Uses Newton-Raphson with isothermal bulk modulus Kt and a bisection fallback. Returns NaN where no solution exists within the phase's domain. For 'water3' P = ρ²∂F/∂ρ is evaluated directly.
+- **`SF_coexistence` / `saturation`, `sublimation`** — Liquid–vapour (vapour pressure) and ice–vapour (sublimation) curves from the Helmholtz fluid 'water3', solved as G_A = G_B by Newton iteration in ln P. Sublimation of ice Ih agrees with IAPWS R14-08 to ±0.008 % over 230–273.16 K; below 230 K an optional dilute-vapour (ideal-gas) extension reaches the NIST measurements of Bielska et al. (2013) down to 175 K.
+
+**(ρ,T) input** — `SF_getprop(rhoT, 'water3', props, 'input', 'rhoT')` (Matlab) / `getProp(PTm, 'water3', ..., rhoT=True)` (Python) evaluate the Helmholtz fluid directly at density–temperature points and return P.
 
 See the Python and Matlab READMEs for full documentation and usage examples.
 
@@ -316,6 +320,8 @@ specially for phase equilibrium calculation. Using other water parametrization w
 'water2' (Brown 2018) and 'water_IAPWS95' (IAPWS95) parametrization are provided for HP extension (up to 100 GPa) and 
 comparison only. The authors recommend the use of 'water1' (Bollengier et al. 2019) for any application in the 200-355 K 
 range and up to 2300 MPa.
+
+'water3' is a Helmholtz energy F(ρ,T) surface rather than a Gibbs spline. It shares the IAPWS-95 reference state with the ice splines: its ice Ih melting temperature at 0.101325 MPa is 273.158 K, and its ice–liquid curves agree with 'water1' within 0.05 K up to 632 MPa and 0.4 K along ice VI to 2.3 GPa. Its lowest temperature is 230 K. Near the critical point the surface carries small (∂P/∂ρ)_T loops inside the two-phase dome (the saturated-liquid density steps by ~10 kg/m³ near 637 K).
 
 A Gibbs energy representation of French and Redmer (2015) ice VII and X equation of state is included. The VII/X–water melting curve is stable above the VI–VII–water triple point (~2216 MPa, 354 K).
 
@@ -339,6 +345,8 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 - [Feistel and Wagner (2006), J. Phys. Chem. Ref. Data 35, pp. 1021-1047](https://aip.scitation.org/doi/abs/10.1063/1.2183324)
 - [Wagner and Pruss (2002), J. Phys. Chem. Ref. Data 31, pp. 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
 - [French and Redmer (2015), Physical Review B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
+- water3: psi-spline Helmholtz surface stage5_18f, J. M. Brown & B. Journaux (lbf-thermo, 2026), in prep.
+- [Bielska et al. (2013) Geophys. Res. Lett. 40, 6303–6307](https://doi.org/10.1002/2013GL058474) (ice vapour-pressure validation data)
 
 ## Contributors
 
@@ -354,6 +362,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ## Change log
 
 ### Changes since 0.9.0
+- `unreleased`: Added 'water3', a Helmholtz energy F(ρ,T) fluid (psi-spline surface) evaluated by `fnFval`/`psi_val` (Matlab) and `lbftd.evalHelmholtz` (Python); (ρ,T) input and liquid/vapour/stable branch selection for Helmholtz materials; `SF_coexistence` / `saturation`, `sublimation`; a `liquid` option in `SF_WhichPhase`/`whichphase` and `SF_WPD`/`wpd`; water3 pairs in `SF_PhaseLines`/`phase_lines`. Fixed `mlbspline` loading of splines whose knot vectors have equal lengths.
 - `1.1.3`: Added `SF_rho2P` (Matlab) and `rho2P` (Python) — EOS pressure-from-density inversion via Newton-Raphson + bisection fallback, supporting all materials including NaClaq. Fixed low-pressure convergence for all ice phases (Ih, II, III, V, VI) by separating the Newton/bisection domain floor from the initial-guess seed point.
 - `1.1.2`: Fixed bug in `_get_shear_mod_GPa` where temperature was not cast to a numpy array, causing `np.sqrt` to fail on 2-D grid inputs for solid phases (ice Ih, II, III, V, VI, VII/X). All shear-wave properties (`shear`, `Vp`, `Vs`) on grids now compute correctly.
 - `1.1.1`: Added `matplotlib` to Python dependencies; removed `numpy<2` upper bound for NumPy 2.x compatibility.

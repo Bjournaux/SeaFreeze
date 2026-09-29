@@ -62,12 +62,22 @@ def _stripNestingToValue(src):
     return np.squeeze(src)
 
 
+def _knotArray(src_knots):
+    # knots comes in double nested so we need an extra layer of stripping nesting.
+    # Build the object array element by element: np.array(list, dtype=object) turns
+    # equal-length knot vectors into a 2-D array instead of an array of vectors.
+    kl = [_stripNestingToValue(kd) for kd in _stripNestingToValue(src_knots)]
+    out = np.empty(len(kl), dtype=object)
+    for i, k in enumerate(kl):
+        out[i] = k
+    return out
+
+
 def getSplineDict(src):
     # All splines must contain the following fields
     out = {
         'form':     _stripNestingToValue(src['form']),
-        # knots comes in double nested so we need an extra layer of stripping nesting
-        'knots':    np.array([_stripNestingToValue(kd) for kd in _stripNestingToValue(src['knots'])], dtype=object),
+        'knots':    _knotArray(src['knots']),
         'number':   _stripNestingToValue(src['number']).astype(int),
         'order':    _stripNestingToValue(src['order']).astype(int),
         'dim':      _stripNestingToValue(src['dim']).astype(int),

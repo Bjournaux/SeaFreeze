@@ -8,6 +8,7 @@ function out = SF_WhichPhase(PT, varargin)
 %   out = SF_WhichPhase([P T])                       % scatter form
 %   out = SF_WhichPhase({P,T,m}, 'solute','NaCl')    % NaCl(aq) liquid
 %   out = SF_WhichPhase([P T m], 'solute','NaCl')
+%   out = SF_WhichPhase({P,T}, 'liquid','water3')    % Helmholtz liquid water
 %
 % Returns a numerical phase code:
 %   0 = liquid  (pure water1 by default, NaCl(aq) when 'solute','NaCl')
@@ -32,8 +33,15 @@ function out = SF_WhichPhase(PT, varargin)
 p = inputParser;
 p.PartialMatching = false;   % exact option names (see SF_WPD.m)
 addParameter(p, 'solute', 'none', @sf_ischarlike);
+addParameter(p, 'liquid', 'water1', @sf_ischarlike);
 parse(p, varargin{:});
 solute = char(p.Results.solute);
+liquid = char(p.Results.liquid);
+defs0 = sf_material_defs();
+if ~ismember(liquid, defs0.liquid_phases)
+    error('SF_WhichPhase:badInput', '''liquid'' must be one of %s (got ''%s'').', ...
+          strjoin(defs0.liquid_phases, ', '), liquid);
+end
 if ~ismember(lower(solute), {'none','nacl','naclaq'})
     error('SF_WhichPhase:badInput', ...
           '''solute'' must be ''none'' or ''NaCl'' (got ''%s'').', solute);
@@ -49,7 +57,7 @@ G_iceII         = sf_load_spline('II');
 G_iceIII        = sf_load_spline('III');
 G_iceV          = sf_load_spline('V');
 G_iceVI         = sf_load_spline('VI');
-G_H2O_2GPa_500K = sf_load_spline('water1');
+if strcmp(liquid, 'water1'), G_H2O_2GPa_500K = sf_load_spline('water1'); end
 
 defs = sf_material_defs();
 MW_H2O = defs.MW_H2O;
@@ -83,7 +91,12 @@ else
         PT_pt = PT(:,1:2);
         is_grid = false;
     end
-    Gliq = sp_val(G_H2O_2GPa_500K, PT_pt);   % J/kg
+    if strcmp(liquid, 'water1')
+        Gliq = sp_val(G_H2O_2GPa_500K, PT_pt);   % J/kg
+    else
+        lq = SF_getprop(PT_pt, liquid, 'G');     % Helmholtz / other liquids
+        Gliq = lq.G;
+    end
     ice_scale = 1;
 end
 

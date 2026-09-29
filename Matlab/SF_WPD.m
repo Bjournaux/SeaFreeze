@@ -12,6 +12,7 @@ function fig = SF_WPD(varargin)
 %   SF_WPD('meta', false)                           % hide metastable extensions
 %   SF_WPD('labels', true)                          % annotate phase fields
 %   SF_WPD('ax', gca)                               % overlay on existing axes
+%   SF_WPD('liquid', 'water3')                      % melting curves from water3
 %   fig = SF_WPD(...)                               % return figure handle
 %
 % Name-Value Parameters:
@@ -21,6 +22,8 @@ function fig = SF_WPD(varargin)
 %   'meta'    - 'default' (only Ih-II and II-VI, matching v1), true/'all'
 %               (all pairs), or false/'none' (no metastable extensions)
 %   'labels'  - logical, annotate stability fields with phase names (default: false)
+%   'liquid'  - pure-water liquid for the melting curves: 'water1' (default)
+%               or 'water3' (Helmholtz psi surface)
 %
 % See also: SF_PhaseLines, SF_WhichPhase
 
@@ -37,6 +40,7 @@ addParameter(p, 'solute',  'none',  @sf_ischarlike);
 addParameter(p, 'm',       [],      @(x) isnumeric(x) && (isempty(x) || isvector(x)));
 addParameter(p, 'meta',    'default', @valid_meta);
 addParameter(p, 'labels',  true,    @(x) islogical(x) || (isnumeric(x) && isscalar(x)));
+addParameter(p, 'liquid',  'water1', @(s) ismember(char(s), {'water1','water3'}));
 parse(p, varargin{:});
 
 ax_in     = p.Results.ax;
@@ -44,6 +48,7 @@ solute    = lower(char(p.Results.solute));
 m_arr     = p.Results.m(:)';
 meta_arg  = p.Results.meta;
 do_labels = logical(p.Results.labels);
+liquid    = char(p.Results.liquid);
 is_nacl   = ismember(solute, {'nacl','naclaq'});
 
 % Parse meta option: 'default' | true/'all' | false/'none'
@@ -81,6 +86,7 @@ PAIRS = {'Ih','water1'; 'Ih','II'; 'Ih','III'; ...
          'II','III'; 'II','V'; 'II','VI'; 'II','water1'; ...
          'III','V'; 'III','water1'; ...
          'V','water1'; 'V','VI'; 'VI','water1'};
+PAIRS(strcmp(PAIRS, 'water1')) = {liquid};
 
 for k = 1:size(PAIRS, 1)
     try

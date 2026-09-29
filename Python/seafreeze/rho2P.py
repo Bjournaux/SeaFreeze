@@ -13,7 +13,7 @@ Baptiste Journaux - 2026
 import warnings
 import numpy as np
 
-from .seafreeze import getProp, phases, defpath
+from .seafreeze import getProp, phases, defpath, helmholtz_phases
 from .phaselines import phase_range
 
 
@@ -52,7 +52,9 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
 
     Notes
     -----
-    Method: Newton-Raphson using the isothermal bulk modulus Kt (MPa)::
+    Helmholtz materials ('water3'): P = rho² ∂F/∂rho is evaluated directly.
+
+    Gibbs materials — method: Newton-Raphson using the isothermal bulk modulus Kt (MPa)::
 
         P_{n+1} = P_n + (rho_target - rho(P_n, T)) * Kt(P_n, T) / rho(P_n, T)
 
@@ -112,6 +114,12 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
             raise ValueError("Molality must be non-negative.")
     else:
         m_flat = None
+
+    # ---- Helmholtz materials: P = rho^2 dF/drho is explicit -------------------
+    if phase in helmholtz_phases:
+        PTm = _build_ptm(rho_flat, T_flat, phase, None)
+        P_out = np.asarray(getProp(PTm, phase, path, 'P', rhoT=True).P, dtype=float)
+        return P_out.reshape(sz)
 
     # ---- Domain bounds ---------------------------------------------------------
     rng = phase_range(phase, path)

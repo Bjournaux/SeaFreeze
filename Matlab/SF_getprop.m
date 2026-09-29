@@ -1,4 +1,4 @@
-function out = SF_getprop(PT, material, props)
+function out = SF_getprop(PT, material, props, varargin)
 % Version 1.1.2 ; Journaux et al. 2025
 % Baptiste Journaux - 2026
 % Calculate thermodynamic quantities for water or ice polymorphs
@@ -13,6 +13,16 @@ function out = SF_getprop(PT, material, props)
 % Usage:
 %    out = SF_getprop(PT, material)           % all supported properties
 %    out = SF_getprop(PT, material, props)    % only the listed properties
+%    out = SF_getprop(rhoT, material, props, 'input', 'rhoT')
+%                                  % Helmholtz materials only: evaluate at
+%                                  % density-temperature points {rho,T} or
+%                                  % [rho T] (kg/m^3, K); P is returned.
+%    out = SF_getprop(PT, material, props, 'branch', 'liquid')
+%                                  % Helmholtz materials only: which fluid
+%                                  % root to return at (P,T): 'stable'
+%                                  % (default, lower G: vapour below the
+%                                  % saturation pressure), 'liquid' or
+%                                  % 'vapor' (metastable branches allowed).
 %
 % where:
 %   out is a structure containing (SI units):
@@ -51,6 +61,10 @@ function out = SF_getprop(PT, material, props)
 %   water1                              Bollengier et al. 2019 (<=500 K, <=2300 MPa)
 %   water2                              Brown 2018 (up to 100 GPa)
 %   water_IAPWS95                       IAPWS95, Wagner & Pruss 2002
+%   water3                              psi-spline Helmholtz surface F(rho,T)
+%                                         (lbf-thermo, stage5_18f, 2026);
+%                                         P,T input is inverted to rho on the
+%                                         densest stable branch (see fnFval)
 %   NaClaq                              aqueous NaCl — stitched LP+HP 2026 (default, recommended)
 %                                         P=[0,10001] MPa, T=[229,2001] K, m=[0,7.01] mol/kg
 %   NaClaq_LP                           2026 low-P  NaCl(aq) LBF spline only
@@ -103,6 +117,35 @@ if ~ismember(material, known_materials)
     error('SeaFreeze:unknownMaterial', ...
           'Unknown material ''%s''. Valid options: %s', ...
           material, strjoin(known_materials, ', '));
+end
+
+% --- Input coordinates: (P,T) by default, (rho,T) for Helmholtz splines ----
+input_mode = 'PT'; branch = 'stable'; nv_given = {};
+if mod(numel(varargin), 2) ~= 0
+    error('SeaFreeze:badInput', 'Optional arguments must be name-value pairs (''input'', ''branch'').');
+end
+for kv = 1:2:numel(varargin)
+    name = lower(char(varargin{kv})); val = char(varargin{kv+1});
+    switch name
+        case 'input'
+            input_mode = val;
+            if ~any(strcmp(input_mode, {'PT', 'rhoT'}))
+                error('SeaFreeze:badInput', '''input'' must be ''PT'' or ''rhoT''.');
+            end
+        case 'branch'
+            branch = val;
+            if ~any(strcmp(branch, {'stable', 'liquid', 'vapor'}))
+                error('SeaFreeze:badInput', '''branch'' must be ''stable'', ''liquid'' or ''vapor''.');
+            end
+        otherwise
+            error('SeaFreeze:badInput', 'Unknown option ''%s'' (valid: ''input'', ''branch'').', name);
+    end
+    nv_given{end+1} = name; %#ok<AGROW>
+end
+if ~isempty(nv_given) && ~ismember(material, defs.helmholtz_phases)
+    error('SeaFreeze:badInput', ...
+          '''input'' and ''branch'' are only supported for Helmholtz materials (%s).', ...
+          strjoin(defs.helmholtz_phases, ', '));
 end
 
 % --- Validate PT shape & contents ------------------------------------------
@@ -235,13 +278,17 @@ switch material
         sp = sf_load_spline('water2');
     case 'water_IAPWS95'
         sp = sf_load_spline('water_IAPWS95');
+    case 'water3'
+        sp = sf_load_spline('water3');
     otherwise
         % unreachable: material was validated against known_materials above
         error('SeaFreeze:unknownMaterial', 'Unknown material ''%s''', material);
 end
 
-% fnGval uses sp_val internally — no Curve Fitting Toolbox required.
-if isempty(eval_props)
+% fnGval / fnFval use sp_val internally — no Curve Fitting Toolbox required.
+if isfield(sp, 'eos') && any(strcmp(sp.eos, {'F_rhoT', 'psi'}))
+    out = fnFval(sp, PT, eval_props, input_mode, branch);
+elseif isempty(eval_props)
     out = fnGval(sp, PT);
 else
     out = fnGval(sp, PT, eval_props);

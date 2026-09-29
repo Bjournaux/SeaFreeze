@@ -411,6 +411,13 @@ function [pair, swapped] = lookup_pair(matA, matB)
         {'V',      'water_IAPWS95',  'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
         {'VI',     'water2',         'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
         {'VI',     'water_IAPWS95',  'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
+        % Helmholtz liquid water3 (psi surface): same stable ranges as water1
+        {'Ih',     'water3',         'T', TP_IhLiqIII(1),   TP_atm(1),     [TP_IhLiqIII; TP_atm]}
+        {'III',    'water3',         'T', TP_IhLiqIII(1),   TP_IIIVLiq(1), [TP_IhLiqIII; TP_IIIVLiq]}
+        {'V',      'water3',         'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
+        {'VI',     'water3',         'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
+        {'II',     'water3',         'T', Inf,              -Inf,          [TP_IhIIIII; TP_IIIIIV]}
+        {'VII_X_French','water3',    'P', TP_VIVIILiq(2),   Inf,           [TP_VIVIILiq]}
         % NaClaq pairs — full curve marked stable by default. Distinguishing
         % stable vs metastable for ice ↔ NaClaq requires triple points that
         % depend on molality (out of scope for this rewrite). Triple-point

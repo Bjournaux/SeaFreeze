@@ -7,6 +7,7 @@ import os.path as op
 import numpy as np
 from mlbspline import load
 from lbftd import evalGibbs as eg
+from lbftd import evalHelmholtz as eh
 from lbftd.statevars import iP, iT, iM
 
 log = logging.getLogger('seafreeze')
@@ -26,6 +27,7 @@ _SPLINE_MAP = {
     'water1':          ('water_Bollengier',     'water_Bollengier.mat'),
     'water2':          ('water_Brown',          'water_Brown.mat'),
     'water_IAPWS95':   ('water_IAPWS95',        'water_IAPWS95.mat'),
+    'water3':          ('water_psi2026',        'water_psi2026.mat'),  # Helmholtz psi surface
     'NaClaq':          None,  # stitched LP+HP — handled separately
     'NaClaq_LP':       ('NaCl_aq_LP_2026',     'NaCl_aq_LP_2026.mat'),
     'NaClaq_HP':       ('NaCl_aq_HP_2026',     'NaCl_aq_HP_2026.mat'),
@@ -83,6 +85,7 @@ phases = {
     "water1":        PhaseDesc(None, 0,      mH2O_kgmol, None, None),  # Bollengier et al. 2019 (≤500 K, ≤2300 MPa)
     "water2":        PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # Brown 2018 (up to 100 GPa)
     "water_IAPWS95": PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # IAPWS95; Wagner & Pruss 2002
+    "water3":        PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # Helmholtz psi-spline F(rho,T); lbf-thermo 2026
     # Aqueous NaCl
     "NaClaq":          PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # stitched LP+HP 2026 (recommended)
     "NaClaq_LP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 low-P  spline only
@@ -90,6 +93,11 @@ phases = {
     "NaClaq_5GPa_2024":PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # Brown 2024 legacy spline
 }
 max_phase_num = int(np.nanmax([p.phase_num for p in phases.values()]))
+
+# Liquids stored as Helmholtz energy F(rho,T) — evaluated by lbftd.evalHelmholtz
+helmholtz_phases = frozenset({'water3'})
+# Pure-water liquids usable as the liquid in whichphase / phase_lines
+pure_water_liquids = ('water1', 'water2', 'water_IAPWS95', 'water3')
 
 # Build phase_num → material code map; exclude NaN phase_nums and keep only
 # the first entry for phase_num 0 (water1 is canonical; NaClaq variants share 0).
@@ -146,7 +154,7 @@ def seafreeze(PTm, phase, path=defpath, *tdvSpec):
     return getProp(PTm, phase, path, *tdvSpec)
 
 
-def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
+def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branch='stable'):
     """Calculates thermodynamic quantities for H2O water or ice polymorphs
     Ih, II, III, V, VI, VII/X and aqueous NaCl.
 
@@ -168,6 +176,16 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
     mus, muw, Va, Cpa, Vm, Cpm, phi, Vex, aw,
     m (mol/kg echo), xs, xw, f, Vw (cm³/mol)
 
+    Helmholtz materials ('water3')
+    ------------------------------
+    The EOS is a Helmholtz energy F(rho,T); (P,T) input is inverted to the
+    densest mechanically stable density.  With ``rhoT=True`` the first
+    coordinate of PTm is density (kg/m³) instead of pressure, and P (MPa) is
+    returned as a computed property.  At (P,T) the fluid root is chosen by
+    ``branch``: 'stable' (default, lower Gibbs energy — vapour below the
+    saturation pressure, liquid above), 'liquid' or 'vapor' (metastable
+    branches allowed).
+
     NOTE:  The authors recommend 'water1' for 200–355 K up to 2300 MPa.
     The ice Gibbs parametrizations are optimized for phase-equilibrium
     calculations against 'water1'.  'water2' and 'water_IAPWS95' are
@@ -179,6 +197,8 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
     :param phase:   Material code — key of the ``phases`` dict.
     :param path:    Path to the ``splines/`` directory (default: package splines).
     :param tdvSpec: Optional property names to compute; default = all supported.
+    :param rhoT:    Helmholtz materials only: PTm holds (rho, T) instead of (P, T).
+    :param branch:  Helmholtz materials only: 'stable' | 'liquid' | 'vapor'.
     :return:        Object with computed properties as named attributes.
     """
     lbftd_log = logging.getLogger('lbftd')
@@ -190,6 +210,11 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
         except KeyError:
             raise ValueError('The specified phase is not recognized.  Supported phases are ' +
                              ', '.join(phases.keys()) + '.')
+
+        is_helm = phase in helmholtz_phases
+        if (rhoT or branch != 'stable') and not is_helm:
+            raise ValueError("rhoT / branch are only supported for Helmholtz materials ("
+                             + ', '.join(sorted(helmholtz_phases)) + ").")
 
         isscatter = _is_scatter(PTm)
         want_set  = set(tdvSpec)
@@ -218,6 +243,12 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
         if is_stitched:
             sp = None  # no single spline for stitched mode
             props = _nacl_stitch(PTm, isscatter, path, *lbftd_wants)
+        elif is_helm:
+            sp = _load_spline(path, phase)
+            fn = eh.evalHelmholtzScatter if isscatter else eh.evalHelmholtzGrid
+            helm_wants = tuple(lbftd_wants) + (('P',) if rhoT else ())
+            props = dict(vars(fn(sp, PTm, *helm_wants, rhoT=rhoT, branch=branch)))
+            P_calc = props.pop('P', None)
         else:
             sp = _load_spline(path, phase)
             raw = _get_tdvs(sp, PTm, isscatter, *lbftd_wants)
@@ -238,6 +269,8 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
 
         # ---- Matlab-parity derived properties -----------------------------------
         _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path)
+        if rhoT and (want_all or 'P' in want_set):
+            props['P'] = P_calc      # PTm held density; P is computed
 
         # ---- Strip prerequisite props that were only added internally -----------
         if not want_all:
@@ -257,21 +290,23 @@ def whichphase(PTm, solute='water1', path=defpath):
     :param PTm:     P (MPa) / T (K) conditions (and optional m for NaClaq).
                     Scatter: 1-D numpy array of (P,T) or (P,T,m) tuples.
                     Grid: numpy array([P_vec, T_vec]) or ([P, T, m_vec]).
-    :param solute:  An optional dissolved solute in the liquid phase.
-                    The default is pure water (water1).
+    :param solute:  The liquid phase: a pure-water liquid ('water1' default,
+                    'water2', 'water_IAPWS95', 'water3') or an aqueous NaCl
+                    material ('NaClaq', 'NaClaq_LP', ...).
     :param path:    Path to the ``splines/`` directory.
-    :return:        numpy.ndarray with the stable phase index at each point.
+    :return:        numpy.ndarray with the stable phase index at each point
+                    (0 = liquid).
     """
-    is_stitched_solute = (solute == 'NaClaq')
+    if solute not in phases:
+        raise ValueError(f"Unknown liquid {solute!r}. Supported: "
+                         + ', '.join(pure_water_liquids) + ', NaClaq, NaClaq_LP, NaClaq_HP, NaClaq_5GPa_2024.')
+    is_nacl = solute.startswith('NaClaq')
+    if not is_nacl and solute not in pure_water_liquids:
+        raise ValueError(f"{solute!r} is not a liquid phase.")
     isscatter = _is_scatter(PTm)
-    # NaClaq uses stitched LP+HP evaluation and cannot be loaded as a single spline.
-    # Load only solid-ice splines (phase_num > 0); liquid is handled below.
-    if is_stitched_solute:
-        phase_sp = {v.phase_num: _load_spline(path, pcomp) for pcomp, v in phases.items() if
-                    v.phase_num > 0}
-    else:
-        phase_sp = {v.phase_num: _load_spline(path, pcomp) for pcomp, v in phases.items() if
-                    v.phase_num > 0 or pcomp == solute}
+    # Ice splines (phase_num > 0); the liquid is evaluated separately below.
+    phase_sp = {v.phase_num: _load_spline(path, pcomp) for pcomp, v in phases.items() if
+                v.phase_num > 0}
     ptsh = (PTm.size,) if isscatter else (PTm[iP].size, PTm[iT].size)
     comp = np.full(ptsh + (max_phase_num + 1,), np.nan)
     for p in phase_sp.keys():
@@ -279,23 +314,27 @@ def whichphase(PTm, solute='water1', path=defpath):
             warnings.simplefilter("ignore")
             sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (p,)
             sp = phase_sp[p]
-            if p == 0:
-                if 'water1' in solute:
-                    phase_sp[p]['MW'] = phases[solute].MW
-                    tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
-                else:
-                    phase_sp[p]['nu'] = phases[phasenum2phase(p)].nu
-                    tdvs = _get_tdvs(sp, PTm, isscatter, 'G', 'muw').muw
-            else:
-                phase_sp[p]['MW'] = phases[phasenum2phase(p)].MW
-                tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
+            phase_sp[p]['MW'] = phases[phasenum2phase(p)].MW
+            tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
             comp[sl] = np.squeeze(tdvs)
-    # Stitched NaClaq liquid: evaluate muw via getProp (handles LP+HP blending)
-    if is_stitched_solute:
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (0,)
-            comp[sl] = np.squeeze(getProp(PTm, 'NaClaq', path, 'muw').muw)
+    # Liquid (slot 0): G*MW for pure water, muw for NaCl(aq)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (0,)
+        if solute == 'NaClaq':
+            # stitched LP+HP: getProp handles the blending
+            liq = getProp(PTm, 'NaClaq', path, 'muw').muw
+        elif is_nacl:
+            sp = _load_spline(path, solute)
+            sp['nu'] = phases[solute].nu
+            liq = _get_tdvs(sp, PTm, isscatter, 'G', 'muw').muw
+        elif solute in helmholtz_phases:
+            liq = getProp(_get_PT(PTm, isscatter), solute, path, 'G').G * phases[solute].MW
+        else:
+            sp = _load_spline(path, solute)
+            sp['MW'] = phases[solute].MW
+            liq = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * sp['MW']
+        comp[sl] = np.squeeze(liq)
     all_nan_sl = np.all(np.isnan(comp), -1)
     out = np.full(ptsh, np.nan)
     out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl], -1)

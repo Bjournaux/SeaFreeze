@@ -19,6 +19,15 @@ function rng = SF_phase_range(material)
 %   rng = SF_phase_range('NaClaq_HP')      % 2026 high-P spline only
 %   rng = SF_phase_range('NaClaq_5GPa_2024') % Brown 2024 legacy
 %
+%   rng = SF_phase_range('water3')         % Helmholtz spline F(rho,T)
+%       rng.rho = [rho_lo rho_hi]  % kg/m^3, knot range
+%       rng.T   = [T_lo   T_hi]    % K, knot range
+%       rng.P   = [P_lo   P_hi]    % MPa, from sp.Prange if stored, else the
+%                                  % extent of P(rho,T) over the knot box
+%                                  % where dP/drho > 0.  Not every (P,T) in
+%                                  % this box is reachable; SF_getprop
+%                                  % returns NaN where it is not.
+%
 % Materials follow SF_getprop's naming.
 
 if ~sf_ischarlike(material)
@@ -43,6 +52,31 @@ if strcmp(material, 'NaClaq')
              min(spLP.knots{2}(end), spHP.knots{2}(end))];
     rng.m = [max(spLP.knots{3}(1), spHP.knots{3}(1)), ...
              min(spLP.knots{3}(end), spHP.knots{3}(end))];
+elseif ismember(material, defs.helmholtz_phases)
+    sp = sf_load_spline(material);
+    if isfield(sp, 'eos') && strcmp(sp.eos, 'psi')
+        % psi surface: knots are x = ln(rho/rhoc)/3, y = ln(T/Tc); below the
+        % lowest density knot the surface is continued, so rho_lo = 0.
+        rng.rho = [0, sp.rhoc * exp(3 * sp.knots{1}(end))];
+        rng.T   = sp.Tc * exp([sp.knots{2}(1), sp.knots{2}(end)]);
+        r = sp.rhoc * exp(3 * linspace(sp.knots{1}(1), sp.knots{1}(end), 200));
+    else
+        rng.rho = [sp.knots{1}(1), sp.knots{1}(end)];
+        if isfield(sp, 'Tc')
+            rng.T = sp.Tc * exp([sp.knots{2}(1), sp.knots{2}(end)]);
+        else
+            rng.T = [sp.knots{2}(1), sp.knots{2}(end)];
+        end
+        r = linspace(rng.rho(1), rng.rho(2), 200);
+    end
+    if isfield(sp, 'Prange')
+        rng.P = sp.Prange(:).';
+    else
+        T = linspace(rng.T(1), rng.T(2), 100);
+        out = fnFval(sp, {r, T}, {'P', 'Kt'}, 'rhoT');
+        ok  = out.Kt > 0 & isfinite(out.P);
+        rng.P = [min(out.P(ok)), max(out.P(ok))];
+    end
 else
     sp = sf_load_spline(material);
     if ~iscell(sp.knots)
