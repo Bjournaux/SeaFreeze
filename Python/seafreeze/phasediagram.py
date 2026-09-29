@@ -21,20 +21,23 @@ included) the diagram is left blank.
 Public API
 ----------
 phase_map(P, T, fluid='water3', ices=ICES, path=defpath) -> PhaseMap
-wpd_PT(ax=None, P=(1e-8, 1e5), T=(150, 1800), ...)     -> matplotlib Figure
-wpd_rhoT(ax=None, rho=(1e-7, 4e3), T=(150, 1800), ...) -> matplotlib Figure
-melt_T_dq2026(P)                                        -> melting T (K) of the stable solid
+phase_diagram_PT(P=(1e-8, 1e5), T=(150, 1800), ...)     -> DiagramPT   (what wpd_PT draws, as data)
+phase_diagram_rhoT(rho=(1e-7, 4e3), T=(150, 1800), ...) -> DiagramRhoT (what wpd_rhoT draws, as data)
+property_map(diag, *props, path=defpath)                -> PropertyMap (property of the stable phase)
+wpd_PT(ax=None, P=(1e-8, 1e5), T=(150, 1800), ...)      -> matplotlib Figure
+wpd_rhoT(ax=None, rho=(1e-7, 4e3), T=(150, 1800), ...)  -> matplotlib Figure
+melt_T_dq2026(P)                                         -> melting T (K) of the stable solid
 
 Baptiste Journaux - 2026
 """
 import warnings
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List, Optional
 
 import numpy as np
 
 from .seafreeze import getProp, defpath, _load_spline, helmholtz_phases
-from .coexistence import saturation, sublimation
+from .coexistence import Coexistence, saturation, sublimation
 from lbftd import evalHelmholtz as eh
 
 ICES = ('Ih', 'II', 'III', 'V', 'VI')          # add 'VII_X_French' via ices=...
@@ -54,6 +57,47 @@ class PhaseMap:
     rho: np.ndarray            # (nphase, nP, nT) kg/m^3
     stable: np.ndarray         # (nP, nT) index into names, -1 where nothing is defined
     rho_stable: np.ndarray     # (nP, nT) density of the stable phase
+
+
+@dataclass
+class DiagramPT:
+    """Full phase diagram in (P, T) as data (phase_diagram_PT): what wpd_PT draws."""
+    pm: PhaseMap               # stability fields on the (log P, T) grid
+    boundaries: list           # (i, j, P, T): G_i = G_j segments between stable phases i < j
+    saturation: Optional[Coexistence]  # vapour-liquid curve (rho_A liquid, rho_B vapour);
+                               # NaN where the fluid is not stable, None outside the T range
+    critical: dict             # {'P', 'T', 'rho'} of the critical point (MPa, K, kg/m^3)
+    triple_points: list        # triple_points(pm)
+    labels: list               # (text, P, T, kind) field labels, kind 'fluid' | 'ice'
+    missing: np.ndarray        # (nP, nT) True where no phase is available
+
+
+@dataclass
+class DiagramRhoT:
+    """Full phase diagram in (rho, T) as data (phase_diagram_rhoT): what wpd_rhoT draws."""
+    pm: PhaseMap               # the (P, T) phase map it is re-drawn from
+    rho: np.ndarray            # (nrho,) kg/m^3
+    T: np.ndarray              # (nT,) K, = pm.T
+    field: np.ndarray          # (nrho, nT) index into pm.names, two_phase in the gaps, -1 undefined
+    two_phase: int             # field value of the two-phase regions (= len(pm.names))
+    coexistence: list          # (i, j, rho_i, rho_j, T): coexisting densities along each P-T boundary
+    saturation: Optional[Coexistence]  # on the T grid (273.16 K <= T < Tc); NaN where the fluid
+                               # is not stable, None outside the T range
+    critical: dict             # {'P', 'T', 'rho'} of the critical point
+    tie_lines: list            # triple_points(pm): the three coexisting densities at each triple T
+    labels: list               # (text, rho, T, kind), kind 'fluid' | 'ice' | 'two-phase'
+    xscale: str                # 'log' | 'linear'
+
+
+@dataclass
+class PropertyMap:
+    """Property of the stable phase on a phase-diagram grid (property_map)."""
+    values: Dict[str, np.ndarray]  # prop -> (nP, nT) or (nrho, nT), NaN where undefined
+    phase: np.ndarray          # same shape: index into names of the phase shown, -1 undefined
+                               # (rho-T: the diagram's two_phase in the two-phase regions)
+    ideal_gas: np.ndarray      # True where the fluid is its dilute ideal-gas extension
+    coords: str                # 'PT' or 'rhoT'
+    names: List[str]           # pm.names
 
 
 def _grid(P, T):
@@ -171,31 +215,36 @@ def phase_map(P, T, fluid='water3', ices=ICES, dilute_extension=True, sanity=Tru
 
 def _boundaries(pm):
     """(i, j, P_line, T_line) segments where phases i and j coexist."""
-    import matplotlib.pyplot as plt
+    from matplotlib.figure import Figure        # contouring only: no pyplot, no backend
     out = []
     n = len(pm.names)
-    fig, ax = plt.subplots()
-    try:
-        for i in range(n):
-            for j in range(i + 1, n):
-                pair = (pm.stable == i) | (pm.stable == j)
-                if not ((pm.stable == i).any() and (pm.stable == j).any()):
-                    continue
-                Z = np.where(pair, pm.G[i] - pm.G[j], np.nan)
-                if np.all(np.isnan(Z)):
-                    continue
-                cs = ax.contour(np.log10(pm.P), pm.T, Z.T, levels=[0.0])
-                for seg in cs.allsegs[0]:
-                    if len(seg) > 2:
-                        out.append((i, j, 10 ** seg[:, 0], seg[:, 1]))
-    finally:
-        plt.close(fig)
+    ax = Figure().subplots()
+    for i in range(n):
+        for j in range(i + 1, n):
+            pair = (pm.stable == i) | (pm.stable == j)
+            if not ((pm.stable == i).any() and (pm.stable == j).any()):
+                continue
+            Z = np.where(pair, pm.G[i] - pm.G[j], np.nan)
+            if np.all(np.isnan(Z)):
+                continue
+            cs = ax.contour(np.log10(pm.P), pm.T, Z.T, levels=[0.0])
+            for seg in cs.allsegs[0]:
+                if len(seg) > 2:
+                    out.append((i, j, 10 ** seg[:, 0], seg[:, 1]))
     return out
 
 
 def _scatter1(P, T):
     pts = np.empty(1, dtype=object)
     pts[0] = (float(P), float(T))
+    return pts
+
+
+def _scatter(X, T):
+    """getProp scatter set: 1-D object array of (X, T) tuples."""
+    pts = np.empty(X.size, dtype=object)
+    for q, xt in enumerate(zip(X.tolist(), T.tolist())):
+        pts[q] = xt
     return pts
 
 

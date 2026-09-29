@@ -33,6 +33,7 @@ datas = [
     # App files
     ("app.py", "."),
     ("core", "core"),
+    ("views", "views"),
     (".streamlit", ".streamlit"),
 ]
 
@@ -48,6 +49,12 @@ hiddenimports = [
     *st_hiddenimports,
     *collect_submodules("streamlit"),
     *collect_submodules("plotly"),
+
+    # GUI pages (imported by app.py, which PyInstaller does not analyse)
+    "views",
+    "views.about",
+    "views.phase_diagram",
+    "views.property_calculator",
 
     # SeaFreeze and its dependencies
     "seafreeze",
@@ -103,9 +110,9 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
+    # matplotlib is kept: seafreeze.phaselines contours phase lines with it
     excludes=[
         "tkinter",
-        "matplotlib",
         "IPython",
         "notebook",
         "pytest",

@@ -41,6 +41,7 @@ Public API
 ----------
 evalHelmholtzGrid(sp, PTm, *props, rhoT=False, allowExtrapolations=False)
 evalHelmholtzScatter(sp, PTm, *props, rhoT=False, allowExtrapolations=False)
+ideal_gas_props(sp, X, T, *props, rhoT=False)   ideal-gas part alone (psi)
 
 ``PTm`` follows the seafreeze conventions: a grid is ``np.array([X_vec, T_vec],
 dtype=object)``, a scatter set is a 1-D object array of ``(X, T)`` tuples.
@@ -61,6 +62,8 @@ from scipy.interpolate import NdBSpline
 # lbftd property names supported here (pure phases only)
 SUPPORTED = ('G', 'S', 'U', 'H', 'A', 'rho', 'Cp', 'Cv', 'Kt', 'Kp', 'Ks',
              'alpha', 'vel', 'P', 'T')
+# ideal_gas_props names: getProp's water3 output set
+IDEAL_GAS_PROPS = SUPPORTED + ('Js', 'gamma_Gruneisen')
 _DERIV_NAMES = ('F', 'Fr', 'Frr', 'Frrr', 'FT', 'FTT', 'FrT')
 
 # IAPWS-95 R6-95(2018) ideal-gas coefficients (fallback when the surface
@@ -551,21 +554,69 @@ def _phi0(sp, delta, tau):
     return phi0, phi0_t, phi0_tt
 
 
-def ideal_gas(sp, P, T):
-    """Gibbs energy (J/kg) and density (kg/m^3) of the surface's ideal-gas
-    part alone (Z = 1) at P (MPa), T (K).  psi surfaces only.
+def ideal_gas_props(sp, X, T, *props, rhoT=False):
+    """Properties of the surface's ideal-gas part alone (Z = 1).  psi surfaces only.
 
     This is the dilute-vapour limit of the EOS; it needs no spline and so
     stays defined below the surface's lowest temperature knot.  Used by
-    seafreeze.sublimation(..., dilute_extension=True).
+    seafreeze.sublimation(..., dilute_extension=True) and phase_map.  With
+    the Planck-Einstein phi0(delta, tau) and its tau derivatives::
+
+        rho = P/(R T)                 A = R T phi0          G = A + R T
+        S = R (tau phi0_t - phi0)     U = R T tau phi0_t    H = U + R T
+        Cv = -R tau^2 phi0_tt         Cp = Cv + R           alpha = 1/T
+        Kt = P    Ks = Kt Cp/Cv    Kp = 1    vel = sqrt(Cp/Cv R T)
+        Js = T alpha/(rho Cp) = 1/(rho Cp) (x 1e6, K/MPa)    gamma_Gruneisen = R/Cv
+
+    Js is getProp's isentropic dT/dP, not the Joule-Thomson coefficient
+    (which vanishes for an ideal gas).  Above ~700 K the surface's reference
+    term (reacting mixture) makes the dilute fluid depart from this ideal gas.
+
+    :param X:     P (MPa), or rho (kg/m^3) with rhoT=True; broadcasts with T
+    :param T:     temperature (K)
+    :param props: property names, as getProp's water3 output (same units);
+                  none = all
+    :return:      SimpleNamespace of arrays with the broadcast shape of X, T
     """
     if not is_psi(sp):
-        raise ValueError('ideal_gas needs a psi surface (it carries phi0)')
-    P = np.asarray(P, float); T = np.asarray(T, float)
+        raise ValueError('ideal_gas_props needs a psi surface (it carries phi0)')
+    if not props:
+        props = IDEAL_GAS_PROPS
+    unknown = set(props) - set(IDEAL_GAS_PROPS)
+    if unknown:
+        raise ValueError('unsupported property name(s): ' + ', '.join(sorted(unknown)))
+    X, T = (np.array(a, float) for a in np.broadcast_arrays(np.asarray(X, float), np.asarray(T, float)))
     R, rhoc, Tc = _scalar(sp, 'R'), _scalar(sp, 'rhoc'), _scalar(sp, 'Tc')
-    rho = P * 1e6 / (R * T)
-    phi0, _, _ = _phi0(sp, rho / rhoc, Tc / T)
-    return R * T * (phi0 + 1.0), rho
+    RT = R * T
+    with np.errstate(divide='ignore', invalid='ignore'):
+        if rhoT:
+            rho = X
+            P = rho * RT / 1e6
+        else:
+            P = X
+            rho = P * 1e6 / RT
+        tau = Tc / T
+        phi0, phi0_t, phi0_tt = _phi0(sp, rho / rhoc, tau)
+        U = RT * tau * phi0_t
+        Cv = -R * tau ** 2 * phi0_tt
+        Cp = Cv + R
+        alpha = 1 / T
+        out = {'G': RT * (phi0 + 1.0), 'S': R * (tau * phi0_t - phi0), 'U': U, 'H': U + RT,
+               'A': RT * phi0, 'rho': rho, 'Cp': Cp, 'Cv': Cv, 'Kt': P,
+               'Kp': np.where(np.isnan(rho), np.nan, 1.0), 'Ks': P * Cp / Cv,
+               'alpha': alpha, 'vel': np.sqrt(Cp / Cv * RT),
+               'Js': T * alpha / (rho * Cp) * 1e6,                   # K/MPa
+               'gamma_Gruneisen': R / Cv, 'P': P, 'T': T}
+    return SimpleNamespace(**{k: out[k] for k in props})
+
+
+def ideal_gas(sp, P, T):
+    """Gibbs energy (J/kg) and density (kg/m^3) of the surface's ideal-gas
+    part alone (Z = 1) at P (MPa), T (K).  psi surfaces only; see
+    ideal_gas_props for the full property set.
+    """
+    o = ideal_gas_props(sp, P, T, 'G', 'rho')
+    return o.G, o.rho
 
 
 # ---------------------------------------------------------------------------

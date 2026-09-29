@@ -65,6 +65,8 @@ streamlit run app.py
 
 The app opens in your browser at `http://localhost:8501`.
 
+When run from a repository checkout, the app uses the in-repo SeaFreeze library (`../Python`) ahead of any installed copy.
+
 ### Dependencies
 
 | Package | Version |
@@ -108,14 +110,21 @@ The output is at `dist/SeaFreezeGUI.app` (~335 MB). Double-click to launch — i
 
 ```
 SeaFreezeGUI/
-├── app.py                  # Main Streamlit app (Property Calculator + Phase Diagram)
+├── app.py                  # Entry point: page config, sidebar branding, navigation
 ├── launcher.py             # Desktop launcher (starts Streamlit in-process)
 ├── SeaFreezeGUI.spec       # PyInstaller build specification
 ├── requirements.txt        # Python dependencies
 ├── core/
 │   ├── __init__.py
 │   ├── compute.py          # Cached wrappers around SeaFreeze API
-│   └── constants.py        # Material lists, property metadata, categories
+│   ├── constants.py        # Material lists, property metadata, categories
+│   └── ui.py               # Shared UI helpers (labels, CSV export, boundary overlays)
+├── views/                  # One module per page, each exposing render()
+│   ├── property_calculator.py
+│   ├── phase_diagram.py
+│   └── about.py
+├── tests/
+│   └── test_app.py         # AppTest smoke tests: cd SeaFreezeGUI && python3 -m pytest -q tests
 ├── .streamlit/
 │   └── config.toml         # Streamlit theme and server config
 ├── screenshots/            # App screenshots for documentation

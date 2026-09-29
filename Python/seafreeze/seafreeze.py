@@ -257,8 +257,13 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
             if want_set & {'shear', 'Vp', 'Vs'} and phasedesc.shear_mod_parms:
                 extra |= {'rho', 'Ks'}
             lbftd_wants = tuple(set(lbftd_wants) | extra)
+            if not lbftd_wants:
+                # only echoes / molality terms requested: an empty request
+                # would make the evaluator compute every property
+                lbftd_wants = ('rho',)
 
         # ---- Evaluate — either stitched LP+HP or single spline -----------------
+        rho_axis = None
         if is_stitched:
             sp = None  # no single spline for stitched mode
             props = _nacl_stitch(PTm, isscatter, path, *lbftd_wants)
@@ -268,6 +273,11 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
             helm_wants = tuple(lbftd_wants) + (('P',) if rhoT else ())
             props = dict(vars(fn(sp, PTm, *helm_wants, rhoT=rhoT, branch=branch)))
             P_calc = props.pop('P', None)
+            if rhoT and not isscatter and 'rho' in props:
+                # (rho,T) grid: the evaluator echoes the density axis, but Js
+                # and gamma_Gruneisen below need rho on the full grid
+                rho_axis = props['rho']
+                props['rho'] = np.broadcast_to(np.reshape(rho_axis, (-1, 1)), np.shape(P_calc))
         else:
             sp = _load_spline(path, phase)
             raw = _get_tdvs(sp, PTm, isscatter, *lbftd_wants)
@@ -290,10 +300,12 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
         _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path)
         if rhoT and (want_all or 'P' in want_set):
             props['P'] = P_calc      # PTm held density; P is computed
+        if rho_axis is not None:
+            props['rho'] = rho_axis  # input echo, like P on a (P,T) grid
 
         # ---- Strip prerequisite props that were only added internally -----------
         if not want_all:
-            for p in ('alpha', 'Cp', 'Cv', 'Kt', 'muw'):
+            for p in ('alpha', 'Cp', 'Cv', 'Kt', 'muw', 'rho'):
                 if p not in want_set:
                     props.pop(p, None)
 
@@ -344,10 +356,12 @@ def _gibbs_rhoT(PTm, phase, path, tdvSpec):
         out[k] = full.reshape(shape)
     if not tdvSpec or 'P' in tdvSpec:
         out['P'] = P.reshape(shape)
+    # rho and T echo the input: per point for scatter, the axes for grids
+    # (as P and T on a (P,T[,m]) grid: (n,1,1) and (1,n,1) on a 3-D grid)
     if 'rho' in out:
-        out['rho'] = R.reshape(shape) if isscatter else np.asarray(PTm[0], float).ravel()
+        out['rho'] = R.reshape(shape) if isscatter else (axes[0].reshape(-1, 1, 1) if is_nacl else axes[0])
     if 'T' in out:
-        out['T'] = TT.reshape(shape) if isscatter else np.asarray(PTm[1], float).ravel()
+        out['T'] = TT.reshape(shape) if isscatter else (axes[1].reshape(1, -1, 1) if is_nacl else axes[1])
     return types.SimpleNamespace(**out)
 
 
@@ -598,8 +612,9 @@ def _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path
     def want(name):
         return want_all or name in want_set
 
-    T_arr = _get_T(PTm, isscatter)
-    P_arr = _get_P(PTm, isscatter)
+    # float: equal-length grid axes arrive as rows of a 2-D object array
+    T_arr = np.asarray(_get_T(PTm, isscatter), dtype=float)
+    P_arr = np.asarray(_get_P(PTm, isscatter), dtype=float)
 
     # For grid mode, reshape T and P so they broadcast correctly against the
     # nD prop arrays returned by lbftd.  For a 2D grid (nP×nT), T has shape
