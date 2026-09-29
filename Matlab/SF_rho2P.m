@@ -1,6 +1,6 @@
 function P_out = SF_rho2P(rho_target, T, material, varargin)
 % SF_rho2P  Invert the SeaFreeze EOS: find P such that rho(P,T) == rho_target.
-% Version 1.0
+% Version 1.2 beta
 % Baptiste Journaux - 2026
 %
 % Usage:

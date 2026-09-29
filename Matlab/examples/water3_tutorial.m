@@ -8,6 +8,7 @@
 
 here = fileparts(mfilename('fullpath'));
 addpath(genpath(fileparts(here)));
+if ~exist('outdir', 'var'), outdir = here; end   % set outdir before running to save elsewhere
 
 %% 1. water3 at (P,T): same call and outputs as every other SeaFreeze phase
 out = SF_getprop([0.101325 298.15; 100 300; 1000 350], 'water3');
@@ -88,5 +89,19 @@ ax = subplot(2, 2, 4);
 SF_WPD('ax', ax, 'liquid', 'water3', 'meta', 'none');
 title(ax, 'SF\_WPD(''liquid'',''water3'')');
 
-print(fig, fullfile(here, 'water3_tutorial_matlab.png'), '-dpng', '-r130');
-fprintf('saved %s\n', fullfile(here, 'water3_tutorial_matlab.png'));
+print(fig, fullfile(outdir, 'water3_tutorial_matlab.png'), '-dpng', '-r130');
+fprintf('saved %s\n', fullfile(outdir, 'water3_tutorial_matlab.png'));
+
+%% 6. Full phase diagrams: vapour, liquid, supercritical fluid, critical point
+%     and the ices, in (P,T) and in (rho,T) with the two-phase regions.
+%     These take ~0.5-2 min each in MATLAB (a SeaFreeze:longRuntime warning says so).
+fig2 = figure('Visible', 'off', 'Position', [100 100 1500 600]);
+ax1 = subplot(1, 2, 1); SF_WPD_PT('ax', ax1, 'nP', 300, 'nT', 240);
+ax2 = subplot(1, 2, 2); SF_WPD_rhoT('ax', ax2, 'rho', [850 1700], 'T', [150 500], 'P', [1e-10 1e4], ...
+                                    'xscale', 'linear', 'nP', 900, 'nT', 240);
+pm = sf_phase_map(logspace(-9, log10(3000), 400), linspace(180, 420, 200));
+tp = sf_triple_points(pm, 'water3');
+fprintf('6. triple points:\n');
+for k = 1:numel(tp), fprintf('   %-12s %8.3f K %10.4f MPa\n', strjoin(tp(k).labels, '-'), tp(k).T, tp(k).P); end
+print(fig2, fullfile(outdir, 'water3_tutorial_diagrams_matlab.png'), '-dpng', '-r110');
+fprintf('saved %s\n', fullfile(outdir, 'water3_tutorial_diagrams_matlab.png'));

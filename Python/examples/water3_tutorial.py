@@ -137,3 +137,22 @@ os.makedirs(outdir, exist_ok=True)
 f = os.path.join(outdir, 'water3_tutorial_python.png')
 fig.savefig(f, dpi=140)
 print('saved', f)
+
+# ---------------------------------------------------------------------------
+# 6. Full phase diagrams: vapour, liquid, supercritical fluid, critical point
+#    and the ices, in (P, T) and in (rho, T) with the two-phase regions
+# ---------------------------------------------------------------------------
+fig2, axs2 = plt.subplots(1, 2, figsize=(15, 5.8))
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore')
+    sf.wpd_PT(ax=axs2[0], nP=300, nT=240)                               # log P axis
+    sf.wpd_rhoT(ax=axs2[1], rho=(850, 1700), T=(150, 500), P=(1e-10, 1e4),
+                xscale='linear', nP=900, nT=240)                         # dense zoom
+pm = sf.phase_map(np.geomspace(1e-9, 3e3, 400), np.linspace(180, 420, 200))
+print('6. triple points:')
+for tp in sorted(sf.triple_points(pm), key=lambda d: d['T']):
+    print(f"   {'-'.join(tp['labels']):12s} {tp['T']:8.3f} K  {tp['P']:10.4f} MPa")
+fig2.tight_layout()
+f2 = os.path.join(outdir, 'water3_tutorial_diagrams_python.png')
+fig2.savefig(f2, dpi=120)
+print('saved', f2)
