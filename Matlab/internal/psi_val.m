@@ -1,7 +1,8 @@
-function d = psi_val(sp, rho, T, need)
+function d = psi_val(sp, rho, T, need, mode)
 % PSI_VAL  Helmholtz energy and its (rho,T) derivatives from a psi-spline surface.
 %
 %   d = psi_val(sp, rho, T, need)
+%   d = psi_val(sp, rho, T, need, 'grid')   % tensor grid rho x T, F_r / F_rr only
 %
 %   Toolbox-free port of psiH2O_val.m (lbf-thermo, JMB / Claude 2026) for the
 %   "psi" representation of pure water: the residual dimensionless Helmholtz
@@ -29,6 +30,11 @@ function d = psi_val(sp, rho, T, need)
 %             crit_table, lowT2s_params).
 %     rho,T - column vectors of scattered states (kg/m^3, K)
 %     need  - struct of logicals: F, Fr, Frr, Frrr, FT, FTT, FrT (absent = false)
+%     mode  - 'grid': rho and T are the axes of a tensor grid; outputs are
+%             numel(rho)-by-numel(T).  Every spline is then evaluated with
+%             sp_val's gridded (per-dimension de Boor) path, which is far
+%             cheaper than scattered evaluation.  Only Fr and Frr are
+%             supported (used to bracket the roots of P(rho,T) = P).
 %
 %   OUTPUT
 %     d - struct with the requested fields, columns like rho, NaN where the
@@ -47,6 +53,13 @@ function d = psi_val(sp, rho, T, need)
     fl = {'F','Fr','Frr','Frrr','FT','FTT','FrT'};
     for k = 1:numel(fl)
         if ~isfield(need, fl{k}), need.(fl{k}) = false; end
+    end
+    if nargin >= 5 && strcmp(mode, 'grid')
+        if need.F || need.Frrr || need.FT || need.FTT || need.FrT
+            error('psi_val:grid', 'grid mode supports Fr and Frr only.');
+        end
+        d = psi_grid_rho(sp, rho(:), T(:), need);
+        return
     end
 
     rho = rho(:); T = T(:); n = numel(rho);
@@ -257,6 +270,91 @@ function d = psi_val(sp, rho, T, need)
     if need.FTT, d.FTT = R * tau.^2 .* (phi0_tt + phir_tt) ./ T;          end
     fn = fieldnames(d);
     for k = 1:numel(fn), v = d.(fn{k}); v(~ok) = NaN; d.(fn{k}) = v; end
+end
+
+
+% ==========================================================================
+function d = psi_grid_rho(sp, rv, Tv, need)
+% F_r and F_rr on the tensor grid rv (nr) x Tv (nT); the same terms as the
+% scattered path, with every spline evaluated on its grid.
+    Tc = double(sp.Tc); rhoc = double(sp.rhoc); R = double(sp.R);
+    nr = numel(rv); nT = numel(Tv);
+    EV = @(spl, dv, xs, ys) reshape(sp_val(spl, dv, {xs(:).', ys(:).'}), numel(xs), numel(ys));
+    x = log(rv / rhoc) / 3;                 % nr x 1
+    y = log(Tv(:).' / Tc);                  % 1 x nT
+    DEL = repmat(rv / rhoc, 1, nT);
+    TAU = repmat(Tc ./ Tv(:).', nr, 1);
+    kx = sp.knots{1}(:); ky = sp.knots{2}(:);
+    ok = (x <= kx(end)) & (y >= ky(1) & y <= ky(end));      % nr x nT
+
+    % spline residual, with the virial continuation below the lowest x knot
+    s = EV(sp, [0 0], x, y); sx = EV(sp, [1 0], x, y); sxx = EV(sp, [2 0], x, y);
+    below = x < kx(1);
+    if any(below)
+        s0 = EV(sp, [0 0], kx(1), y); s1 = EV(sp, [1 0], kx(1), y);
+        r = exp(3 * (x(below) - kx(1)));
+        s(below, :)   = bsxfun(@plus, s0, bsxfun(@times, s1, (r - 1) / 3));
+        sx(below, :)  = bsxfun(@times, s1, r);
+        sxx(below, :) = bsxfun(@times, 3 * s1, r);
+    end
+    pr_d  = s + sx / 3;
+    pr_dd = (sx / 3 + sxx / 9) ./ DEL;
+
+    % reference table (clamped) + low-density extension
+    if isfield(sp, 'dphi_ref')
+        rs = sp.dphi_ref; rkx = rs.knots{1}(:); rky = rs.knots{2}(:);
+        Xc = min(max(x, rkx(1)), rkx(end)); Yc = min(max(y, rky(1)), rky(end));
+        oob = bsxfun(@or, x ~= Xc, y ~= Yc);
+        fx = EV(rs, [1 0], Xc, Yc); fxx = EV(rs, [2 0], Xc, Yc);
+        fx(oob) = 0; fxx(oob) = 0;
+        if isfield(rs, 'low')
+            lw = rs.low; lkx = lw.knots{1}(:);
+            blr = x < rkx(1) & x >= lkx(1);
+            blc = y >= rky(1) & y <= rky(end);
+            if any(blr) && any(blc)
+                r = exp(3 * (x(blr) - rkx(1)));
+                D10 = EV(rs, [1 0], rkx(1), y(blc)) - EV(lw, [1 0], rkx(1), y(blc));
+                fx(blr, blc)  = EV(lw, [1 0], x(blr), y(blc)) + bsxfun(@times, D10, r);
+                fxx(blr, blc) = EV(lw, [2 0], x(blr), y(blc)) + bsxfun(@times, 3 * D10, r);
+            end
+        end
+        pr_d  = pr_d  + fx ./ (3 * DEL);
+        pr_dd = pr_dd + (fxx / 9 - fx / 3) ./ DEL.^2;
+    end
+
+    % tabulated KW2000 critical term: table axes (1 - tau) per T, (delta - 1) per rho
+    ct = [];
+    if isfield(sp, 'crit_table'), ct = sp.crit_table;
+    elseif isfield(sp, 'dphi_ref') && isfield(sp.dphi_ref, 'crit_table'), ct = sp.dphi_ref.crit_table; end
+    if ~isempty(ct)
+        c0 = double(ct.c0); ckx = ct.knots{1}(:); cky = ct.knots{2}(:);
+        xq = 1 - Tc ./ Tv(:).';  yq = rv / rhoc - 1;
+        inc = xq >= ckx(1) & xq <= ckx(end);
+        inr = yq >= cky(1) & yq <= cky(end);
+        if any(inc) && any(inr)
+            g = zeros(nr, nT); gy = g; gyy = g;
+            g(inr, inc)   = EV(ct, [0 0], xq(inc), yq(inr)).';
+            gy(inr, inc)  = EV(ct, [0 1], xq(inc), yq(inr)).';
+            gyy(inr, inc) = EV(ct, [0 2], xq(inc), yq(inr)).';
+            pr_d  = pr_d  + c0 * (gy ./ DEL - g ./ DEL.^2);
+            pr_dd = pr_dd + c0 * (gyy ./ DEL - 2 * gy ./ DEL.^2 + 2 * g ./ DEL.^3);
+        end
+    end
+
+    % low-T two-structure term (analytic, elementwise)
+    lj = '';
+    if isfield(sp, 'lowT2s_params'), lj = sp.lowT2s_params;
+    elseif isfield(sp, 'dphi_ref') && isfield(sp.dphi_ref, 'lowT2s_params'), lj = sp.dphi_ref.lowT2s_params; end
+    if ~isempty(lj)
+        q = lowT2s_phi(DEL(:), TAU(:), lowT2s_decode(char(lj)), R);
+        pr_d  = pr_d  + reshape(q.d,  nr, nT);
+        pr_dd = pr_dd + reshape(q.dd, nr, nT);
+    end
+
+    RT = R * repmat(Tv(:).', nr, 1);
+    d = struct();
+    if need.Fr,  d.Fr  = RT .* (1 ./ DEL + pr_d) / rhoc;          d.Fr(~ok)  = NaN; end
+    if need.Frr, d.Frr = RT .* (-1 ./ DEL.^2 + pr_dd) / rhoc^2;   d.Frr(~ok) = NaN; end
 end
 
 

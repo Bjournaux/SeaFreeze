@@ -94,7 +94,7 @@ persistent warned
 if dilute
     lo = T(:) < Tmin;
     if any(lo)
-        [G(lo), rho(lo)] = ideal_gas(sp, P(lo), T(lo));
+        [G(lo), rho(lo)] = sf_ideal_gas(sp, P(lo), T(lo));
         if isempty(warned)
             warning('SeaFreeze:diluteExtension', ...
                 ['Sublimation below %.4g K (the lowest temperature of %s) uses the dilute-vapour ' ...
@@ -105,20 +105,6 @@ if dilute
         end
     end
 end
-end
-
-function [G, rho] = ideal_gas(sp, P, T)
-% Gibbs energy (J/kg) and density of the surface's ideal-gas part (Z = 1).
-R = double(sp.R); rhoc = double(sp.rhoc); Tc = double(sp.Tc);
-P = P(:); T = T(:);
-rho = P * 1e6 ./ (R * T);
-d = rho / rhoc; tau = Tc ./ T;
-n0 = double(sp.phi0_n0(:)'); g0 = double(sp.phi0_g0(:)');
-phi0 = log(d) + n0(1) + n0(2) * tau + n0(3) * log(tau);
-for i = 1:numel(g0)
-    phi0 = phi0 + n0(3+i) * log(1 - exp(-g0(i) * tau));
-end
-G = R * T .* (phi0 + 1);
 end
 
 function [P, rA, rB] = newton_lnP(fA, fB, T, P0)

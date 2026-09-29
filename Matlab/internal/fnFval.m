@@ -327,9 +327,17 @@ function rho = invert_P(sp, P, T, rlim, Tlim, branch)
     idx  = find(inT);
     [Tu, ~, jT] = unique(T(idx));
     nTu = numel(Tu);
-    RG = repmat(rg, nTu, 1);
-    TG = reshape(repmat(Tu(:).', nr, 1), [], 1);
-    pg = reshape(P_dPdrho(sp, RG, TG), nr, nTu);        % Pa
+    if is_psi(sp)
+        dg = psi_val(sp, rg, Tu, struct('Fr', true, 'Frr', true), 'grid');   % tensor grid: fast
+        Fr = dg.Fr; Frr = dg.Frr;
+    else
+        if isfield(sp, 'Tc'), tu = log(Tu / sp.Tc); else, tu = Tu; end
+        Fr  = reshape(sp_val(sp, [1 0], {rg.', tu(:).'}), nr, nTu);
+        Frr = reshape(sp_val(sp, [2 0], {rg.', tu(:).'}), nr, nTu);
+    end
+    pg  = bsxfun(@times, rg.^2, Fr);                            % P, Pa
+    dpg = bsxfun(@times, 2 * rg, Fr) + bsxfun(@times, rg.^2, Frr);   % dP/drho
+    col = zeros(n, 1); col(idx) = jT;                            % T column of each point
     for j = 1:nTu
         pts = idx(jT == j);
         s   = pg(:, j) - Ppa(pts).';                 % nr-by-npts
@@ -347,11 +355,13 @@ function rho = invert_P(sp, P, T, rlim, Tlim, branch)
     hasr = khi > 0;
     ih = find(hasr);
     rho_hi = NaN(n, 1);
-    rho_hi(ih) = newton_bracket(sp, rg(khi(ih)), rg(khi(ih) + 1), Ppa(ih), T(ih));
+    x0 = hermite_guess(rg, pg, dpg, khi(ih), col(ih), Ppa(ih));
+    rho_hi(ih) = newton_bracket(sp, rg(khi(ih)), rg(khi(ih) + 1), Ppa(ih), T(ih), x0);
     rho = rho_hi;
     two = find(hasr & klo ~= khi);
     if ~isempty(two)
-        rlo = newton_bracket(sp, rg(klo(two)), rg(klo(two) + 1), Ppa(two), T(two));
+        x0 = hermite_guess(rg, pg, dpg, klo(two), col(two), Ppa(two));
+        rlo = newton_bracket(sp, rg(klo(two)), rg(klo(two) + 1), Ppa(two), T(two), x0);
         % lower Gibbs energy wins: G = F + rho F_r
         nd = struct('F', true, 'Fr', true);
         dh = helm_derivs(sp, rho_hi(two), T(two), nd);
@@ -364,12 +374,42 @@ function rho = invert_P(sp, P, T, rlim, Tlim, branch)
 end
 
 
-function x = newton_bracket(sp, a, b, Pt, ta)
+function x = hermite_guess(rg, pg, dpg, k, j, Pt)
+% Starting density inside each bracket [rg(k), rg(k+1)] at T column j: the
+% root of the cubic Hermite interpolant of P(rho) built from P and dP/drho at
+% the bracket ends (already known from the grid), so Newton needs ~1 step.
+    k = k(:); j = j(:); Pt = Pt(:);
+    nr = numel(rg);
+    i0 = k + (j - 1) * nr; i1 = i0 + 1;
+    a = rg(k); h = rg(k + 1) - a;
+    pa = pg(i0); pb = pg(i1); da = dpg(i0) .* h; db = dpg(i1) .* h;
+    t = min(max((Pt - pa) ./ (pb - pa), 0), 1);
+    t(~isfinite(t)) = 0.5;
+    for it = 1:12
+        t2 = t.^2; t3 = t2 .* t;
+        f  = (2*t3 - 3*t2 + 1) .* pa + (t3 - 2*t2 + t) .* da + (-2*t3 + 3*t2) .* pb + (t3 - t2) .* db - Pt;
+        df = (6*t2 - 6*t) .* pa + (3*t2 - 4*t + 1) .* da + (-6*t2 + 6*t) .* pb + (3*t2 - 2*t) .* db;
+        tn = t - f ./ df;
+        bad = ~isfinite(tn) | tn < 0 | tn > 1;
+        tn(bad) = t(bad);
+        t = tn;
+    end
+    x = a + t .* h;
+end
+
+
+function x = newton_bracket(sp, a, b, Pt, ta, x0)
 % Bracket-safeguarded Newton for rho^2 F_r = Pt (Pa) with P increasing on [a,b].
+% Converged when the Newton step is below 1e-9 rho: with quadratic
+% convergence the density after that step is accurate to ~1e-16 relative.
     a = a(:); b = b(:); Pt = Pt(:); ta = ta(:);
-    pa = P_dPdrho(sp, a, ta);
-    pb = P_dPdrho(sp, b, ta);
-    x  = a + (Pt - pa) .* (b - a) ./ (pb - pa);
+    if nargin >= 6 && ~isempty(x0)
+        x = x0(:);
+    else
+        pa = P_dPdrho(sp, a, ta);
+        pb = P_dPdrho(sp, b, ta);
+        x  = a + (Pt - pa) .* (b - a) ./ (pb - pa);
+    end
     bad = ~isfinite(x) | x < a | x > b;
     x(bad) = (a(bad) + b(bad)) / 2;
     live = true(numel(x), 1);
@@ -385,7 +425,7 @@ function x = newton_bracket(sp, a, b, Pt, ta)
         xn(out) = (al(out) + bl(out)) / 2;
         step = abs(xn - xl);
         a(live) = al; b(live) = bl; x(live) = xn;
-        done = step <= 1e-12 * xn | f == 0;
+        done = (step <= 1e-9 * xn & ~out) | f == 0;
         live(live) = ~done;
         if ~any(live), break; end
     end
