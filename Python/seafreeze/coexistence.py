@@ -16,7 +16,7 @@ share the IAPWS-95 reference state: U = S = 0 for liquid at the triple point).
 Public API
 ----------
 saturation(T, fluid='water3', path=defpath)          -> Coexistence(P, T, rho_A, rho_B)
-sublimation(T, ice='Ih', fluid='water3', dilute_extension=False, path=defpath)
+sublimation(T, ice='Ih', fluid='water3', dilute_extension=True, path=defpath)
                                                      -> Coexistence(P, T, rho_A, rho_B)
 
 Baptiste Journaux - 2026
@@ -130,18 +130,36 @@ def saturation(T, fluid='water3', path=defpath):
     return Coexistence(P=P, T=T, rho_A=rl, rho_B=rv)
 
 
-def sublimation(T, ice='Ih', fluid='water3', dilute_extension=False, path=defpath):
+_DILUTE_WARNED = False
+
+
+def _warn_dilute(Tmin, fluid):
+    """Warn once per session that the dilute-vapour extension is in use."""
+    global _DILUTE_WARNED
+    if not _DILUTE_WARNED:
+        _DILUTE_WARNED = True
+        warnings.warn(
+            f"Sublimation below {Tmin:.4g} K (the lowest temperature of {fluid}) uses the "
+            "dilute-vapour extension: the vapour is the surface's ideal-gas part (Z = 1). "
+            "Non-ideality there changes p_sub by ~1e-5 relative. Pass dilute_extension=False "
+            "for NaN instead. (Shown once per session.)", UserWarning, stacklevel=3)
+
+
+def sublimation(T, ice='Ih', fluid='water3', dilute_extension=True, path=defpath):
     """Ice-vapour coexistence (sublimation pressure).
 
     :param T:     temperature(s) in K.  The vapour comes from the Helmholtz
                   fluid, so T must lie in its range (water3: T >= 230 K).
     :param ice:   ice phase (default 'Ih')
     :param fluid: Helmholtz material providing the vapour (default 'water3')
-    :param dilute_extension: below the fluid's lowest temperature, treat the
-                  vapour as the surface's ideal-gas part alone (Z = 1).  At
-                  sublimation pressures (< 10 Pa below 230 K) the neglected
-                  virial terms change p_sub by ~1e-5 relative.  This is an
-                  EXTRAPOLATION of the fluid surface, off by default.
+    :param dilute_extension: (default True) below the fluid's lowest
+                  temperature, treat the vapour as the surface's ideal-gas
+                  part alone (Z = 1).  At sublimation pressures (< 10 Pa below
+                  230 K) the neglected virial terms change p_sub by ~1e-5
+                  relative (validated against the NIST measurements of Bielska
+                  et al. 2013, 175-253 K).  It extrapolates the fluid surface,
+                  so a UserWarning is issued the first time it is used in a
+                  session.  False returns NaN below the surface.
     :return:      Coexistence(P [MPa], T [K], rho_A = ice, rho_B = vapour)
     """
     if fluid not in helmholtz_phases:
@@ -159,6 +177,7 @@ def sublimation(T, ice='Ih', fluid='water3', dilute_extension=False, path=defpat
             lo = T_ < Tmin
             if lo.any():
                 G[lo], rho[lo] = eh.ideal_gas(sp, P[lo], T_[lo])
+                _warn_dilute(Tmin, fluid)
         return G, rho
     P, ri, rv = _solve(lambda P, T_: _G_rho(ice, P, T_, path), vapour, T, P0)
     return Coexistence(P=P, T=T, rho_A=ri, rho_B=rv)

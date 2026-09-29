@@ -14,9 +14,12 @@ function out = SF_getprop(PT, material, props, varargin)
 %    out = SF_getprop(PT, material)           % all supported properties
 %    out = SF_getprop(PT, material, props)    % only the listed properties
 %    out = SF_getprop(rhoT, material, props, 'input', 'rhoT')
-%                                  % Helmholtz materials only: evaluate at
-%                                  % density-temperature points {rho,T} or
-%                                  % [rho T] (kg/m^3, K); P is returned.
+%                                  % evaluate at density-temperature points
+%                                  % {rho,T} or [rho T] (kg/m^3, K) — for
+%                                  % NaClaq {rho,T,m} or [rho T m]; P (MPa)
+%                                  % is returned.  Helmholtz materials are
+%                                  % evaluated directly; Gibbs materials
+%                                  % solve P(rho,T) with SF_rho2P first.
 %    out = SF_getprop(PT, material, props, 'branch', 'liquid')
 %                                  % Helmholtz materials only: which fluid
 %                                  % root to return at (P,T): 'stable'
@@ -142,14 +145,21 @@ for kv = 1:2:numel(varargin)
     end
     nv_given{end+1} = name; %#ok<AGROW>
 end
-if ~isempty(nv_given) && ~ismember(material, defs.helmholtz_phases)
+if any(strcmp(nv_given, 'branch')) && ~ismember(material, defs.helmholtz_phases)
     error('SeaFreeze:badInput', ...
-          '''input'' and ''branch'' are only supported for Helmholtz materials (%s).', ...
+          '''branch'' is only supported for Helmholtz materials (%s).', ...
           strjoin(defs.helmholtz_phases, ', '));
 end
 
 % --- Validate PT shape & contents ------------------------------------------
 sf_validate_PT(PT, material);
+
+% --- (rho,T) input for Gibbs splines: solve P(rho,T), then evaluate at (P,T)
+if strcmp(input_mode, 'rhoT') && ~ismember(material, defs.helmholtz_phases)
+    if nargin < 3, props = []; end
+    out = gibbs_rhoT(PT, material, props, ismember(material, nacl_materials));
+    return
+end
 
 % --- Resolve and validate props --------------------------------------------
 if nargin < 3 || isempty(props)
@@ -320,4 +330,60 @@ end
 if user_wants_F
     out.F = out.A;
     if ~user_wants_A, out = rmfield(out, 'A'); end
+end
+
+
+% ============================================================================
+function out = gibbs_rhoT(X, material, props, is_nacl)
+% Density-temperature input for a Gibbs material: P(rho,T[,m]) from SF_rho2P
+% (Newton on the Gibbs spline, 1e-6 MPa), then the normal (P,T) evaluation.
+% Outputs have the input's shape (n_rho-by-nT[-by-nm] for grids, columns for
+% scatter); P is computed, rho and T echo the input; NaN where no pressure in
+% the spline's range gives the requested density.
+gridded = iscell(X);
+if gridded
+    if is_nacl
+        [R, TT, M] = ndgrid(X{1}(:), X{2}(:), X{3}(:));
+    else
+        [R, TT] = ndgrid(X{1}(:), X{2}(:)); M = [];
+    end
+else
+    R = X(:,1); TT = X(:,2);
+    if is_nacl, M = X(:,3); else, M = []; end
+end
+sz = size(R); n = numel(R);
+if is_nacl
+    P = SF_rho2P(R(:), TT(:), material, M(:), 'tol', 1e-6);
+    PTs = [P(:) TT(:) M(:)];
+else
+    P = SF_rho2P(R(:), TT(:), material, 'tol', 1e-6);
+    PTs = [P(:) TT(:)];
+end
+P = P(:);
+ok = isfinite(P);
+if any(ok)
+    o = SF_getprop(PTs(ok, :), material, props);
+else
+    % nothing solvable: evaluate one in-range point only for the field names
+    rng = SF_phase_range(material);
+    q = [mean(rng.P) mean(rng.T)];
+    if is_nacl, q(3) = mean(rng.m); end
+    o = SF_getprop(q, material, props);
+end
+nok = nnz(ok);
+out = struct();
+fn = fieldnames(o);
+for k = 1:numel(fn)
+    v = o.(fn{k});
+    full = NaN(n, 1);
+    if any(ok) && numel(v) == nok, full(ok) = v(:); end
+    out.(fn{k}) = reshape(full, sz);
+end
+if isempty(props) || any(strcmp(cellstr(props), 'P')), out.P = reshape(P, sz); end
+if gridded
+    if isfield(out, 'rho'), out.rho = X{1}(:); end
+    if isfield(out, 'T'),   out.T   = X{2}(:); end
+else
+    if isfield(out, 'rho'), out.rho = R(:); end
+    if isfield(out, 'T'),   out.T   = TT(:); end
 end

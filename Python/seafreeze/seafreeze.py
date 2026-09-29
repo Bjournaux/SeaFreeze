@@ -176,12 +176,19 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
     mus, muw, Va, Cpa, Vm, Cpm, phi, Vex, aw,
     m (mol/kg echo), xs, xw, f, Vw (cm³/mol)
 
+    Density input
+    -------------
+    With ``rhoT=True`` the first coordinate of PTm is density (kg/m³)
+    instead of pressure, and P (MPa) is returned as a computed property.
+    Helmholtz materials are evaluated directly at (rho, T); Gibbs materials
+    first solve P(rho, T[, m]) with ``rho2P`` (1e-6 MPa), then evaluate at
+    (P, T).  rho and T echo the input; NaN where no pressure in the spline's
+    range gives the requested density.
+
     Helmholtz materials ('water3')
     ------------------------------
-    The EOS is a Helmholtz energy F(rho,T); (P,T) input is inverted to the
-    densest mechanically stable density.  With ``rhoT=True`` the first
-    coordinate of PTm is density (kg/m³) instead of pressure, and P (MPa) is
-    returned as a computed property.  At (P,T) the fluid root is chosen by
+    The EOS is a Helmholtz energy F(rho,T); (P,T) input is inverted to a
+    mechanically stable density.  At (P,T) the fluid root is chosen by
     ``branch``: 'stable' (default, lower Gibbs energy — vapour below the
     saturation pressure, liquid above), 'liquid' or 'vapor' (metastable
     branches allowed).
@@ -197,7 +204,7 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
     :param phase:   Material code — key of the ``phases`` dict.
     :param path:    Path to the ``splines/`` directory (default: package splines).
     :param tdvSpec: Optional property names to compute; default = all supported.
-    :param rhoT:    Helmholtz materials only: PTm holds (rho, T) instead of (P, T).
+    :param rhoT:    PTm holds (rho, T[, m]) instead of (P, T[, m]); all materials.
     :param branch:  Helmholtz materials only: 'stable' | 'liquid' | 'vapor'.
     :return:        Object with computed properties as named attributes.
     """
@@ -212,9 +219,11 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
                              ', '.join(phases.keys()) + '.')
 
         is_helm = phase in helmholtz_phases
-        if (rhoT or branch != 'stable') and not is_helm:
-            raise ValueError("rhoT / branch are only supported for Helmholtz materials ("
+        if branch != 'stable' and not is_helm:
+            raise ValueError("branch is only supported for Helmholtz materials ("
                              + ', '.join(sorted(helmholtz_phases)) + ").")
+        if rhoT and not is_helm:
+            return _gibbs_rhoT(PTm, phase, path, tdvSpec)
 
         isscatter = _is_scatter(PTm)
         want_set  = set(tdvSpec)
@@ -282,6 +291,54 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
     finally:
         if not verbose:
             lbftd_log.setLevel(logging.WARNING)
+
+
+def _gibbs_rhoT(PTm, phase, path, tdvSpec):
+    """(rho, T[, m]) input for a Gibbs material: P from rho2P, then (P, T[, m])."""
+    from .rho2P import rho2P
+    is_nacl = phase.startswith('NaClaq')
+    isscatter = _is_scatter(PTm)
+    if isscatter:
+        R = np.array([t[0] for t in PTm], float)
+        TT = np.array([t[1] for t in PTm], float)
+        M = np.array([t[2] for t in PTm], float) if is_nacl else None
+        shape = R.shape
+    else:
+        axes = [np.asarray(a, float).ravel() for a in (PTm[:3] if is_nacl else PTm[:2])]
+        grids = np.meshgrid(*axes, indexing='ij')
+        shape = grids[0].shape
+        R, TT = grids[0].ravel(), grids[1].ravel()
+        M = grids[2].ravel() if is_nacl else None
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        P = np.asarray(rho2P(R, TT, phase, m=M, tol=1e-6, path=path), float).ravel()
+    ok = np.isfinite(P)
+    pts = np.empty(int(ok.sum()), dtype=object)
+    for j, i in enumerate(np.flatnonzero(ok)):
+        pts[j] = (P[i], TT[i], M[i]) if is_nacl else (P[i], TT[i])
+    if ok.any():
+        o = vars(getProp(pts, phase, path, *tdvSpec))
+    else:
+        rng = __import__('seafreeze.phaselines', fromlist=['phase_range']).phase_range(phase, path)
+        q = np.empty(1, dtype=object)
+        q[0] = ((np.mean(rng.P), np.mean(rng.T), np.mean(rng.m)) if is_nacl
+                else (np.mean(rng.P), np.mean(rng.T)))
+        o = vars(getProp(q, phase, path, *tdvSpec))
+    n = R.size
+    out = {}
+    for k, v in o.items():
+        v = np.asarray(v)
+        full = np.full(n, np.nan)
+        if ok.any() and v.size == ok.sum():
+            full[ok] = v.ravel()
+        out[k] = full.reshape(shape)
+    if not tdvSpec or 'P' in tdvSpec:
+        out['P'] = P.reshape(shape)
+    if 'rho' in out:
+        out['rho'] = R.reshape(shape) if isscatter else np.asarray(PTm[0], float).ravel()
+    if 'T' in out:
+        out['T'] = TT.reshape(shape) if isscatter else np.asarray(PTm[1], float).ravel()
+    return types.SimpleNamespace(**out)
 
 
 def whichphase(PTm, solute='water1', path=defpath):

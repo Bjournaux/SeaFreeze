@@ -16,6 +16,7 @@
 here = fileparts(mfilename('fullpath'));
 root = fileparts(here);
 addpath(fullfile(root, 'internal'));
+addpath(fullfile(root, 'internal', 'compat'));
 addpath(fullfile(root, 'legacy'));
 addpath(fullfile(root, 'legacy', 'LocalBasisFunction'));
 

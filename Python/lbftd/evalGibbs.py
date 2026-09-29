@@ -17,6 +17,20 @@ log.addHandler(stream)
 log.setLevel(logging.WARNING)
 
 
+def _gridAxes(PTM):
+    """Grid axes as an object array of 1-D float vectors.
+
+    np.array([P, T], dtype=object) silently becomes a 2-D object array when P
+    and T have the same length; its rows then reach scipy's splev with dtype
+    object and fail.  Normalise every axis to a float vector here.
+    """
+    axes = [np.asarray(a, dtype=float).ravel() for a in PTM]
+    out = np.empty(len(axes), dtype=object)
+    for i, a in enumerate(axes):
+        out[i] = a
+    return out
+
+
 def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapolate=False, allowExtrapolations=False):
     """ Calculates thermodynamic variables for solutions based on a spline giving Gibbs energy
     This currently only supports single-solute solutions.
@@ -59,6 +73,7 @@ def evalSolutionGibbsGrid(gibbsSp, PTM, *tdvSpec, verbose=False, failOnExtrapola
                     the output will also include P, T, and M (if provided) properties
     """
     statevarnames = _getSupportedThermodynamicVariables()
+    PTM = _gridAxes(PTM)
     [dimCt, tdvSpec, addedTdvs] = _parseInput(gibbsSp, *tdvSpec)
     _checkInputs(gibbsSp, dimCt, tdvSpec, PTM, failOnExtrapolate)
     tdvout = createThermodynamicStatesObj(tdvSpec, PTM, initializetdvs=True)  # this has the original PTM

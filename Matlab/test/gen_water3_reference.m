@@ -15,7 +15,7 @@
 
 here = fileparts(mfilename('fullpath'));
 root = fileparts(here);
-addpath(root); addpath(fullfile(root, 'internal'));
+addpath(root); addpath(fullfile(root, 'internal')); addpath(fullfile(root, 'internal', 'compat'));
 outdir = fullfile(here, 'fixtures');
 if ~exist(outdir, 'dir'), mkdir(outdir); end
 
@@ -51,5 +51,7 @@ s = SF_getprop([Pm(:) Tm(:)], 'water3');
 w3.P = P; w3.T = T; w3.grid = g; w3.scatter = s;
 w3.sat = SF_coexistence('saturation', [273.16 300 400 500 600 640]);
 w3.sub = SF_coexistence('sublimation', [180 200 230 250 273.16], 'dilute_extension', true);
+rT = SF_getprop({[1000 1050 1100 1200], [280 300 330 360]}, 'water1', {'P','G','Cp'}, 'input', 'rhoT');
+w3.rhoT_water1 = struct('rho', [1000 1050 1100 1200], 'T', [280 300 330 360], 'P', rT.P, 'G', rT.G, 'Cp', rT.Cp);
 save(fullfile(outdir, 'water3_getprop_reference.mat'), 'w3', '-v7');
 fprintf('Wrote water3_getprop_reference.mat\n');

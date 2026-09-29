@@ -10,6 +10,7 @@ function test_fnFval()
 
 here = fileparts(mfilename('fullpath'));
 addpath(fullfile(fileparts(here), 'internal'));
+addpath(fullfile(fileparts(here), 'internal', 'compat'));
 addpath(fileparts(here));
 
 np = 0; nf = 0;
@@ -98,13 +99,28 @@ sc = SF_getprop([P(3) T(3)], 'water3');
 % out of range -> NaN, no error
 z = SF_getprop([100 200; 1e7 300], 'water3', {'rho','G'});
 [np,nf] = check('out-of-domain PT -> NaN', all(isnan(z.rho)) && all(isnan(z.G)), np, nf);
-% rhoT input refused for Gibbs materials
+% branch option refused for Gibbs materials
 try
-    SF_getprop([1000 300], 'water1', 'rho', 'input', 'rhoT'); bad = false;
+    SF_getprop([100 300], 'water1', 'rho', 'branch', 'liquid'); bad = false;
 catch e
     bad = strcmp(e.identifier, 'SeaFreeze:badInput');
 end
-[np,nf] = check('input rhoT refused for Gibbs materials', bad, np, nf);
+[np,nf] = check('branch refused for Gibbs materials', bad, np, nf);
+
+% (rho,T) input for Gibbs splines: P from SF_rho2P, then (P,T) evaluation
+g1 = SF_getprop({[1000 1050 1100], [280 300 330]}, 'water1', {'P','rho','G','Cp','T'}, 'input', 'rhoT');
+[Pg, Tg] = deal(g1.P(:), reshape(repmat([280 300 330], 3, 1), [], 1));
+chk1 = SF_getprop([Pg Tg], 'water1', {'rho','G','Cp'});
+[np,nf] = check(sprintf('rhoT grid water1: shape, rho round trip %.1e', max(abs(chk1.rho - reshape(repmat([1000;1050;1100],1,3),[],1)))), ...
+    isequal(size(g1.P), [3 3]) && isequal(g1.rho, [1000;1050;1100]) && isequal(g1.T, [280;300;330]) && ...
+    max(abs(chk1.rho - reshape(repmat([1000;1050;1100],1,3),[],1))) < 1e-4 && ...
+    max(abs(chk1.G - g1.G(:))) < 1e-9 * max(abs(g1.G(:))) + 1e-9, np, nf);
+g6 = SF_getprop([1330 260; 1360 270; 2000 270], 'VI', {'P','Vp','shear'}, 'input', 'rhoT');
+[np,nf] = check('rhoT scatter ice VI incl. shear/Vp; out-of-range -> NaN', ...
+    all(isfinite(g6.P(1:2))) && all(isfinite(g6.Vp(1:2))) && isnan(g6.P(3)) && isnan(g6.Vp(3)), np, nf);
+gn = SF_getprop([1050 300 1; 1100 320 2], 'NaClaq', {'P','rho','muw'}, 'input', 'rhoT');
+bk = SF_getprop([gn.P gn.rho(:)*0 + [300; 320] [1; 2]], 'NaClaq', 'rho');
+[np,nf] = check('rhoT scatter NaClaq (P,T,m) round trip', max(abs(bk.rho - [1050; 1100])) < 1e-4, np, nf);
 
 % branch selection: vapour below the saturation pressure, liquid above
 v  = SF_getprop([1e-3 300; 0.1 400; 0.1 300; 10 400], 'water3', {'rho','G'});
@@ -180,12 +196,12 @@ r1408 = 611.657e-6 * exp((-0.212144006e2*th.^0.333333333e-2 + 0.273203819e2*th.^
         - 0.610598130e1*th.^0.170333333e1) ./ th);
 e = max(abs(su.P ./ r1408 - 1));
 [np,nf] = check(sprintf('sublimation (Ih + water3) vs IAPWS R14-08: max %.1e', e), e < 2e-4, np, nf);
-ex = SF_coexistence('sublimation', [175 200], 'dilute_extension', true);
-nx = SF_coexistence('sublimation', [175 200]);
+ex = SF_coexistence('sublimation', [175 200]);                          % default: extension on
+nx = SF_coexistence('sublimation', [175 200], 'dilute_extension', false);
 th = [175; 200] / 273.16;
 r1408 = 611.657e-6 * exp((-0.212144006e2*th.^0.333333333e-2 + 0.273203819e2*th.^0.120666667e1 ...
         - 0.610598130e1*th.^0.170333333e1) ./ th);
-[np,nf] = check('sublimation below 230 K: NaN by default, R14-08 +-2e-4 with dilute_extension', ...
+[np,nf] = check('sublimation below 230 K: dilute extension by default (R14-08 +-2e-4), NaN when off', ...
     all(isnan(nx.P)) && max(abs(ex.P ./ r1408 - 1)) < 2e-4, np, nf);
 
 fprintf('\n%d passed, %d failed\n', np, nf);

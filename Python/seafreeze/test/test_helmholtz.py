@@ -132,9 +132,40 @@ def test_branch_selection_water3():
     assert vp.rho[0] < 1 and vp.G[0] > v.G[2]
 
 
-def test_rhoT_refused_for_gibbs():
+def test_branch_refused_for_gibbs():
     with pytest.raises(ValueError):
-        sf.getProp(_scatter([1000], [300]), 'water1', defpath, 'rho', rhoT=True)
+        sf.getProp(_scatter([100], [300]), 'water1', defpath, 'rho', branch='liquid')
+
+
+def test_rhoT_gibbs_grid_water1():
+    rho = np.array([1000., 1050, 1100]); T = np.array([280., 300, 330])
+    g = sf.getProp(_grid(rho, T), 'water1', defpath, 'P', 'rho', 'G', 'T', rhoT=True)
+    assert g.P.shape == (3, 3)
+    assert np.array_equal(g.rho, rho) and np.array_equal(g.T, T)
+    Pm, Tm = g.P.ravel(), np.meshgrid(rho, T, indexing='ij')[1].ravel()
+    b = sf.getProp(_scatter(Pm, Tm), 'water1', defpath, 'rho', 'G')
+    assert np.max(np.abs(b.rho - np.repeat(rho, 3))) < 1e-4
+    assert _relerr(b.G, g.G.ravel()) < 1e-9
+
+
+def test_rhoT_gibbs_ice_and_nacl():
+    s6 = sf.getProp(_scatter([1330, 1360, 2000], [260, 270, 270]), 'VI', defpath, 'P', 'Vp', rhoT=True)
+    assert np.all(np.isfinite(s6.P[:2])) and np.all(np.isfinite(s6.Vp[:2]))
+    assert np.isnan(s6.P[2]) and np.isnan(s6.Vp[2])
+    pts = np.empty(2, dtype=object); pts[0] = (1050., 300., 1.); pts[1] = (1100., 320., 2.)
+    n = sf.getProp(pts, 'NaClaq', defpath, 'P', 'rho', 'muw', rhoT=True)
+    back = np.empty(2, dtype=object); back[0] = (n.P[0], 300., 1.); back[1] = (n.P[1], 320., 2.)
+    assert np.max(np.abs(sf.getProp(back, 'NaClaq', defpath, 'rho').rho - [1050, 1100])) < 1e-4
+
+
+def test_rhoT_matlab_parity_water1():
+    w3 = _fix('water3_getprop_reference.mat')['w3']
+    if not hasattr(w3, 'rhoT_water1'):
+        pytest.skip('reference predates Gibbs rhoT; rerun gen_water3_reference.m')
+    r = w3.rhoT_water1
+    o = sf.getProp(_grid(r.rho, r.T), 'water1', defpath, 'P', 'G', 'Cp', rhoT=True)
+    for k in ('P', 'G', 'Cp'):
+        assert _relerr(getattr(o, k), getattr(r, k)) < 1e-6, k
 
 
 def test_rho2P_and_range_water3():
@@ -218,11 +249,11 @@ def test_sublimation_vs_R1408_and_NIST():
     T = np.array([230, 240, 250, 260, 270, 273.16])
     s = sf.sublimation(T)
     assert np.max(np.abs(s.P / cx.psub_iapws(T) - 1)) < 2e-4
-    # below 230 K: NaN by default, dilute-vapour extension on request
-    assert np.all(np.isnan(sf.sublimation([175.0, 200.0]).P))
+    # below 230 K: NaN when the dilute-vapour extension is switched off
+    assert np.all(np.isnan(sf.sublimation([175.0, 200.0], dilute_extension=False).P))
     from seafreeze.test.water3_vapor_figures import BIELSKA2013
     Tb, pb, ub = BIELSKA2013.T
-    e = sf.sublimation(Tb, dilute_extension=True)
+    e = sf.sublimation(Tb)                                   # extension on by default
     # every NIST Bielska et al. (2013) point within 3 sigma
     assert np.all(np.abs(e.P * 1e6 - pb) < 3 * ub)
 
@@ -235,3 +266,15 @@ def test_coexistence_vs_matlab():
     assert _relerr(s.P, w3.sat.P) < 1e-9
     b = sf.sublimation(w3.sub.T, dilute_extension=True)
     assert _relerr(b.P, w3.sub.P) < 1e-9
+
+
+def test_dilute_extension_warns_once(monkeypatch):
+    from seafreeze import coexistence as cx
+    monkeypatch.setattr(cx, '_DILUTE_WARNED', False)
+    with pytest.warns(UserWarning, match='dilute-vapour extension'):
+        sf.sublimation([200.0])
+    import warnings as w
+    with w.catch_warnings():
+        w.simplefilter('error')                              # a second warning would raise
+        sf.sublimation([190.0])
+        sf.sublimation([250.0])                              # inside the surface: never warns

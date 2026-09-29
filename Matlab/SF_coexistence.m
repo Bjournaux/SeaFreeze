@@ -14,7 +14,7 @@ function out = SF_coexistence(kind, T, varargin)
 %   out = SF_coexistence('saturation',  T)                 % T < Tc, water3
 %   out = SF_coexistence('sublimation', T)                 % ice Ih + water3 vapour
 %   out = SF_coexistence('sublimation', T, 'ice', 'Ih', 'fluid', 'water3')
-%   out = SF_coexistence('sublimation', T, 'dilute_extension', true)
+%   out = SF_coexistence('sublimation', T, 'dilute_extension', false)
 %
 % Output struct (column vectors, one entry per T):
 %   out.T      (K)
@@ -22,10 +22,14 @@ function out = SF_coexistence(kind, T, varargin)
 %   out.rho_A  (kg/m^3)    liquid (saturation) or ice (sublimation)
 %   out.rho_B  (kg/m^3)    vapour
 %
-% 'dilute_extension' (sublimation only, default false): below the fluid's
+% 'dilute_extension' (sublimation only, default true): below the fluid's
 %   lowest temperature (230 K for water3) treat the vapour as the surface's
 %   ideal-gas part alone (Z = 1).  At those sublimation pressures (< 10 Pa)
-%   the neglected terms change p_sub by ~1e-5 relative.  An EXTRAPOLATION.
+%   the neglected terms change p_sub by ~1e-5 relative (validated against
+%   the NIST measurements of Bielska et al. 2013, 175-253 K).  It is an
+%   extrapolation of the fluid surface: a warning is issued the first time
+%   it is used in a session (id 'SeaFreeze:diluteExtension').  Pass false to
+%   get NaN below the surface instead.
 %
 % Starting values come from the IAPWS-95 auxiliary vapour-pressure equation
 % (Wagner & Pruss 2002, eq. 2.5) and IAPWS R14-08 (Wagner et al. 2011); the
@@ -36,7 +40,7 @@ function out = SF_coexistence(kind, T, varargin)
 p = inputParser;
 addParameter(p, 'ice', 'Ih', @(s) ischar(s) || isstring(s));
 addParameter(p, 'fluid', 'water3', @(s) ischar(s) || isstring(s));
-addParameter(p, 'dilute_extension', false, @(x) islogical(x) || isnumeric(x));
+addParameter(p, 'dilute_extension', true, @(x) islogical(x) || isnumeric(x));
 parse(p, varargin{:});
 ice = char(p.Results.ice); fluid = char(p.Results.fluid);
 dilute = logical(p.Results.dilute_extension);
@@ -85,11 +89,20 @@ G = o.G(:); rho = o.rho(:);
 end
 
 function [G, rho] = vapour(sp, fluid, P, T, dilute, Tmin)
+persistent warned
 [G, rho] = G_rho(fluid, P, T, 'vapor');
 if dilute
     lo = T(:) < Tmin;
     if any(lo)
         [G(lo), rho(lo)] = ideal_gas(sp, P(lo), T(lo));
+        if isempty(warned)
+            warning('SeaFreeze:diluteExtension', ...
+                ['Sublimation below %.4g K (the lowest temperature of %s) uses the dilute-vapour ' ...
+                 'extension: the vapour is the surface''s ideal-gas part (Z = 1). Non-ideality ' ...
+                 'there changes p_sub by ~1e-5 relative. Pass ''dilute_extension'', false for NaN ' ...
+                 'instead. (Shown once per session.)'], Tmin, fluid);
+            warned = true;
+        end
     end
 end
 end
