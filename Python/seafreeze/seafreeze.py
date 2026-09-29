@@ -110,6 +110,10 @@ for k, v in phases.items():
 # ---------------------------------------------------------------------------
 # Spline loading
 # ---------------------------------------------------------------------------
+# In-memory cache keyed by (file path, modification time): repeated calls
+# (coexistence solves, phase diagrams, rho2P) would otherwise re-read the
+# file each time, and Helmholtz splines keep their compiled evaluators in it.
+_SPLINE_CACHE = {}
 def _load_spline(splines_dir, material):
     """Load the Gibbs LBF spline for *material* from the per-spline folder structure.
 
@@ -131,7 +135,12 @@ def _load_spline(splines_dir, material):
             raise ValueError(f"Unknown material '{material}'. Supported: "
                              + ', '.join(k for k, v in _SPLINE_MAP.items() if v is not None))
     subfolder, filename = entry
-    sp = load.loadSpline(op.join(splines_dir, subfolder, filename), 'sp')
+    fpath = op.join(splines_dir, subfolder, filename)
+    key = (fpath, op.getmtime(fpath))
+    sp = _SPLINE_CACHE.get(key)
+    if sp is not None:
+        return sp
+    sp = load.loadSpline(fpath, 'sp')
     # Ensure NaClaq splines have metadata lbftd expects
     pd = phases.get(material)
     if pd is not None and pd.cutoff is not None:
@@ -141,6 +150,7 @@ def _load_spline(splines_dir, material):
         mw = sp.get('MW')
         if mw is not None and np.isscalar(mw):
             sp['MW'] = np.array([mH2O_kgmol, float(mw)])
+    _SPLINE_CACHE[key] = sp
     return sp
 
 

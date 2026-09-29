@@ -31,6 +31,7 @@ if ~isempty(rows)
             for c = 1:3
                 o = SF_getprop([P T], names{c}, {'G', 'S', 'rho'});
                 v(c, :) = [o.G o.S o.rho];
+                if o.G == 0, v(c, :) = NaN; end          % outside a Gibbs spline
             end
             if any(~isfinite(v(:))), break; end
             r = [v(1,1) - v(2,1); v(1,1) - v(3,1)];

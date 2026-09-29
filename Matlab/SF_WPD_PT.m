@@ -41,6 +41,10 @@ addParameter(p, 'fluid', 'water3');
 addParameter(p, 'ices', {'Ih','II','III','V','VI'});
 parse(p, varargin{:});
 o = p.Results;
+warning('SeaFreeze:longRuntime', ['SF_WPD_PT: computing the stable phase at %d (P,T) states ' ...
+        '(Gibbs minimisation over the Helmholtz fluid and the ices). This typically takes ' ...
+        '0.5-2 min depending on your machine; reduce ''nP''/''nT'' for a faster preview. ' ...
+        'Silence with warning(''off'',''SeaFreeze:longRuntime'').'], o.nP * o.nT);
 
 Pg = logspace(log10(o.P(1)), log10(o.P(2)), o.nP)';
 Tg = linspace(o.T(1), o.T(2), o.nT);

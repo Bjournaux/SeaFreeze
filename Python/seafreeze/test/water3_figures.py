@@ -109,7 +109,8 @@ def deviation_map(outdir):
     T = np.linspace(240, 500, 105)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        w3 = sf.getProp(grid(P, T), 'water3', sf.seafreeze.defpath, 'rho', 'Cp')
+        # liquid branch: compare like with like where water1 (a liquid-only EOS) is defined
+        w3 = sf.getProp(grid(P, T), 'water3', sf.seafreeze.defpath, 'rho', 'Cp', branch='liquid')
         w1 = sf.getProp(grid(P, T), 'water1', sf.seafreeze.defpath, 'rho', 'Cp')
         ph = sf.whichphase(grid(P, T))
     fig, axs = plt.subplots(1, 2, figsize=(12, 4.8), sharey=True)

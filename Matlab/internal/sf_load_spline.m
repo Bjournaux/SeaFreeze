@@ -76,12 +76,23 @@ if isempty(matfile)
     matfile = fullfile(root, 'splines', subfolder, filename);
 end
 
+% In-memory cache: repeated calls (SF_coexistence, phase diagrams, SF_rho2P)
+% would otherwise re-read the file every time (water3 is 2.2 MB).  Keyed by
+% file path; 'clear sf_load_spline' or 'clear functions' empties it.
+persistent CACHE_KEYS CACHE_SP
+if isempty(CACHE_KEYS), CACHE_KEYS = {}; CACHE_SP = {}; end
+hit = find(strcmp(CACHE_KEYS, matfile), 1);
+if ~isempty(hit)
+    sp = CACHE_SP{hit};
+    return
+end
 if exist(matfile, 'file') ~= 2
     error('sf_load_spline:missingFile', ...
           'Spline file for material ''%s'' is not installed: %s', material, matfile);
 end
 S  = load(matfile, 'sp');
 sp = S.sp;
+CACHE_KEYS{end+1} = matfile; CACHE_SP{end+1} = sp;
 
 end  % main function
 

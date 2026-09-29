@@ -204,7 +204,8 @@ def _GSrho(name, P, T, fluid, path):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         o = getProp(_scatter1(P, T), name, path, 'G', 'S', 'rho')
-    return float(np.ravel(o.G)[0]), float(np.ravel(o.S)[0]), float(np.ravel(o.rho)[0])
+    get = lambda k: float(np.ravel(getattr(o, k, [np.nan]))[0])   # out of range: no fields
+    return get('G'), get('S'), get('rho')
 
 
 def triple_points(pm, fluid='water3', path=defpath):

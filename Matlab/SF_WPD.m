@@ -1,6 +1,6 @@
 function fig = SF_WPD(varargin)
 % SF_WPD  Draw the H2O Water Phase Diagram.
-% Version 1.1.2
+% Version 1.2 beta
 % Baptiste Journaux - 2026
 %
 % Computes all phase boundaries dynamically from Gibbs energy splines
@@ -49,6 +49,11 @@ m_arr     = p.Results.m(:)';
 meta_arg  = p.Results.meta;
 do_labels = logical(p.Results.labels);
 liquid    = char(p.Results.liquid);
+if ~strcmp(liquid, 'water1')
+    warning('SeaFreeze:longRuntime', ['SF_WPD: melting curves from the Helmholtz fluid %s are ' ...
+            'computed by solving P(rho,T) at every grid point. This can take several minutes ' ...
+            'depending on your machine. Silence with warning(''off'',''SeaFreeze:longRuntime'').'], liquid);
+end
 is_nacl   = ismember(solute, {'nacl','naclaq'});
 
 % Parse meta option: 'default' | true/'all' | false/'none'
