@@ -22,7 +22,8 @@ here = fileparts(mfilename('fullpath'));
 mat_root = fileparts(here);
 % Add LocalBasisFunction first, then mat_root on top so the updated
 % Matlab/fnGval.m shadows any older copies in LocalBasisFunction/.
-addpath(fullfile(mat_root, 'LocalBasisFunction'));
+addpath(fullfile(mat_root, 'internal'));
+addpath(fullfile(mat_root, 'internal', 'compat'));
 addpath(mat_root);
 
 ref_path = fullfile(here, 'reference_SeaFreeze.mat');
@@ -49,7 +50,8 @@ end
 % missing in the loaded reference, point at the regeneration command.
 expected_cases = {'Ih_grid','Ih_scatter','II_grid','III_grid','V_grid', ...
                   'VI_grid','VII_X_French_grid','water1_grid','water1_scatter', ...
-                  'water_IAPWS95_grid','water2_grid','NaClaq_grid', ...
+                  'water_IAPWS95_grid','water2_grid','water3_grid','water3_scatter', ...
+                  'water3rhoT_scatter','water1rhoT_grid','NaClaq_grid', ...
                   'NaClaq_edges_grid','NaClaq_scatter'};
 missing = setdiff(expected_cases, fieldnames(ref));
 if ~isempty(missing)
@@ -124,8 +126,14 @@ for ci = 1:length(case_names)
     fprintf('\n== %s (%s, %s) ==\n', cn, phase, mode);
     case_pass = 0; case_info = 0; case_fail = 0;
 
+    rhoT = isfield(c, 'rhoT') && c.rhoT;     % coordinates are (rho,T); P is an output
+    if rhoT, props = [props, {'P'}]; end
     try
-        out = SF_getprop(PT, phase, props);
+        if rhoT
+            out = SF_getprop(PT, phase, props, 'input', 'rhoT');
+        else
+            out = SF_getprop(PT, phase, props);
+        end
     catch err
         fprintf('  [ERROR] SF_getprop threw: %s\n', err.message);
         fail_n = fail_n + 1;
@@ -139,8 +147,10 @@ for ci = 1:length(case_names)
 
     for j = 1:length(props)
         nm = props{j};
-        if ~isfield(c, nm) || ~isfield(out, nm), continue; end
-        [ok, mrel, mabs] = compare_arrays(c.(nm), out.(nm), rtol, atol);
+        refname = nm;
+        if rhoT && strcmp(nm, 'P'), refname = 'P_calc'; end   % P holds the densities there
+        if ~isfield(c, refname) || ~isfield(out, nm), continue; end
+        [ok, mrel, mabs] = compare_arrays(c.(refname), out.(nm), rtol, atol);
         if ok
             case_pass = case_pass + 1;
             if verbose

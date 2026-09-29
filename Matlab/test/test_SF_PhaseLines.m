@@ -231,7 +231,7 @@ end
 % Overlay onto an existing figure: pass the previous fig handle as 'plot'
 try
     o1 = SF_PhaseLines('Ih','water1','plot',true);
-    ax = gca(o1.fig);
+    ax = sf_gca(o1.fig);
     n_lines_before = numel(findobj(ax,'Type','Line'));
     o2 = SF_PhaseLines('VI','water1','plot',o1.fig);
     n_lines_after = numel(findobj(ax,'Type','Line'));

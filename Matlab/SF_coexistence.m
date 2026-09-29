@@ -96,12 +96,12 @@ if dilute
     if any(lo)
         [G(lo), rho(lo)] = sf_ideal_gas(sp, P(lo), T(lo));
         if isempty(warned)
+            warned = true;             % set first: shown once even if escalated to an error
             warning('SeaFreeze:diluteExtension', ...
                 ['Sublimation below %.4g K (the lowest temperature of %s) uses the dilute-vapour ' ...
                  'extension: the vapour is the surface''s ideal-gas part (Z = 1). Non-ideality ' ...
                  'there changes p_sub by ~1e-5 relative. Pass ''dilute_extension'', false for NaN ' ...
                  'instead. (Shown once per session.)'], Tmin, fluid);
-            warned = true;
         end
     end
 end

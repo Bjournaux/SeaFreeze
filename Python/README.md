@@ -528,6 +528,27 @@ The validation figures are produced by the scripts in `seafreeze/test/` (`water3
 ![How SeaFreeze evaluates a Helmholtz fluid at (P,T)](../assets/water3/water3_method.png)
 ![water3 over its full range](../assets/water3/water3_surface_maps.png)
 
+## Tests
+
+From `Python/`:
+
+```bash
+python -m pytest seafreeze            # all SeaFreeze tests (1.2: 227 tests, 286 subtests)
+python -m pytest seafreeze/test/test_helmholtz.py seafreeze/test/test_water3_extras.py \
+                 seafreeze/test/test_phasediagram.py   # water3, (rho,T) input, coexistence, phase diagrams
+```
+
+| File | Covers |
+|---|---|
+| `seafreeze/test/test_helmholtz.py` | water3 vs lbf-thermo's `psiH2O_val` and MATLAB (`Matlab/test/fixtures/`), (P,T) grid/scatter, identities, branches, `rhoT=True` for water3 and Gibbs splines, `rho2P`, `saturation` / `sublimation` vs IAPWS-95, IAPWS R14-08 and NIST data, dilute-extension warning, `whichphase` / `phase_lines` with water3 |
+| `seafreeze/test/test_phasediagram.py` | `phase_map`, `triple_points` vs literature, `wpd_PT` / `wpd_rhoT`, `melt_T_dq2026` |
+| `seafreeze/test/test_water3_extras.py` | spline cache, equal-length grids (Gibbs phases, NaClaq), `wpd(liquid='water3')` |
+| `seafreeze/test/test_getProp_vs_matlab.py` | every property vs MATLAB `SF_getprop` (13 cases incl. water3 and (ρ,T) input) |
+| `seafreeze/test/test_phaselines_vs_matlab.py`, `test_rho2P.py`, `test_whichphase.py`, `test_seafreeze.py`, `test_phaselines.py` | earlier features |
+
+The MATLAB-side references are regenerated with `Matlab/test/gen_getProp_reference.m` and
+`Matlab/test/gen_water3_reference.m` (see `Matlab/test/README.md`).
+
 ## Important remarks 
 ### Water representation
 The ice Gibbs parametrizations are optimized to be used with `water1` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will lead to incorrect melting curves. `water2` (Brown 2018) and `water_IAPWS95` (IAPWS-95) are provided for high-pressure extension (up to 100 GPa) and comparison only. The authors recommend `water1` for any application in the 200–355 K range and up to 2300 MPa. `water3` (Helmholtz surface, 1.2 beta) shares the same reference state and reproduces the `water1` melting curves within 0.05 K up to 632 MPa; it is the phase to use for vapour, liquid–vapour and supercritical states (see its [range of validity](#range-of-validity)).

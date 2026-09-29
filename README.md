@@ -473,6 +473,19 @@ The Python and Matlab READMEs document every option.
 
 See the Python and Matlab READMEs for full documentation and usage examples.
 
+## Tests
+
+Both versions ship with test suites that also cross-validate each other (every property of every material, including
+water3 and (ρ,T) input, in both directions):
+
+```bash
+cd Python && python -m pytest seafreeze                           # Python
+cd Matlab && matlab -batch "run_all_tests"                        # MATLAB
+cd Matlab && octave --no-gui --eval "run_all_tests"               # GNU Octave
+```
+
+See [`Matlab/test/README.md`](Matlab/test/README.md) and the Python README for what each suite covers.
+
 ## Important remarks 
 ### Water representations
 The ices' Gibbs parametrizations are optimized to be used with 'water1' Gibbs LBF from Bollengier et al. (2019), 

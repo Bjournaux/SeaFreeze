@@ -70,14 +70,21 @@ end
 % --- Deprecation: SeaFreeze() should warn once and return same result -----
 try
     clear SeaFreeze   % reset the persistent `warned` flag
-    s = warning('on', 'SeaFreeze:deprecated');
+    % Escalate the warning to an error to detect it: lastwarn is unreliable under
+    % Octave, which also records disabled warnings (e.g. from its own fullfile).
+    s = warning('error', 'SeaFreeze:deprecated');
     cleanup = onCleanup(@() warning(s));
-    lastwarn('', '');
-    a = SeaFreeze([100 280], 'water1', 'rho');
-    [msg, id] = lastwarn;
+    id = '';
+    try
+        SeaFreeze([100 280], 'water1', 'rho');
+    catch w
+        id = w.identifier;
+    end
     if ~strcmp(id, 'SeaFreeze:deprecated')
         error('expected SeaFreeze:deprecated warning, got id=''%s''', id);
     end
+    warning('off', 'SeaFreeze:deprecated');
+    a = SeaFreeze([100 280], 'water1', 'rho');
     b = SF_getprop([100 280], 'water1', 'rho');
     if abs(a.rho - b.rho) > 1e-12 * abs(b.rho)
         error('SeaFreeze and SF_getprop returned different rho values');

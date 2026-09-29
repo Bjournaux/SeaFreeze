@@ -41,7 +41,7 @@ REF_PATH = os.path.normpath(os.path.join(
 
 # Properties always excluded from the numerical comparison.
 _SKIP_FIELDS = frozenset({
-    'input_P', 'input_T', 'input_m', 'input_type', 'input_material',
+    'input_P', 'input_T', 'input_m', 'input_type', 'input_material', 'input_mode',
 })
 
 # Relative tolerance for all spline-derived properties.
@@ -108,10 +108,12 @@ def _compare_case(case_name, case):
     material   = str(case.input_material).strip()
 
     PTm = _build_ptm(case, input_type)
+    # (rho,T) cases: input_P holds densities and P is an output (1.2)
+    rhoT = str(getattr(case, 'input_mode', 'PT')).strip() == 'rhoT'
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        out = sf.getProp(PTm, material)
+        out = sf.getProp(PTm, material, rhoT=rhoT)
 
     results = {}
     for prop, ref_arr in _numeric_fields(case):
@@ -192,6 +194,11 @@ class TestGetPropVsMatlab(ut.TestCase):
     def test_NaClaq_grid(self):             self._run_case('NaClaq_grid')
     def test_NaClaq_stitch_scatter(self):   self._run_case('NaClaq_stitch_scatter')
     def test_NaClaq_stitch_grid(self):      self._run_case('NaClaq_stitch_grid')
+    # 1.2: Helmholtz water3 and (rho,T) input
+    def test_water3_scatter(self):          self._run_case('water3_scatter')
+    def test_water3_grid(self):             self._run_case('water3_grid')
+    def test_water3_rhoT(self):             self._run_case('water3_rhoT')
+    def test_water1_rhoT(self):             self._run_case('water1_rhoT')
 
 
 if __name__ == '__main__':

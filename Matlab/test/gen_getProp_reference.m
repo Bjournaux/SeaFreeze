@@ -21,10 +21,15 @@ function gen_getProp_reference()
 %   water1_grid      water1,   grid     5×4
 %   NaClaq_scatter   NaClaq_5GPa_2024,  scatter  4 pts  (P,T,m)
 %   NaClaq_grid      NaClaq_5GPa_2024,  grid     4×4×3  {P,T,m}
+%   water3_scatter   water3 (Helmholtz), scatter 5 pts (vapour, liquid, supercritical)
+%   water3_grid      water3,   grid     4×4
+%   water3_rhoT      water3,   (rho,T) scatter 4 pts ('input','rhoT')
+%   water1_rhoT      water1,   (rho,T) grid 3×3 (Gibbs spline inverted by SF_rho2P)
 
 here = fileparts(mfilename('fullpath'));
 mat_root = fileparts(here);
-addpath(fullfile(mat_root, 'LocalBasisFunction'));
+addpath(fullfile(mat_root, 'internal'));
+addpath(fullfile(mat_root, 'internal', 'compat'));
 addpath(mat_root);
 
 cases = struct();
@@ -104,6 +109,34 @@ out     = SF_getprop({P_grid4, T_grid4, m_grid4}, 'NaClaq');
 cases.NaClaq_stitch_grid = add_grid_input(out, P_grid4, T_grid4, m_grid4, 'NaClaq');
 fprintf('  NaClaq_stitch_grid    (%d×%d×%d)\n', ...
     numel(P_grid4), numel(T_grid4), numel(m_grid4));
+
+% ---- water3 (Helmholtz fluid) scatter: vapour, liquid, supercritical ---------
+P_vec = [1e-3 0.101325 30 500 2000]';
+T_vec = [300  298.15   700 350 450]';
+out   = SF_getprop([P_vec, T_vec], 'water3');
+cases.water3_scatter = add_pt_input(out, P_vec, T_vec, [], 'water3');
+fprintf('  water3_scatter      (%d pts)\n', numel(P_vec));
+
+% ---- water3 grid --------------------------------------------------------------
+P_grid = [0.1 10 100 1000];
+T_grid = [300 400 500 700];
+out    = SF_getprop({P_grid, T_grid}, 'water3');
+cases.water3_grid = add_grid_input(out, P_grid, T_grid, [], 'water3');
+fprintf('  water3_grid         (%d×%d)\n', numel(P_grid), numel(T_grid));
+
+% ---- (rho,T) input: water3 direct, water1 through SF_rho2P ----------------------
+R_vec = [1e-2 997 1100 1250]';
+T_vec = [400 298.15 300 350]';
+out   = SF_getprop([R_vec, T_vec], 'water3', [], 'input', 'rhoT');
+s = add_pt_input(out, R_vec, T_vec, [], 'water3'); s.input_mode = 'rhoT';
+cases.water3_rhoT = s;
+fprintf('  water3_rhoT         (%d pts)\n', numel(R_vec));
+R_grid = [1000 1050 1100];
+T_grid = [280 300 330];
+out    = SF_getprop({R_grid, T_grid}, 'water1', [], 'input', 'rhoT');
+s = add_grid_input(out, R_grid, T_grid, [], 'water1'); s.input_mode = 'rhoT';
+cases.water1_rhoT = s;
+fprintf('  water1_rhoT         (%d×%d)\n', numel(R_grid), numel(T_grid));
 
 % ---- Save -------------------------------------------------------------------
 out_path = fullfile(here, 'reference_getProp.mat');

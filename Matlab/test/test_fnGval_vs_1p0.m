@@ -7,6 +7,13 @@ function test_fnGval_vs_1p0()
 % mask) are skipped in this comparison.
 
 here = fileparts(mfilename('fullpath'));
+% The frozen baseline (legacy/fnGval_1p0.m) evaluates splines with the Curve
+% Fitting Toolbox (fnval/fnder).  Without it (GNU Octave, or MATLAB without the
+% toolbox) there is nothing to compare against: skip, and say so.
+if isempty(which('fnval'))
+    fprintf('SKIPPED: the frozen fnGval_1p0 baseline needs fnval (Curve Fitting Toolbox)\n');
+    return
+end
 addpath(fullfile(fileparts(here),'LocalBasisFunction'));
 addpath(fileparts(here));
 addpath(here);   % fnGval_1p0 lives in the test folder

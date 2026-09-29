@@ -33,28 +33,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '..', '..'))
 sys.path.insert(0, os.path.join(ROOT, 'Python'))
 
+import warnings  # noqa: E402
 from seafreeze import seafreeze as sf  # noqa: E402
-from mlbspline import load as mlb_load  # noqa: E402
-from lbftd import evalGibbs as eg  # noqa: E402
 
 
-def direct_getProp(PTm, phase, tdv_names):
-    """Bypass sf.getProp to avoid its shear/Vp/Vs block (broken under numpy 2.x)
-    and to keep outputs as plain ndarrays. Mirrors the core of sf.getProp:
-    load the spline, attach MW/nu as needed, and call the grid/scatter
-    evaluator directly.
+def direct_getProp(PTm, phase, tdv_names, rhoT=False):
+    """Evaluate through the public sf.getProp, exactly as users call it
+    (stitched NaClaq, Helmholtz water3, (rho,T) input).  The earlier bypass of
+    getProp worked around a numpy-2 shear bug fixed in 1.1.2 and relied on a
+    PhaseDesc field that no longer exists.
     """
-    pd = sf.phases[phase]
-    sp = mlb_load.loadSpline(sf.defpath, pd.sp_name)
-    # For solute TDVs (mus, Vm, Cpm, gam, ...) MW must be [MW_solvent, MW_solute].
-    if pd.nu is not None:
-        sp['MW'] = np.array([sf.mH2O_kgmol, pd.MW])
-        sp['nu'] = pd.nu
-    elif pd.MW is not None:
-        sp['MW'] = np.atleast_1d(pd.MW)
-    is_scatter = sf._is_scatter(PTm)
-    fn = eg.evalSolutionGibbsScatter if is_scatter else eg.evalSolutionGibbsGrid
-    return fn(sp, PTm, *tdv_names, allowExtrapolations=False)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        return sf.getProp(PTm, phase, sf.defpath, *tdv_names, rhoT=rhoT)
 
 
 def grid(P, T, m=None):
@@ -93,12 +84,15 @@ def collect(out, names):
     return d
 
 
-def add_case(cases, label, phase, PTm, names, extras):
-    out = direct_getProp(PTm, phase, names)
+def add_case(cases, label, phase, PTm, names, extras, rhoT=False):
+    out = direct_getProp(PTm, phase, names + (['P'] if rhoT else []), rhoT=rhoT)
     d = collect(out, names)
     d.update(extras)
+    if rhoT:
+        d['P_calc'] = np.asarray(out.P, dtype=float)   # computed pressure (MPa)
     d['phase'] = phase  # store phase explicitly so the MATLAB test
                         # doesn't have to parse the case name
+    d['rhoT'] = int(rhoT)   # 1: the P field holds densities (kg/m3), P is an output
     cases[label] = d
     print(f"  + {label:24s} ({phase}, {len(names)} TDVs)")
 
@@ -156,6 +150,22 @@ def main():
     P = np.array([100.0, 1000.0, 5000.0])
     T = np.array([300.0, 500.0, 800.0])
     add_case(cases, 'water2_grid', 'water2', grid(P, T), BASE, {'P': P, 'T': T})
+
+    # ---- water3: Helmholtz fluid (vapour, liquid, supercritical) ----
+    P = np.array([0.1, 10.0, 100.0, 1000.0])
+    T = np.array([300.0, 400.0, 500.0, 700.0])
+    add_case(cases, 'water3_grid', 'water3', grid(P, T), BASE, {'P': P, 'T': T})
+    Ps = np.array([1e-3, 0.101325, 30.0, 500.0, 2000.0])        # vapour, liquid, supercritical, ...
+    Ts = np.array([300.0, 298.15, 700.0, 350.0, 450.0])
+    add_case(cases, 'water3_scatter', 'water3', scatter(Ps, Ts), BASE, {'P': Ps, 'T': Ts})
+
+    # ---- (rho,T) input: Helmholtz water3 (direct) and Gibbs water1 (via rho2P) ----
+    R = np.array([1e-2, 997.0, 1100.0, 1250.0])
+    Tr = np.array([400.0, 298.15, 300.0, 350.0])
+    add_case(cases, 'water3rhoT_scatter', 'water3', scatter(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
+    R = np.array([1000.0, 1050.0, 1100.0])
+    Tr = np.array([280.0, 300.0, 330.0])
+    add_case(cases, 'water1rhoT_grid', 'water1', grid(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
 
     # ---- Aqueous NaCl (3D) ----
     P = np.arange(0.1, 500.1, 100.0)
