@@ -4,7 +4,7 @@ function d = psi_val(sp, rho, T, need, mode)
 %   d = psi_val(sp, rho, T, need)
 %   d = psi_val(sp, rho, T, need, 'grid')   % tensor grid rho x T, F_r / F_rr only
 %
-%   Toolbox-free port of psiH2O_val.m (lbf-thermo, JMB / Claude 2026) for the
+%   Toolbox-free port of psiH2O_val.m (lbf-thermo, JMB 2026) for the
 %   "psi" representation of pure water: the residual dimensionless Helmholtz
 %   energy is a tensor B-spline in stretched coordinates plus reference terms,
 %
