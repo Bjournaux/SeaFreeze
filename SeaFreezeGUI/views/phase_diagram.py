@@ -8,6 +8,19 @@ import streamlit as st
 
 from core.compute import compute_properties, get_phase_line, get_phase_line_full
 from core.ui import make_csv, short_label
+from views import full_diagram
+
+_MODES = ["Full diagram (water3 + ices)", "Ice melting lines"]
+
+
+def render():
+    st.title("SeaFreeze — Phase Diagram")
+    mode = st.radio("Mode", _MODES, horizontal=True, key="pd_mode",
+                    label_visibility="collapsed")
+    if mode == _MODES[0]:
+        full_diagram.render()
+    else:
+        _render_melting_lines()
 
 
 # Colors for each phase — consistent across the page
@@ -60,7 +73,7 @@ _PHASE_LABEL = {
 }
 
 
-_LIQUIDS = {"water1", "NaClaq"}
+_LIQUIDS = {"water1", "water3", "NaClaq"}
 
 
 def _add_boundary_traces(fig, P, T, stable, color, name, custom_row,
@@ -201,20 +214,27 @@ def _render_transition_jump(event):
             "quantities for each end-member at the clicked (P, T).")
 
 
-def render():
-    st.title("SeaFreeze — Phase Diagram")
-
+def _render_melting_lines():
     with st.sidebar:
+        st.header("Liquid")
+        liquid = st.radio("Liquid", ["water1", "water3"], horizontal=True, key="pd_liquid",
+                          format_func=short_label, label_visibility="collapsed",
+                          help="Liquid used for the melting curves. water3 (Helmholtz, beta) "
+                               "reproduces the water1 melting curves within 0.05 K to 632 MPa.")
+        pure_pairs = [(a, liquid if b == "water1" else b) for a, b in _PURE_PAIRS]
+        all_phases = [liquid if p == "water1" else p for p in _ALL_PHASES]
+
+        st.divider()
         st.header("Phase boundaries")
         st.caption("Select phases to show their stability boundaries. "
                    "All boundaries between checked phases are drawn.")
 
         checked_phases = []
         cols = st.columns(3)
-        for i, phase in enumerate(_ALL_PHASES):
+        for i, phase in enumerate(all_phases):
+            key = "pd_liquid_on" if phase == liquid else f"pd_{phase}"
             with cols[i % 3]:
-                if st.checkbox(short_label(phase), value=True,
-                               key=f"pd_{phase}"):
+                if st.checkbox(short_label(phase), value=True, key=key):
                     checked_phases.append(phase)
 
         st.divider()
@@ -252,6 +272,10 @@ def render():
                 nacl_molalities = []
 
         st.divider()
+        st.header("Axes")
+        c1, c2 = st.columns(2)
+        log_P = c1.checkbox("log P", value=False, key="pd_logP")
+        log_T = c2.checkbox("log T", value=False, key="pd_logT")
         st.header("Axis ranges")
         auto_axes = st.checkbox("Auto-fit axes to selected phases",
                                 value=True, key="pd_autoaxes")
@@ -269,7 +293,7 @@ def render():
     triple_pts = {}   # (P_round, T_round) -> (P, T), deduped
 
     # Pure-water phase boundaries between checked phases
-    for matA, matB in _PURE_PAIRS:
+    for matA, matB in pure_pairs:
         if matA not in checked_phases or matB not in checked_phases:
             continue
         try:
@@ -354,11 +378,17 @@ def render():
                 return lo2, hi + pad
             P_lo, P_hi = _pad(min(all_P), max(all_P), floor=0.0)
             T_lo, T_hi = _pad(min(all_T), max(all_T))
+        if log_P:
+            pos = [p for p in all_P if p > 0]
+            P_lo = P_lo if P_lo and P_lo > 0 else (min(pos) if pos else 0.1)
+        if log_T:
+            T_lo = T_lo if T_lo and T_lo > 0 else 1.0
+        rng = lambda lo, hi, log: [np.log10(lo), np.log10(hi)] if log else [lo, hi]
         fig.update_layout(
             xaxis_title="Pressure (MPa)",
             yaxis_title="Temperature (K)",
-            xaxis=dict(range=[P_lo, P_hi]),
-            yaxis=dict(range=[T_lo, T_hi]),
+            xaxis=dict(range=rng(P_lo, P_hi, log_P), type="log" if log_P else "linear"),
+            yaxis=dict(range=rng(T_lo, T_hi, log_T), type="log" if log_T else "linear"),
             template="plotly_white",
             height=700,
             clickmode="event+select",
@@ -370,13 +400,15 @@ def render():
         # Phase region labels (only for checked phases inside the visible axes)
         if show_labels:
             for phase in checked_phases:
-                if phase not in _PHASE_LABEL:
+                key = "water1" if phase == liquid else phase
+                if key not in _PHASE_LABEL:
                     continue
-                Px, Tx, txt = _PHASE_LABEL[phase]
+                Px, Tx, txt = _PHASE_LABEL[key]
                 if not (P_lo <= Px <= P_hi and T_lo <= Tx <= T_hi):
                     continue
                 fig.add_annotation(
-                    x=Px, y=Tx, text=f"<b>{txt}</b>", showarrow=False,
+                    x=np.log10(Px) if log_P else Px, y=np.log10(Tx) if log_T else Tx,
+                    text=f"<b>{txt}</b>", showarrow=False,
                     font=dict(size=20, color=_LABEL_COLOR),
                 )
 
@@ -384,7 +416,7 @@ def render():
                    "thermodynamic jump (ΔV, ΔS, ΔH) across the transition.")
         event = st.plotly_chart(
             fig, use_container_width=True,
-            on_select="rerun", selection_mode="points", key="pd_chart")
+            on_select="rerun", selection_mode="points", key=f"pd_chart_{liquid}")
 
         # ── Transition jump (ΔV / ΔS / ΔH) on click ───────────────────────
         _render_transition_jump(event)

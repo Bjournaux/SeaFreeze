@@ -10,13 +10,15 @@ Built with [Streamlit](https://streamlit.io/) and [Plotly](https://plotly.com/py
 
 ### Property Calculator
 
-Compute thermodynamic properties for any SeaFreeze material (Ice Ih–VI, Water, NaCl(aq)) with adaptive visualization that adjusts to your input:
+Compute thermodynamic properties for any SeaFreeze material (Ice Ih–VII/X, Water, NaCl(aq), and **water3**, the 1.2-beta Helmholtz fluid: vapour, liquid and supercritical) with adaptive visualization that adjusts to your input:
 
 - **Single point** — returns a table of all properties with values and units
-- **1-D sweep** — vary one coordinate (P, T, or m) to produce interactive line plots
+- **1-D sweep** — vary one coordinate (P, ρ, T, or m) to produce interactive line plots
 - **2-D grid** — vary two coordinates to produce heatmaps, heatmaps with isocontours, or 3-D surface plots
 
-All modes support CSV export. The 2-D mode includes selectable color scales, adjustable contour density, and optional stability field boundary overlays.
+Input in **(P, T)** or **(ρ, T)** for every pure phase (the pressure is then an output; native for water3, solved point by point for the Gibbs phases, so those grids are capped at 2500 points). For water3 at (P, T) choose the **branch**: stable (lower Gibbs energy), liquid or vapour. Every P, ρ and T range can be **log-spaced** and drawn on a log axis, and 1-D plots have a log y-axis option.
+
+All modes support CSV export. The 2-D mode includes selectable color scales, adjustable contour density, and optional stability field boundary overlays (for water3: the full phase diagram — boundaries, saturation curve, critical and triple points).
 
 | Single point | 1-D sweep |
 |:---:|:---:|
@@ -26,11 +28,35 @@ All modes support CSV export. The 2-D mode includes selectable color scales, adj
 |:---:|:---:|:---:|
 | ![Heatmap](screenshots/Ice%20V%2C%20P%20and%20T%20range%20Heatmap.png) | ![Isocontours](screenshots/Ice%20V%2C%20P%20and%20T%20range%20Heatmap%2Bisocontour.png) | ![3D](screenshots/Ice%20V%2C%20P%20and%20T%20range%203D%20surface.png) |
 
-### Phase Diagram
+### Phase Diagram — full diagram (water3 + ices)
+
+The whole H₂O phase diagram — vapour, liquid, supercritical fluid, the critical point and ices Ih, II, III, V, VI — by Gibbs-energy minimisation (`seafreeze.phase_diagram_PT` / `phase_diagram_rhoT`), in **P–T** or **ρ–T**:
+
+- **Colour by** the stable phase, or by any property of the stable phase (ρ, P, G, S, U, H, A, Cp, Cv, K_T, K′, K_S, α, sound speed, isentropic dT/dP, Grüneisen; shear, Vp, Vs in the ices) — the map jumps across every phase boundary
+- **Views**: 2-D map, 2-D map + isocontours, 3-D surface (opened along the phase boundaries)
+- **Overlays**: phase boundaries (ρ–T: coexisting densities), saturation curve / dome, critical point, triple points (ρ–T: three-phase tie lines), field labels; two-phase regions shaded grey in ρ–T
+- **Axes**: log or linear P / ρ and T; colour range 1–99 % (default), full or manual; log colour scale
+- **Range & resolution**: the default window (P 1e-8–1e5 MPa, ρ 1e-7–4000 kg/m³, T 150–1800 K) loads instantly from `assets/diagrams/`; other windows and the Draft / Standard / Fine resolutions are computed live (≈ 8–26 s, shown before you run) and cached
+- Triple-point / critical-point table and CSV export of the displayed grid
+
+Ice VII/X is not included yet (a new representation is in preparation); its field is shown as *not modelled*.
+
+| Stable phase (P–T) | Cp of the stable phase, isocontours |
+|:---:|:---:|
+| ![Full diagram P-T](screenshots/Full_diagram_PT.png) | ![Cp map](screenshots/Full_diagram_Cp_PT.png) |
+
+| Stable phase (ρ–T, log density) | Sound speed, 3-D surface |
+|:---:|:---:|
+| ![Full diagram rho-T](screenshots/Full_diagram_rhoT.png) | ![3-D surface](screenshots/Full_diagram_vel_3D.png) |
+
+After changing the SeaFreeze library or the default window/resolution, regenerate the shipped defaults with `python3 tools/precompute_diagrams.py` (the app recomputes live if they do not match).
+
+### Phase Diagram — ice melting lines
 
 Interactive water phase diagram with selectable phase boundaries:
 
-- Checkboxes for each ice polymorph (Ih, II, III, V, VI) and liquid water
+- Checkboxes for each ice polymorph (Ih, II, III, V, VI) and liquid water; liquid **water1** or **water3**
+- Log or linear P and T axes
 - Toggle between stable, metastable, or all segments
 - Overlay NaCl(aq) melting curves at user-specified molalities
 - Adjustable P and T axis ranges
@@ -117,18 +143,23 @@ SeaFreezeGUI/
 ├── core/
 │   ├── __init__.py
 │   ├── compute.py          # Cached wrappers around SeaFreeze API
-│   ├── constants.py        # Material lists, property metadata, categories
+│   ├── constants.py        # Material lists, property metadata, categories, input limits
+│   ├── diagrams.py         # Full phase diagrams: precomputed defaults + cached live runs
+│   ├── diagram_plot.py     # Plotly drawing of the diagrams and property maps (2-D / 3-D)
 │   └── ui.py               # Shared UI helpers (labels, CSV export, boundary overlays)
 ├── views/                  # One module per page, each exposing render()
 │   ├── property_calculator.py
-│   ├── phase_diagram.py
+│   ├── phase_diagram.py    # mode switch + ice melting-line viewer
+│   ├── full_diagram.py     # full diagram / property maps
 │   └── about.py
+├── tools/
+│   └── precompute_diagrams.py   # regenerates assets/diagrams/*.npz
 ├── tests/
 │   └── test_app.py         # AppTest smoke tests: cd SeaFreezeGUI && python3 -m pytest -q tests
 ├── .streamlit/
 │   └── config.toml         # Streamlit theme and server config
 ├── screenshots/            # App screenshots for documentation
-└── assets/                 # Icons and static assets
+└── assets/                 # Icons, static assets, diagrams/ (precomputed default diagrams)
 ```
 
 ---

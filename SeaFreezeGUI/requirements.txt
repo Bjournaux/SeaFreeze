@@ -1,5 +1,13 @@
-SeaFreeze>=1.1.1
+# SeaFreeze GUI.  The app runs the SeaFreeze library of this repository
+# (../Python, version 1.2 beta: water3 and the full phase diagrams), so these
+# are that library's dependencies plus the GUI's own; the PyPI SeaFreeze
+# release (1.1.x) does not have water3.
 streamlit>=1.39
 plotly>=5.20
 pandas>=2.1
 numpy>=1.26
+scipy>=1.12
+matplotlib>=3.8
+h5py>=3.10
+hdf5storage>=0.1.19
+psutil>=5.9

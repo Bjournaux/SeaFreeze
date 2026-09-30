@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import streamlit as st
 
-from core.constants import ALL_MATERIALS, MATERIAL_LABELS
+from core.constants import ALL_MATERIALS, INPUT_LIMITS, MATERIAL_LABELS
 from core.compute import get_phase_range
 from core.ui import asset
 
@@ -24,7 +24,9 @@ def render():
     SeaFreeze is based on the evaluation of Gibbs Local Basis Function (LBF)
     parametrizations for each phase, constructed to reproduce thermodynamic measurements
     across a wide range of pressures and temperatures relevant to planetary interiors and
-    high-pressure geophysics.
+    high-pressure geophysics. **Water3** (SeaFreeze 1.2 beta) is a Helmholtz-energy surface
+    F(ρ, T) for fluid water — vapour, liquid and supercritical — used for the full phase
+    diagram with the vapour, the saturation curve and the critical point.
 
     **Try it online:** [seafreeze.streamlit.app](https://seafreeze.streamlit.app/)
     ⚠️ *Beta — under active development.*
@@ -36,9 +38,13 @@ def render():
     for mat in ALL_MATERIALS:
         try:
             P_rng, T_rng, m_rng = get_phase_range(mat)
+            lim = INPUT_LIMITS.get(mat)
+            if lim:                           # fluid: vapour to ~10 TPa, not the spline box
+                P_rng, T_rng = lim["P"], lim["T"]
+            fmtP = (lambda v: f"{v:.0e}") if lim else (lambda v: f"{v:.0f}")
             row = {
                 "Material": MATERIAL_LABELS[mat],
-                "P range (MPa)": f"{P_rng[0]:.0f} – {P_rng[1]:.0f}",
+                "P range (MPa)": f"{fmtP(P_rng[0])} – {fmtP(P_rng[1])}",
                 "T range (K)":   f"{T_rng[0]:.0f} – {T_rng[1]:.0f}",
             }
             if m_rng is not None:

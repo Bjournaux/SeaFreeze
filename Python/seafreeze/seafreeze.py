@@ -292,9 +292,7 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
             if want_all or 'shear' in want_set: props['shear'] = 1e3 * smg
             if want_all or 'Vp'    in want_set: props['Vp']    = _get_Vp(smg, rho, Ks)
             if want_all or 'Vs'    in want_set: props['Vs']    = _get_Vs(smg, rho)
-            if not want_all:
-                if 'Ks'  not in want_set: props.pop('Ks', None)
-                if 'rho' not in want_set: props.pop('rho', None)
+            # rho / Ks prerequisites are stripped at the end: Js still needs rho
 
         # ---- Matlab-parity derived properties -----------------------------------
         _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path)
@@ -305,7 +303,7 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
 
         # ---- Strip prerequisite props that were only added internally -----------
         if not want_all:
-            for p in ('alpha', 'Cp', 'Cv', 'Kt', 'muw', 'rho'):
+            for p in ('alpha', 'Cp', 'Cv', 'Kt', 'Ks', 'muw', 'rho'):
                 if p not in want_set:
                     props.pop(p, None)
 

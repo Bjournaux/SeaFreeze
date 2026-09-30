@@ -674,8 +674,10 @@ def _invert_P(sp, P, T, rlim, Tlim, branch='stable'):
     """Density solving rho^2 dF/drho = P (P in MPa) at each point.
 
     Brackets every root on a coarse density grid (per distinct temperature)
-    where P increases with rho (mechanically stable), refines the least and
-    the most dense of them, and returns the one selected by ``branch``:
+    where P increases with rho (mechanically stable) and Cv > 0 at both ends
+    of the bracket (thermally stable: this discards roots on spurious loops
+    of the surface, e.g. inside the dome near Tc), refines the least and the
+    most dense of them, and returns the one selected by ``branch``:
     'stable' (lower Gibbs energy), 'liquid' (densest) or 'vapor' (least dense).
     NaN where no stable root exists.
     """
@@ -714,11 +716,27 @@ def _invert_P(sp, P, T, rlim, Tlim, branch='stable'):
     pg, _ = _P_dPdrho(sp, np.tile(rg, nTu), np.repeat(Tu, nr))
     pg = pg.reshape(nTu, nr)
     kidx = np.arange(1, nr)[:, None]
+    rising = np.diff(pg, axis=1) > 0                             # nTu x (nr-1)
+    # brackets that hold a crossing for some point: check Cv > 0 at their ends
+    cand = np.zeros_like(rising)
+    for j in range(nTu):
+        pts = idx[jT == j]
+        pmin, pmax = Ppa[pts].min(), Ppa[pts].max()
+        lo, hi = np.minimum(pg[j, :-1], pg[j, 1:]), np.maximum(pg[j, :-1], pg[j, 1:])
+        cand[j] = rising[j] & (hi >= pmin) & (lo <= pmax)
+    jj, kk = np.nonzero(cand)
+    if jj.size:
+        nodes = np.unique(np.r_[jj * nr + kk, jj * nr + kk + 1])
+        FTT = _helm_derivs(sp, rg[nodes % nr], Tu[nodes // nr], {'FTT': True})['FTT']
+        cv_ok = np.ones(nTu * nr, bool)
+        cv_ok[nodes] = -Tu[nodes // nr] * FTT > 0                # Cv > 0 (NaN: rejected)
+        cv_ok = cv_ok.reshape(nTu, nr)
+        rising &= cv_ok[:, :-1] & cv_ok[:, 1:]
     for j in range(nTu):
         pts = idx[jT == j]
         col = pg[j]
         s = col[:, None] - Ppa[pts][None, :]                    # nr x npts
-        up = (s[:-1] <= 0) & (s[1:] >= 0) & (np.diff(col) > 0)[:, None]
+        up = (s[:-1] <= 0) & (s[1:] >= 0) & rising[j][:, None]
         khi[pts] = np.max(np.where(up, kidx, 0), axis=0)        # densest crossing
         kl = np.min(np.where(up, kidx, nr + 1), axis=0)          # least dense crossing
         klo[pts] = np.where(kl > nr, 0, kl)

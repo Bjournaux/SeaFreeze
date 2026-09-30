@@ -405,7 +405,7 @@ below the saturation pressure, liquid above); `'branch','liquid'` or `'branch','
 | Temperature | 230 K – 150 000 K (surface knots). Below 230 K only the dilute vapour is available, through the ideal-gas extension used by the sublimation curve and the phase diagrams |
 | Density | up to 16 000 kg/m³; below 10⁻⁴ kg/m³ the surface is continued by a virial form and a low-density chemistry table |
 | Pressure | from the dilute vapour to ~10 TPa (P = ρ²∂F/∂ρ over the box) |
-| Phases | vapour, liquid, supercritical fluid; at (P,T) the stable branch (lower Gibbs energy) is returned unless `branch` = `'liquid'` / `'vapor'` |
+| Phases | vapour, liquid, supercritical fluid; at (P,T) the stable branch (lower Gibbs energy; roots with C_v ≤ 0 or (∂P/∂ρ)_T ≤ 0, e.g. on the spurious loop inside the dome at 629–632 K, are rejected) is returned unless `branch` = `'liquid'` / `'vapor'` |
 | Not water | more than 40 K below the melting curve of the stable solid (the surface's own validity mask, psiEOS `dq2026` model); the phase diagrams apply this mask |
 | Use with care | cold ultra-dense corner (ρ > 4000 kg/m³, T < 1000 K: not constrained by data); interior of the two-phase dome (spinodals are data-free; small (∂P/∂ρ)_T loops near T_c make the saturated-liquid density step by ~10 kg/m³ near 637 K); supercooled liquid below 230 K and stretched liquid below −140 MPa are extrapolations |
 

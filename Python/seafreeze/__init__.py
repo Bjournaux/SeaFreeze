@@ -4,12 +4,14 @@ from .seafreeze import getProp, whichphase, phasenum2phase, phases, helmholtz_ph
 from .phaselines import phase_lines, phase_range, wpd
 from .rho2P import rho2P
 from .coexistence import saturation, sublimation
-from .phasediagram import phase_map, triple_points, wpd_PT, wpd_rhoT, melt_T_dq2026
+from .phasediagram import (phase_map, triple_points, phase_diagram_PT, phase_diagram_rhoT,
+                           property_map, wpd_PT, wpd_rhoT, melt_T_dq2026)
 
 __all__ = [
     '__version__',
     'getProp', 'whichphase', 'phasenum2phase', 'phases', 'helmholtz_phases',
     'phase_lines', 'phase_range', 'wpd',
     'rho2P', 'saturation', 'sublimation',
-    'phase_map', 'triple_points', 'wpd_PT', 'wpd_rhoT', 'melt_T_dq2026',
+    'phase_map', 'triple_points', 'phase_diagram_PT', 'phase_diagram_rhoT', 'property_map',
+    'wpd_PT', 'wpd_rhoT', 'melt_T_dq2026',
 ]

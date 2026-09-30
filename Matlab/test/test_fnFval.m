@@ -204,6 +204,17 @@ r1408 = 611.657e-6 * exp((-0.212144006e2*th.^0.333333333e-2 + 0.273203819e2*th.^
 [np,nf] = check('sublimation below 230 K: dilute extension by default (R14-08 +-2e-4), NaN when off', ...
     all(isnan(nx.P)) && max(abs(ex.P ./ r1408 - 1)) < 2e-4, np, nf);
 
+% ---- P -> rho: thermally unstable roots rejected (spurious loop of the
+%      stage5_18f surface inside the dome at 629-632 K) --------------------
+PTu = [35 631; 38 631; 41 631];
+su = SF_getprop(PTu, 'water3', {'rho','Cv','Kt'});
+lu = SF_getprop(PTu, 'water3', {'rho'}, 'branch', 'liquid');
+[np,nf] = check(sprintf('631 K / 35-41 MPa: stable root = liquid (rho %.1f), Cv > 0', su.rho(1)), ...
+    max(abs(su.rho - lu.rho)) < 1e-9 && all(su.rho > 630) && all(su.Cv > 0) && all(su.Kt > 0), np, nf);
+gu = SF_getprop({linspace(5, 120, 47), linspace(600, 660, 61)}, 'water3', {'rho','Cv','Kt'});
+[np,nf] = check('near-critical grid: every stable root has Cv > 0 and Kt > 0', ...
+    all(isfinite(gu.rho(:))) && all(gu.Cv(:) > 0) && all(gu.Kt(:) > 0), np, nf);
+
 fprintf('\n%d passed, %d failed\n', np, nf);
 if nf > 0, error('test_fnFval:failed', '%d test(s) failed', nf); end
 end

@@ -278,3 +278,32 @@ def test_dilute_extension_warns_once(monkeypatch):
         w.simplefilter('error')                              # a second warning would raise
         sf.sublimation([190.0])
         sf.sublimation([250.0])                              # inside the surface: never warns
+
+
+# ---------------------------------------------------------------------------
+# P -> rho inversion rejects thermally unstable roots (spurious loop of the
+# stage5_18f surface inside the dome at 629-632 K)
+# ---------------------------------------------------------------------------
+def test_inversion_rejects_unstable_root_near_Tc():
+    import seafreeze as sf
+    pts = np.empty(3, dtype=object)
+    for i, P in enumerate((35.0, 38.0, 41.0)):
+        pts[i] = (P, 631.0)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        st = sf.getProp(pts, 'water3', sf.seafreeze.defpath, 'rho', 'Cv', 'Kt')
+        lq = sf.getProp(pts, 'water3', sf.seafreeze.defpath, 'rho', branch='liquid')
+    np.testing.assert_allclose(st.rho, lq.rho, rtol=1e-12)          # the compressed liquid
+    assert np.all(st.rho > 630) and np.all(st.Cv > 0) and np.all(st.Kt > 0)
+
+
+def test_stable_branch_is_thermodynamically_stable_near_Tc():
+    import seafreeze as sf
+    g = np.empty(2, dtype=object)
+    g[0] = np.linspace(5.0, 120.0, 116)
+    g[1] = np.linspace(600.0, 660.0, 121)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        o = sf.getProp(g, 'water3', sf.seafreeze.defpath, 'rho', 'Cv', 'Kt')
+    assert np.isfinite(o.rho).all()
+    assert (o.Cv > 0).all() and (o.Kt > 0).all()

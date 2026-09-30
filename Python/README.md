@@ -373,7 +373,7 @@ below the saturation pressure, liquid above); `branch='liquid'` or `'vapor'` ret
 | Temperature | 230 K – 150 000 K (surface knots). Below 230 K only the dilute vapour is available, through the ideal-gas extension used by the sublimation curve and the phase diagrams |
 | Density | up to 16 000 kg/m³; below 10⁻⁴ kg/m³ the surface is continued by a virial form and a low-density chemistry table |
 | Pressure | from the dilute vapour to ~10 TPa (P = ρ²∂F/∂ρ over the box) |
-| Phases | vapour, liquid, supercritical fluid; at (P,T) the stable branch (lower Gibbs energy) is returned unless `branch` = `'liquid'` / `'vapor'` |
+| Phases | vapour, liquid, supercritical fluid; at (P,T) the stable branch (lower Gibbs energy; roots with C_v ≤ 0 or (∂P/∂ρ)_T ≤ 0, e.g. on the spurious loop inside the dome at 629–632 K, are rejected) is returned unless `branch` = `'liquid'` / `'vapor'` |
 | Not water | more than 40 K below the melting curve of the stable solid (the surface's own validity mask, psiEOS `dq2026` model); the phase diagrams apply this mask |
 | Use with care | cold ultra-dense corner (ρ > 4000 kg/m³, T < 1000 K: not constrained by data); interior of the two-phase dome (spinodals are data-free; small (∂P/∂ρ)_T loops near T_c make the saturated-liquid density step by ~10 kg/m³ near 637 K); supercooled liquid below 230 K and stretched liquid below −140 MPa are extrapolations |
 
@@ -486,6 +486,22 @@ for tp in sf.triple_points(pm):
     print(tp['labels'], tp['T'], tp['P'], tp['rho'])   # e.g. ['L', 'Ih', 'III'] 251.10 K 207.60 MPa
 ```
 
+The same diagrams as data (for your own plots, or the GUI), and any property of the stable phase over them:
+
+```python
+d = sf.phase_diagram_PT(P=(1e-8, 1e5), T=(150, 1800), nP=400, nT=320)
+d.pm.stable, d.boundaries, d.saturation, d.critical, d.triple_points, d.labels
+m = sf.property_map(d, 'rho', 'Cp', 'vel')          # property of the stable phase, NaN where undefined
+m.values['Cp'], m.phase, m.ideal_gas                # (nP, nT) arrays
+
+r = sf.phase_diagram_rhoT(nP=1000, nT=300, nrho=600)
+r.field, r.gap, r.coexistence, r.tie_lines          # field: phase index, r.two_phase in the gaps;
+                                                    # gap: the two coexisting phases of each gap cell
+mr = sf.property_map(r, 'P', 'Cp')                  # fluid at (rho, T) directly; ices interpolated
+                                                    # along each isotherm; two-phase regions NaN
+sf.phasediagram.rhoT_labels(r, 'linear')            # labels placed for a linear density axis
+```
+
 Validity masks (on by default, see `phase_map`): an ice competes only where its spline is physical (ρ > 0, K_T > 0,
 0 < Cp < 2 × 9R/M), and the fluid is not used more than 40 K below the stable-solid melting curve
 (`sf.melt_T_dq2026`) above the triple-point pressure. Cells where no phase is available (the ice VII/X field) are
@@ -541,7 +557,7 @@ python -m pytest seafreeze/test/test_helmholtz.py seafreeze/test/test_water3_ext
 | File | Covers |
 |---|---|
 | `seafreeze/test/test_helmholtz.py` | water3 vs lbf-thermo's `psiH2O_val` and MATLAB (`Matlab/test/fixtures/`), (P,T) grid/scatter, identities, branches, `rhoT=True` for water3 and Gibbs splines, `rho2P`, `saturation` / `sublimation` vs IAPWS-95, IAPWS R14-08 and NIST data, dilute-extension warning, `whichphase` / `phase_lines` with water3 |
-| `seafreeze/test/test_phasediagram.py` | `phase_map`, `triple_points` vs literature, `wpd_PT` / `wpd_rhoT`, `melt_T_dq2026` |
+| `seafreeze/test/test_phasediagram.py` | `phase_map`, `triple_points` vs literature, `phase_diagram_PT` / `phase_diagram_rhoT` / `property_map` (vs `getProp`), `wpd_PT` / `wpd_rhoT`, `melt_T_dq2026` |
 | `seafreeze/test/test_water3_extras.py` | spline cache, equal-length grids (Gibbs phases, NaClaq), `wpd(liquid='water3')` |
 | `seafreeze/test/test_getProp_vs_matlab.py` | every property vs MATLAB `SF_getprop` (13 cases incl. water3 and (ρ,T) input) |
 | `seafreeze/test/test_phaselines_vs_matlab.py`, `test_rho2P.py`, `test_whichphase.py`, `test_seafreeze.py`, `test_phaselines.py` | earlier features |

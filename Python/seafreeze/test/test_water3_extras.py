@@ -110,3 +110,19 @@ def test_wpd_with_water3_liquid():
 def test_wpd_rejects_unsupported_liquid():
     with pytest.raises(ValueError):
         sf.wpd(liquid='water2')
+
+
+# --------------------------------------------------------------------------
+# selective requests mixing Js with the shear-derived properties
+# --------------------------------------------------------------------------
+@pytest.mark.parametrize('props', [('Js', 'shear'), ('Js', 'Vp', 'Vs'), ('gamma_Gruneisen', 'Vs')])
+def test_js_with_shear_props(props):
+    pts = _scatter([100.0, 200.0], [250.0, 240.0])
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        sel = sf.getProp(pts, 'Ih', defpath, *props)
+        full = sf.getProp(pts, 'Ih', defpath)
+    got = set(vars(sel))
+    assert got >= set(props) and not got & {'rho', 'Ks', 'Cp', 'alpha'}   # prerequisites stripped
+    for p in props:
+        np.testing.assert_allclose(getattr(sel, p), getattr(full, p), rtol=1e-12)

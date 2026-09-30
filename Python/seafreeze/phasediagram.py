@@ -87,6 +87,8 @@ class DiagramRhoT:
     tie_lines: list            # triple_points(pm): the three coexisting densities at each triple T
     labels: list               # (text, rho, T, kind), kind 'fluid' | 'ice' | 'two-phase'
     xscale: str                # 'log' | 'linear'
+    gap: Optional[np.ndarray] = None  # (nrho, nT, 2) int8: the two coexisting phases
+                               # (i <= j; (0, 0) = liquid + vapour) in two-phase cells, -1 elsewhere
 
 
 @dataclass
@@ -337,47 +339,401 @@ def _style(ax):
         ax.spines[s].set_visible(False)
 
 
+# ---- the diagrams as data ----------------------------------------------------
+def _window_sat(T, fluid, path):
+    """Saturation curve on _sat_T temperatures inside the T window, or None."""
+    lo, hi = max(273.16, T[0]), min(_TC, T[1])
+    if lo >= hi:
+        return None
+    Ts = _sat_T(lo)
+    Ts = Ts[Ts <= hi]
+    return saturation(Ts, fluid=fluid, path=path) if Ts.size else None
+
+
+def _mask_coex(c, keep):
+    nan = lambda a: np.where(keep, a, np.nan)
+    return Coexistence(P=nan(c.P), T=c.T, rho_A=nan(c.rho_A), rho_B=nan(c.rho_B))
+
+
+def _in_window(tps, P, T):
+    return [tp for tp in tps if (P is None or P[0] <= tp['P'] <= P[1]) and T[0] <= tp['T'] <= T[1]]
+
+
+def phase_diagram_PT(P=(1e-8, 1e5), T=(150.0, 1800.0), nP=500, nT=420, fluid='water3',
+                     ices=ICES, path=defpath):
+    """Full H2O phase diagram in (P, T) as data: what wpd_PT draws.
+
+    Stability fields by Gibbs-energy minimisation (phase_map) on a log-P grid;
+    boundaries are the G_i = G_j contours between neighbouring stable phases;
+    the saturation curve (stable part), the critical point, the triple points
+    inside the window and the field labels.
+
+    :param P, T:   (min, max) window, MPa and K; nP log-spaced, nT linear points
+    :return:       DiagramPT
+    """
+    Pg = np.geomspace(P[0], P[1], nP)
+    Tg = np.linspace(T[0], T[1], nT)
+    pm = phase_map(Pg, Tg, fluid, ices, path=path)
+    sat = _window_sat(T, fluid, path)
+    if sat is not None:
+        sat = _mask_coex(sat, pm_stable_fluid(pm, sat.P, sat.T))       # stable branch only
+    return DiagramPT(pm=pm, boundaries=_boundaries(pm), saturation=sat,
+                     critical=dict(P=_PC, T=_TC, rho=_RHOC),
+                     triple_points=_in_window(triple_points(pm, fluid, path), P, T),
+                     labels=_labels_PT(pm), missing=pm.stable < 0)
+
+
+def _labels_PT(pm):
+    """(text, P, T, kind) at the median of each field (fluid split by kind)."""
+    lPm, Tm = np.meshgrid(np.log10(pm.P), pm.T, indexing='ij')
+    N = pm.stable.size
+    out = []
+    kind = _fluid_kind(pm)
+    for lab, k in (('vapour', 0), ('liquid', 1), ('supercritical fluid', 2)):
+        m = kind == k
+        if m.sum() > max(20, 1e-3 * N):
+            out.append((lab, 10 ** np.median(lPm[m]), np.median(Tm[m]), 'fluid'))
+    for idx, name in enumerate(pm.names[1:], start=1):
+        m = pm.stable == idx
+        if m.sum() > max(4, 1.5e-4 * N):
+            out.append((_LABEL.get(name, name), 10 ** np.median(lPm[m]), np.median(Tm[m]), 'ice'))
+    return out
+
+
+def phase_diagram_rhoT(rho=(1e-7, 4e3), T=(150.0, 1800.0), P=(1e-10, 1e5), nP=1200, nT=420,
+                       nrho=800, xscale='log', fluid='water3', ices=ICES, path=defpath):
+    """Full H2O phase diagram in (rho, T) as data: what wpd_rhoT draws.
+
+    The (P, T) phase map is re-drawn in density: along every isotherm the
+    density of the stable phase increases with P; where it jumps (between two
+    phases, or across the vapour-liquid saturation) the density gap is a
+    two-phase region -- the vapour-liquid dome, sublimation (ice + V), melting
+    (ice + L) and ice-ice regions -- bounded by the coexisting densities.
+
+    :param rho, T: (min, max) window, kg/m^3 and K
+    :param P:      pressure span of the underlying (P, T) map (nP log-spaced points)
+    :param xscale: 'log' (density grid log-spaced, shows the vapour) or 'linear'
+    :return:       DiagramRhoT
+    """
+    Pg = np.geomspace(P[0], P[1], nP)
+    Tg = np.linspace(T[0], T[1], nT)
+    pm = phase_map(Pg, Tg, fluid, ices, path=path)
+    rq = np.geomspace(rho[0], rho[1], nrho) if xscale == 'log' else np.linspace(rho[0], rho[1], nrho)
+    n = len(pm.names)
+    TWO = n
+    # saturation densities bound the vapour-liquid dome exactly
+    Tsat = Tg[(Tg >= 273.16) & (Tg < _TC)]
+    sat = None
+    if Tsat.size:
+        # solve on ~100 temperatures clustered toward Tc, interpolate onto the grid
+        Ts = _sat_T(273.16)
+        s0 = saturation(Ts, fluid=fluid, path=path)
+        ok = np.isfinite(s0.P)
+        sat = Coexistence(P=np.exp(np.interp(Tsat, Ts[ok], np.log(s0.P[ok]))), T=Tsat,
+                          rho_A=np.interp(Tsat, Ts[ok], s0.rho_A[ok]),
+                          rho_B=np.exp(np.interp(Tsat, Ts[ok], np.log(s0.rho_B[ok]))))
+    img = np.full((nrho, nT), -1)
+    gap = np.full((nrho, nT, 2), -1, dtype=np.int8)
+    pairs = {}
+    for j in range(nT):
+        st = pm.stable[:, j]; rs = pm.rho_stable[:, j]
+        ok = (st >= 0) & np.isfinite(rs)
+        if ok.sum() < 2:
+            continue
+        st, rs = st[ok], np.maximum.accumulate(rs[ok])
+        k = np.searchsorted(rs, rq)
+        inside = (k > 0) & (k < rs.size)
+        kk = np.clip(k, 1, rs.size - 1)
+        a, b = st[kk - 1], st[kk]
+        single = inside & (a == b)
+        img[single, j] = a[single]
+        dual = inside & (a != b)
+        img[dual, j] = TWO
+        gap[dual, j, 0] = np.minimum(a, b)[dual]
+        gap[dual, j, 1] = np.maximum(a, b)[dual]
+        for q in np.flatnonzero(dual):
+            key = (int(min(a[q], b[q])), int(max(a[q], b[q])))
+            pairs.setdefault(key, []).append((rq[q], Tg[j]))
+        # vapour-liquid dome from the saturation densities
+        if sat is not None and Tg[j] in Tsat:
+            i = int(np.flatnonzero(Tsat == Tg[j])[0])
+            rv, rl = sat.rho_B[i], sat.rho_A[i]
+            if np.isfinite(rv) and np.isfinite(rl):
+                dome = (rq > rv) & (rq < rl) & (img[:, j] == 0)
+                img[dome, j] = TWO
+                gap[dome, j] = 0
+                for q in np.flatnonzero(dome):
+                    pairs.setdefault((0, 0), []).append((rq[q], Tg[j]))
+    # coexisting densities along every P-T boundary; the ice - fluid boundary
+    # passes through the triple point, where the fluid density jumps from the
+    # vapour to the liquid: break the curves there
+    coex = [(i, j, *_split_jumps(_rho_on(pm, i, Pl, Tl, fluid, path),
+                                 _rho_on(pm, j, Pl, Tl, fluid, path), Tl))
+            for i, j, Pl, Tl in _boundaries(pm)]
+    if sat is not None:
+        sat = _mask_coex(sat, pm_stable_fluid(pm, sat.P, Tsat))
+    return DiagramRhoT(pm=pm, rho=rq, T=Tg, field=img, two_phase=TWO, coexistence=coex,
+                       saturation=sat, critical=dict(P=_PC, T=_TC, rho=_RHOC),
+                       tie_lines=_in_window(triple_points(pm, fluid, path), None, T),
+                       labels=_labels_rhoT(pm, img, pairs, rq, Tg, xscale), xscale=xscale, gap=gap)
+
+
+def _split_jumps(ri, rj, T, factor=20.0):
+    """Insert NaN between consecutive points where either density changes by > factor."""
+    ri, rj, T = (np.asarray(a, float) for a in (ri, rj, T))
+    with np.errstate(divide='ignore', invalid='ignore'):
+        jump = np.zeros(max(T.size - 1, 0), bool)
+        for r in (ri, rj):
+            q = np.abs(np.log(r[1:] / r[:-1]))
+            jump |= q > np.log(factor)
+    k = np.flatnonzero(jump) + 1
+    if k.size == 0:
+        return ri, rj, T
+    return (np.insert(ri, k, np.nan), np.insert(rj, k, np.nan), np.insert(T, k, np.nan))
+
+
+def rhoT_labels(d, xscale=None):
+    """Field and two-phase labels of a DiagramRhoT, placed for a 'log' or
+    'linear' density axis (default: the diagram's own grid spacing).
+
+    The two-phase regions are labelled from d.gap (the coexisting phases of
+    each two-phase cell).
+    """
+    xscale = xscale or d.xscale
+    pairs = {}
+    if d.gap is not None:
+        R, TT = np.meshgrid(d.rho, d.T, indexing='ij')
+        g = d.gap.astype(int)
+        code = np.where(g[..., 0] >= 0, g[..., 0] * 64 + g[..., 1], -1)
+        for c in np.unique(code[code >= 0]):
+            m = code == c
+            pairs[(int(c // 64), int(c % 64))] = list(zip(R[m], TT[m]))
+    return _labels_rhoT(d.pm, d.field, pairs, d.rho, d.T, xscale)
+
+
+def _wmedian(v, w):
+    """Weighted median."""
+    o = np.argsort(v)
+    c = np.cumsum(w[o])
+    return v[o][np.searchsorted(c, 0.5 * c[-1])]
+
+
+def _labels_rhoT(pm, img, pairs, rq, Tg, xscale):
+    """(text, rho, T, kind) for the fields and the two-phase regions.
+
+    Positions are area-weighted medians in the displayed coordinates
+    (xscale), whatever the spacing of the density grid.
+    """
+    fx = np.log10 if xscale == 'log' else (lambda v: v)
+    ix = (lambda v: 10 ** v) if xscale == 'log' else (lambda v: v)
+    xw = np.abs(np.gradient(fx(rq)))                      # displayed width of each density cell
+    X, TT = np.meshgrid(fx(rq), Tg, indexing='ij')
+    W = np.broadcast_to(xw[:, None], X.shape)
+    N = img.size
+    area = lambda m: W[m].sum() / xw.sum() * Tg.size      # in "columns x rows" units
+    out = []
+    for idx, name in enumerate(pm.names):
+        m = img == idx
+        if m.sum() < max(4, 1.2e-4 * N):
+            continue
+        if idx == 0:
+            for lab, sel in (('vapour', (TT < _TC) & (X < fx(_RHOC))),
+                             ('liquid', (TT < _TC) & (X >= fx(_RHOC))),
+                             ('supercritical fluid', TT >= _TC + 50)):
+                mm = m & sel
+                if mm.sum() > max(15, 4.5e-4 * N):
+                    out.append((lab, ix(_wmedian(X[mm], W[mm])), _wmedian(TT[mm], W[mm]), 'fluid'))
+        else:
+            out.append((_LABEL.get(name, name), ix(_wmedian(X[m], W[m])), _wmedian(TT[m], W[m]), 'ice'))
+    wmap = dict(zip(rq, xw))
+    for (i, jph), pts in pairs.items():
+        pts = np.array(pts)
+        if len(pts) < max(6, 1.8e-4 * N):
+            continue
+        if i == 0 and jph == 0:
+            lab = 'L + V'
+        elif i == 0:
+            fl = 'V' if np.median(pts[:, 0]) < 100 else 'L'
+            lab = f'{_LABEL.get(pm.names[jph], pm.names[jph])} + {fl}'
+        else:
+            lab = f'{_LABEL.get(pm.names[i])} + {_LABEL.get(pm.names[jph])}'
+        w = np.array([wmap.get(r, 1.0) for r in pts[:, 0]])
+        out.append((lab, ix(_wmedian(fx(pts[:, 0]), w)), _wmedian(pts[:, 1], w), 'two-phase'))
+    return out
+
+
+# ---- property of the stable phase ----------------------------------------------
+MAP_PROPS = ('rho', 'P', 'G', 'S', 'U', 'H', 'A', 'Cp', 'Cv', 'Kt', 'Kp', 'Ks', 'alpha', 'vel',
+             'Js', 'gamma_Gruneisen')
+ICE_ONLY_PROPS = ('shear', 'Vp', 'Vs')                  # NaN in the fluid
+
+
+def property_map(diag, *props, path=defpath):
+    """Property of the stable phase over a phase diagram.
+
+    Each grid point carries the property of the phase stable there, so the
+    maps jump across the phase boundaries (density at melting and boiling...).
+
+    * DiagramPT: every phase is evaluated on the diagram's (P, T) grid.
+    * DiagramRhoT: the fluid is evaluated directly at (rho, T) (Helmholtz);
+      an ice field is interpolated in density along each isotherm of the
+      underlying (P, T) map, where the ice density rises with P.  Two-phase
+      regions are NaN.
+
+    Below the fluid's lowest temperature the vapour is its dilute ideal-gas
+    part, as in phase_map (flagged in `ideal_gas`).
+
+    :param diag:  DiagramPT or DiagramRhoT
+    :param props: names from MAP_PROPS, plus ICE_ONLY_PROPS (NaN in the
+                  fluid); none = MAP_PROPS
+    :return:      PropertyMap
+    """
+    props = tuple(props) or MAP_PROPS
+    bad = set(props) - set(MAP_PROPS) - set(ICE_ONLY_PROPS)
+    if bad:
+        raise ValueError('unsupported property name(s): ' + ', '.join(sorted(bad)))
+    if isinstance(diag, DiagramPT):
+        pm = diag.pm
+        vals, ig = _stable_props_PT(pm, props, range(len(pm.names)), path)
+        return PropertyMap(values=vals, phase=pm.stable.copy(), ideal_gas=ig, coords='PT',
+                           names=list(pm.names))
+    if isinstance(diag, DiagramRhoT):
+        return _property_map_rhoT(diag, props, path)
+    raise TypeError('diag must be a DiagramPT or a DiagramRhoT')
+
+
+def _stable_props_PT(pm, props, phases, path):
+    """{prop: (nP, nT)} of the stable phase (only `phases`), and the ideal-gas mask."""
+    shape = pm.stable.shape
+    vals = {p: np.full(shape, np.nan) for p in props}
+    ig = np.zeros(shape, bool)
+    Pm, Tm = np.meshgrid(pm.P, pm.T, indexing='ij')
+    if 'P' in vals:
+        vals['P'] = np.where(np.isin(pm.stable, list(phases)), Pm, np.nan)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        for k in phases:
+            sel = pm.stable == k
+            if not sel.any():
+                continue
+            name = pm.names[k]
+            want = [p for p in props if p != 'P' and (k > 0 or p not in ICE_ONLY_PROPS)]
+            if want:
+                o = getProp(_grid(pm.P, pm.T), name, path, *want)
+                for p in want:
+                    a = np.broadcast_to(np.asarray(getattr(o, p, np.nan), float), shape)
+                    vals[p][sel] = a[sel]
+            if k == 0:
+                sp = _load_spline(path, name)
+                if eh.is_psi(sp):
+                    lo = sel & (Tm < eh.domain(sp)[1][0]) & (Pm < 1e-4)   # as phase_map
+                    if lo.any():
+                        ig |= lo
+                        want = [p for p in props if p in eh.IDEAL_GAS_PROPS and p != 'P']
+                        if want:
+                            o = eh.ideal_gas_props(sp, Pm[lo], Tm[lo], *want)
+                            for p in want:
+                                vals[p][lo] = getattr(o, p)
+    return vals, ig
+
+
+def _property_map_rhoT(d, props, path):
+    pm, fluid = d.pm, d.pm.names[0]
+    shape = d.field.shape
+    vals = {p: np.full(shape, np.nan) for p in props}
+    ig = np.zeros(shape, bool)
+    Rm, Tm = np.meshgrid(d.rho, d.T, indexing='ij')
+    # the fluid: directly at (rho, T)
+    sel = d.field == 0
+    if sel.any():
+        if 'rho' in vals:
+            vals['rho'][sel] = Rm[sel]
+        want = [p for p in props if p not in ICE_ONLY_PROPS and p != 'rho']
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            if want:
+                o = getProp(_grid(d.rho, d.T), fluid, path, *want, rhoT=True)
+                for p in want:
+                    a = np.broadcast_to(np.asarray(getattr(o, p, np.nan), float), shape)
+                    vals[p][sel] = a[sel]
+            sp = _load_spline(path, fluid)
+            if eh.is_psi(sp):
+                lo = sel & (Tm < eh.domain(sp)[1][0])          # dilute-vapour extension
+                if lo.any():
+                    ig |= lo
+                    want = [p for p in props if p in eh.IDEAL_GAS_PROPS and p != 'rho']
+                    if want:
+                        o = eh.ideal_gas_props(sp, Rm[lo], Tm[lo], *want, rhoT=True)
+                        for p in want:
+                            vals[p][lo] = getattr(o, p)
+    # the ices: interpolate in density along each isotherm of the (P, T) map
+    ices = [k for k in range(1, len(pm.names)) if (d.field == k).any()]
+    if ices:
+        need = tuple(p for p in props if p not in ('rho', 'P'))
+        src, _ = _stable_props_PT(pm, need, ices, path)
+        for k in ices:
+            for j in np.flatnonzero((d.field == k).any(axis=0)):
+                col = pm.stable[:, j] == k
+                tgt = d.field[:, j] == k
+                if not col.any():
+                    continue
+                r = np.maximum.accumulate(pm.rho[k][col, j])
+                x = d.rho[tgt]
+                if 'rho' in vals:
+                    vals['rho'][tgt, j] = x
+                if 'P' in vals:
+                    vals['P'][tgt, j] = np.exp(np.interp(x, r, np.log(pm.P[col])))
+                for p in need:
+                    vals[p][tgt, j] = np.interp(x, r, src[p][col, j])
+    return PropertyMap(values=vals, phase=d.field.copy(), ideal_gas=ig, coords='rhoT',
+                       names=list(pm.names))
+
+
+# ---- the diagrams as matplotlib figures ------------------------------------------
 def wpd_PT(ax=None, P=(1e-8, 1e5), T=(150.0, 1800.0), nP=500, nT=420, fluid='water3',
            ices=ICES, path=defpath, return_map=False):
     """Full H2O phase diagram in (P, T): vapour, liquid, supercritical fluid, ices.
 
-    Stability fields by Gibbs-energy minimisation (phase_map) on a log-P grid;
-    boundaries are the G_i = G_j contours between neighbouring stable phases;
-    overlays: saturation curve and critical point, triple points.
+    Draws phase_diagram_PT: stability fields by Gibbs-energy minimisation on a
+    log-P grid, the boundaries between neighbouring stable phases, the
+    saturation curve and critical point, and the triple points.
 
     :return: matplotlib Figure (and the PhaseMap if return_map=True)
     """
     import matplotlib.pyplot as plt
     from matplotlib.colors import ListedColormap
-    Pg = np.geomspace(P[0], P[1], nP)
-    Tg = np.linspace(T[0], T[1], nT)
-    pm = phase_map(Pg, Tg, fluid, ices, path=path)
+    d = phase_diagram_PT(P, T, nP, nT, fluid, ices, path)
+    pm = d.pm
     if ax is None:
         fig, ax = plt.subplots(figsize=(11, 7.5))
     else:
         fig = ax.figure
     cmap = ListedColormap([_tint(c) for c in _COLORS[:len(pm.names)]])
     S = np.ma.masked_less(pm.stable, 0).astype(float)
-    ax.pcolormesh(Pg, Tg, S.T, cmap=cmap, vmin=-0.5, vmax=len(pm.names) - 0.5, shading='auto',
+    ax.pcolormesh(pm.P, pm.T, S.T, cmap=cmap, vmin=-0.5, vmax=len(pm.names) - 0.5, shading='auto',
                   rasterized=True)
-    _hatch_missing(ax, Pg, Tg, pm.stable < 0)
-    for i, j, Pl, Tl in _boundaries(pm):
+    _hatch_missing(ax, pm.P, pm.T, d.missing)
+    for i, j, Pl, Tl in d.boundaries:
         ax.plot(Pl, Tl, '-', color='#0b0b0b', lw=1.1)
     # vapour-liquid: saturation curve and critical point
-    Ts = _sat_T(max(273.16, T[0]))                          # stable branch only
-    sat = saturation(Ts, fluid=fluid, path=path)
-    keep = pm_stable_fluid(pm, sat.P, Ts)
-    ax.plot(np.where(keep, sat.P, np.nan), Ts, '-', color='#0b0b0b', lw=1.1)
+    if d.saturation is not None:
+        ax.plot(d.saturation.P, d.saturation.T, '-', color='#0b0b0b', lw=1.1)
     ax.plot(_PC, _TC, 'o', color='#0b0b0b', ms=6, mfc='white', mew=1.5, zorder=5)
     ax.annotate('critical point', (_PC, _TC), xytext=(8, -12), textcoords='offset points', fontsize=9)
-    for tp in triple_points(pm, fluid, path):
+    for tp in d.triple_points:
         ax.plot(tp['P'], tp['T'], 'o', color='#0b0b0b', ms=3.5, zorder=6)
     ax.set_xscale('log')
-    ax.set_xlim(Pg[0], Pg[-1]); ax.set_ylim(Tg[0], Tg[-1])
+    ax.set_xlim(pm.P[0], pm.P[-1]); ax.set_ylim(pm.T[0], pm.T[-1])
     ax.set_xlabel('Pressure (MPa)'); ax.set_ylabel('Temperature (K)')
     ax.set_title(f'H$_2$O phase diagram — fluid: {fluid}, ices: ' + ', '.join(_LABEL[i] for i in ices),
                  loc='left', fontsize=11)
-    _label_fields_PT(ax, pm)
+    for text, Px, Tx, kind in d.labels:
+        if kind == 'fluid':
+            ax.text(Px, Tx, text, ha='center', va='center', fontsize=11, fontweight='bold',
+                    color='#123c70')
+        else:
+            ax.text(Px, Tx, text, ha='center', va='center', fontsize=10, fontweight='bold',
+                    color='#0b0b0b')
     _style(ax)
     return (fig, pm) if return_map else fig
 
@@ -414,104 +770,39 @@ def _fluid_kind(pm):
     return np.where(pm.stable == 0, k, -1)
 
 
-def _label_fields_PT(ax, pm):
-    lPm, Tm = np.meshgrid(np.log10(pm.P), pm.T, indexing='ij')
-    kind = _fluid_kind(pm)
-    for idx, name in enumerate(pm.names):
-        if idx == 0:
-            for k, lab in ((0, 'vapour'), (1, 'liquid'), (2, 'supercritical fluid')):
-                m = kind == k
-                if m.sum() > 200:
-                    ax.text(10 ** np.median(lPm[m]), np.median(Tm[m]), lab, ha='center', va='center',
-                            fontsize=11, fontweight='bold', color='#123c70')
-            continue
-        m = pm.stable == idx
-        if m.sum() > 30:
-            ax.text(10 ** np.median(lPm[m]), np.median(Tm[m]), _LABEL.get(name, name), ha='center',
-                    va='center', fontsize=10, fontweight='bold', color='#0b0b0b')
-
-
 def wpd_rhoT(ax=None, rho=(1e-7, 4e3), T=(150.0, 1800.0), P=(1e-10, 1e5), nP=1200, nT=420,
              nrho=800, xscale='log', fluid='water3', ices=ICES, path=defpath, return_map=False):
     """Full H2O phase diagram in (rho, T).
 
-    The (P, T) phase map is re-drawn in density: along every isotherm the
-    density of the stable phase increases with P; where it jumps (between
-    two phases, or across the vapour-liquid saturation) the density gap is a
-    two-phase region — the vapour-liquid dome, sublimation (ice + V),
-    melting (ice + L) and ice-ice regions — drawn grey and bounded by the
-    coexisting densities.
+    Draws phase_diagram_rhoT: the stability fields re-drawn in density, the
+    two-phase regions (grey) bounded by the coexisting densities, the
+    saturation dome and critical point, and the three-phase tie lines.
 
     :param xscale: 'log' (default, shows the vapour) or 'linear'
     :return: matplotlib Figure (and the PhaseMap if return_map=True)
     """
     import matplotlib.pyplot as plt
     from matplotlib.colors import ListedColormap
-    Pg = np.geomspace(P[0], P[1], nP)
-    Tg = np.linspace(T[0], T[1], nT)
-    pm = phase_map(Pg, Tg, fluid, ices, path=path)
-    rq = np.geomspace(rho[0], rho[1], nrho) if xscale == 'log' else np.linspace(rho[0], rho[1], nrho)
-    n = len(pm.names)
-    TWO = n
-    # saturation densities bound the vapour-liquid dome exactly
-    Tsat = Tg[(Tg >= 273.16) & (Tg < _TC)]
-    sat = None
-    if Tsat.size:
-        # solve on ~100 temperatures clustered toward Tc, interpolate onto the grid
-        Ts = _sat_T(273.16)
-        s0 = saturation(Ts, fluid=fluid, path=path)
-        ok = np.isfinite(s0.P)
-        sat = type(s0)(P=np.exp(np.interp(Tsat, Ts[ok], np.log(s0.P[ok]))), T=Tsat,
-                       rho_A=np.interp(Tsat, Ts[ok], s0.rho_A[ok]),
-                       rho_B=np.exp(np.interp(Tsat, Ts[ok], np.log(s0.rho_B[ok]))))
-    img = np.full((nrho, nT), -1.0)
-    pairs = {}
-    for j in range(nT):
-        st = pm.stable[:, j]; rs = pm.rho_stable[:, j]
-        ok = (st >= 0) & np.isfinite(rs)
-        if ok.sum() < 2:
-            continue
-        st, rs = st[ok], np.maximum.accumulate(rs[ok])
-        k = np.searchsorted(rs, rq)
-        inside = (k > 0) & (k < rs.size)
-        kk = np.clip(k, 1, rs.size - 1)
-        a, b = st[kk - 1], st[kk]
-        single = inside & (a == b)
-        img[single, j] = a[single]
-        dual = inside & (a != b)
-        img[dual, j] = TWO
-        for q in np.flatnonzero(dual):
-            key = (int(min(a[q], b[q])), int(max(a[q], b[q])))
-            pairs.setdefault(key, []).append((rq[q], Tg[j]))
-        # vapour-liquid dome from the saturation densities
-        if sat is not None and Tg[j] in Tsat:
-            i = int(np.flatnonzero(Tsat == Tg[j])[0])
-            rv, rl = sat.rho_B[i], sat.rho_A[i]
-            if np.isfinite(rv) and np.isfinite(rl):
-                dome = (rq > rv) & (rq < rl) & (img[:, j] == 0)
-                img[dome, j] = TWO
-                for q in np.flatnonzero(dome):
-                    pairs.setdefault((0, 0), []).append((rq[q], Tg[j]))
+    d = phase_diagram_rhoT(rho, T, P, nP, nT, nrho, xscale, fluid, ices, path)
+    pm, rq, Tg, n = d.pm, d.rho, d.T, d.two_phase
     if ax is None:
         fig, ax = plt.subplots(figsize=(11, 7.5))
     else:
         fig = ax.figure
     cmap = ListedColormap([_tint(c) for c in _COLORS[:n]] + [(0.86, 0.86, 0.84)])
-    ax.pcolormesh(rq, Tg, np.ma.masked_less(img, 0).T, cmap=cmap, vmin=-0.5, vmax=n + 0.5,
+    ax.pcolormesh(rq, Tg, np.ma.masked_less(d.field, 0).T, cmap=cmap, vmin=-0.5, vmax=n + 0.5,
                   shading='auto', rasterized=True)
-    # coexisting densities along every P-T boundary
-    for i, jph, Pl, Tl in _boundaries(pm):
-        for ph in (i, jph):
-            ax.plot(_rho_on(pm, ph, Pl, Tl, fluid, path), Tl, '-', color='#0b0b0b', lw=0.8)
-    if sat is not None:
-        keep = pm_stable_fluid(pm, sat.P, Tsat)
-        ax.plot(np.where(keep, sat.rho_A, np.nan), Tsat, '-', color='#0b0b0b', lw=1.1)
-        ax.plot(np.where(keep, sat.rho_B, np.nan), Tsat, '-', color='#0b0b0b', lw=1.1)
+    for i, j, ri, rj, Tl in d.coexistence:
+        ax.plot(ri, Tl, '-', color='#0b0b0b', lw=0.8)
+        ax.plot(rj, Tl, '-', color='#0b0b0b', lw=0.8)
+    if d.saturation is not None:
+        ax.plot(d.saturation.rho_A, d.saturation.T, '-', color='#0b0b0b', lw=1.1)
+        ax.plot(d.saturation.rho_B, d.saturation.T, '-', color='#0b0b0b', lw=1.1)
     ax.plot(_RHOC, _TC, 'o', color='#0b0b0b', ms=6, mfc='white', mew=1.5, zorder=5)
     ax.annotate('critical point', (_RHOC, _TC), xytext=(-14, 10), textcoords='offset points',
                 fontsize=9, ha='right')
     # three-phase (triple-point) tie lines: the separations between two-phase regions
-    for tp in triple_points(pm, fluid, path):
+    for tp in d.tie_lines:
         r = np.array(tp['rho'])
         ax.plot([r.min(), r.max()], [tp['T'], tp['T']], '-', color='#0b0b0b', lw=1.0, zorder=4)
         ax.plot(r, np.full(3, tp['T']), '|', color='#0b0b0b', ms=7, mew=1.2, zorder=4)
@@ -520,38 +811,15 @@ def wpd_rhoT(ax=None, rho=(1e-7, 4e3), T=(150.0, 1800.0), P=(1e-10, 1e5), nP=120
     ax.set_xlabel('Density (kg/m³)'); ax.set_ylabel('Temperature (K)')
     ax.set_title(f'H$_2$O phase diagram in density — fluid: {fluid}; grey: two-phase regions',
                  loc='left', fontsize=11)
-    # field and two-phase labels (positions in the plotted coordinates)
-    fx = np.log10 if xscale == 'log' else (lambda v: v)
-    ix = (lambda v: 10 ** v) if xscale == 'log' else (lambda v: v)
-    X, TT = np.meshgrid(fx(rq), Tg, indexing='ij')
-    for idx, name in enumerate(pm.names):
-        m = img == idx
-        if m.sum() < 40:
-            continue
-        if idx == 0:
-            for lab, sel in (('vapour', (TT < _TC) & (X < fx(_RHOC))),
-                             ('liquid', (TT < _TC) & (X >= fx(_RHOC))),
-                             ('supercritical fluid', TT >= _TC + 50)):
-                mm = m & sel
-                if mm.sum() > 150:
-                    ax.text(ix(np.median(X[mm])), np.median(TT[mm]), lab, ha='center', va='center',
-                            fontsize=11, fontweight='bold', color='#123c70')
+    for text, x, Tx, kind in d.labels:
+        if kind == 'fluid':
+            ax.text(x, Tx, text, ha='center', va='center', fontsize=11, fontweight='bold',
+                    color='#123c70')
+        elif kind == 'ice':
+            ax.text(x, Tx, text, ha='center', va='center', fontsize=10, fontweight='bold')
         else:
-            ax.text(ix(np.median(X[m])), np.median(TT[m]), _LABEL.get(name, name), ha='center',
-                    va='center', fontsize=10, fontweight='bold')
-    for (i, jph), pts in pairs.items():
-        pts = np.array(pts)
-        if len(pts) < 60:
-            continue
-        if i == 0 and jph == 0:
-            lab = 'L + V'
-        elif i == 0:
-            fl = 'V' if np.median(pts[:, 0]) < 100 else 'L'
-            lab = f'{_LABEL.get(pm.names[jph], pm.names[jph])} + {fl}'
-        else:
-            lab = f'{_LABEL.get(pm.names[i])} + {_LABEL.get(pm.names[jph])}'
-        ax.text(ix(np.median(fx(pts[:, 0]))), np.median(pts[:, 1]), lab, ha='center', va='center',
-                fontsize=8.5, color='#52514e', style='italic')
+            ax.text(x, Tx, text, ha='center', va='center', fontsize=8.5, color='#52514e',
+                    style='italic')
     _style(ax)
     return (fig, pm) if return_map else fig
 

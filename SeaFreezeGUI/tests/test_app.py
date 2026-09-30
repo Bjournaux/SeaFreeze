@@ -41,6 +41,12 @@ def _open(page="Property Calculator"):
     return at
 
 
+def _melting(at):
+    """Switch the Phase Diagram page to the ice melting-line viewer."""
+    at.radio(key="pd_mode").set_value("Ice melting lines")
+    return _run(at)
+
+
 def _compute(at):
     [btn] = [b for b in at.button if b.label == "Compute"]
     btn.click()
@@ -154,7 +160,7 @@ def test_three_ranges_warns():
 
 # ── Phase Diagram ────────────────────────────────────────────────────────────
 def test_phase_diagram_default():
-    at = _open("Phase Diagram")
+    at = _melting(_open("Phase Diagram"))
     [fig] = _figures(at)
     names = _trace_names(fig)
     assert "Ice Ih – Water" in names
@@ -167,7 +173,7 @@ def test_phase_diagram_default():
 
 
 def test_phase_diagram_metastable_and_triple_points():
-    at = _open("Phase Diagram")
+    at = _melting(_open("Phase Diagram"))
     at.radio(key="pd_segment").set_value("all")
     at.checkbox(key="pd_show_tp").check()
     _run(at)
@@ -178,7 +184,7 @@ def test_phase_diagram_metastable_and_triple_points():
 
 
 def test_phase_diagram_nacl_curves():
-    at = _open("Phase Diagram")
+    at = _melting(_open("Phase Diagram"))
     at.checkbox(key="pd_show_nacl").check()
     _run(at)
     assert at.text_input(key="pd_nacl_m").value == "1, 2, 3"
@@ -189,12 +195,136 @@ def test_phase_diagram_nacl_curves():
 
 
 def test_phase_diagram_too_few_phases():
-    at = _open("Phase Diagram")
-    for phase in ["II", "III", "V", "VI", "water1"]:
-        at.checkbox(key=f"pd_{phase}").uncheck()
+    at = _melting(_open("Phase Diagram"))
+    for key in ["pd_II", "pd_III", "pd_V", "pd_VI", "pd_liquid_on"]:
+        at.checkbox(key=key).uncheck()
     _run(at)
     assert not _figures(at)
     assert any("at least two phases" in i.value for i in at.info)
+
+
+def test_melting_lines_water3_and_log_axes():
+    at = _melting(_open("Phase Diagram"))
+    at.radio(key="pd_liquid").set_value("water3")
+    at.checkbox(key="pd_logP").check()
+    at.checkbox(key="pd_logT").check()
+    _run(at)
+    [fig] = _figures(at)
+    names = _trace_names(fig)
+    assert "Ice Ih – Water3" in names and "Ice VI – Water3" in names
+    assert fig["layout"]["xaxis"]["type"] == "log" and fig["layout"]["yaxis"]["type"] == "log"
+
+
+# ── Full diagram ─────────────────────────────────────────────────────────────
+def test_full_diagram_default_is_precomputed():
+    at = _open("Phase Diagram")
+    assert at.radio(key="pd_mode").value.startswith("Full diagram")
+    assert any("precomputed default" in c.value for c in at.caption)
+    [fig] = _figures(at)
+    names = _trace_names(fig)
+    assert fig["data"][0]["type"] == "heatmap"
+    assert {"phase boundaries", "saturation curve", "critical point", "triple points"} <= set(names)
+    assert fig["layout"]["xaxis"]["type"] == "log"
+    texts = {a["text"] for a in fig["layout"]["annotations"]}
+    assert {"<b>liquid</b>", "<b>vapour</b>", "<b>VI</b>"} <= texts
+
+
+@pytest.mark.parametrize("coords", ["P–T", "ρ–T"])
+@pytest.mark.parametrize("view", ["2-D map", "2-D map + isocontours", "3-D surface"])
+def test_full_diagram_property_views(coords, view):
+    at = _open("Phase Diagram")
+    at.radio(key="pdf_coords").set_value(coords)
+    _run(at)
+    at.selectbox(key="pdf_colour").set_value("rho")
+    _run(at)
+    at.radio(key="pdf_view").set_value(view)
+    at.checkbox(key="pdf_ylog").check()
+    _run(at)
+    [fig] = _figures(at)
+    types = [tr["type"] for tr in fig["data"]]
+    if view == "3-D surface":
+        assert types[0] == "surface"
+        assert fig["layout"]["scene"]["yaxis"]["type"] == "log"
+    else:
+        assert "heatmap" in types and fig["layout"]["yaxis"]["type"] == "log"
+        assert ("contour" in types) == (view == "2-D map + isocontours")
+    if coords == "ρ–T" and view != "3-D surface":
+        assert "saturation dome" in _trace_names(fig)
+
+
+def test_full_diagram_linear_axes():
+    at = _open("Phase Diagram")
+    at.checkbox(key="pdf_xlog_PT").uncheck()
+    _run(at)
+    [fig] = _figures(at)
+    assert fig["layout"]["xaxis"]["type"] == "linear"
+
+
+# ── water3 and (rho, T) input in the calculator ─────────────────────────────
+@pytest.mark.parametrize("branch, lo, hi", [("stable", 990, 1000), ("liquid", 990, 1000),
+                                            ("vapor", 0, 0.1)])
+def test_water3_single_point_branches(branch, lo, hi):
+    at = _open()
+    at.selectbox(key="pc_material").set_value("water3")
+    _run(at)
+    at.number_input(key="P_single_water3_PT").set_value(0.001)
+    at.number_input(key="T_single_water3_PT").set_value(300.0)
+    at.radio(key="pc_branch").set_value(branch)
+    _run(at)
+    _compute(at)
+    df = at.dataframe[0].value
+    rho = float(df.set_index("Property").loc["rho", "Value"])
+    if branch == "stable":                  # 1 kPa < p_sat(300 K): the vapour is stable
+        lo, hi = 0, 0.1
+    assert lo < rho < hi
+
+
+def test_water3_rhoT_log_sweep():
+    at = _open()
+    at.selectbox(key="pc_material").set_value("water3")
+    _run(at)
+    at.radio(key="pc_input").set_value("ρ, T")
+    _run(at)
+    _set_range(at, "rho", 20)
+    _run(at)
+    assert at.checkbox(key="rho_log_water3_rhoT").value     # log by default for water3
+    _compute(at)
+    figs = _figures(at)
+    assert figs and all(f["layout"]["xaxis"]["type"] == "log" for f in figs)
+    assert figs[0]["layout"]["xaxis"]["title"]["text"] == "ρ (kg/m³)"
+    # pressure is an output in (rho, T) mode
+    assert "P" in [t.label for t in at.tabs]
+
+
+def test_water3_2d_with_phase_diagram_overlay():
+    at = _open()
+    at.selectbox(key="pc_material").set_value("water3")
+    _run(at)
+    _set_range(at, "P", 30)
+    _set_range(at, "T", 20)
+    _run(at)
+    _compute(at)
+    at.checkbox(key="show_boundaries").check()
+    _run(at)
+    [fig] = _figures(at)
+    names = _trace_names(fig)
+    assert fig["layout"]["xaxis"]["type"] == "log"
+    assert {"saturation curve", "critical point"} <= set(names)
+
+
+def test_gibbs_rhoT_input_small_grid():
+    at = _open()
+    at.selectbox(key="pc_material").set_value("Ih")
+    _run(at)
+    at.radio(key="pc_input").set_value("ρ, T")
+    _run(at)
+    at.number_input(key="rho_single_Ih_rhoT").set_value(920.0)
+    at.number_input(key="T_single_Ih_rhoT").set_value(260.0)
+    _run(at)
+    _compute(at)
+    df = at.dataframe[0].value.set_index("Property")
+    P = float(df.loc["P", "Value"])
+    assert 0 < P < 100                       # ice Ih at 920 kg/m3, 260 K
 
 
 # ── About ────────────────────────────────────────────────────────────────────

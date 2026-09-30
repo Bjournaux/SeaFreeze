@@ -53,6 +53,7 @@ hiddenimports = [
     # GUI pages (imported by app.py, which PyInstaller does not analyse)
     "views",
     "views.about",
+    "views.full_diagram",
     "views.phase_diagram",
     "views.property_calculator",
 

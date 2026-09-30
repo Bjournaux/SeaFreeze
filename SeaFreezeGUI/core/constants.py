@@ -2,7 +2,9 @@
 
 # ── Material groups (display order) ──────────────────────────────────────────
 MATERIALS_ICE = ["Ih", "II", "III", "V", "VI", "VII_X_French"]
-MATERIALS_WATER = ["water1", "water2", "water_IAPWS95"]
+MATERIALS_WATER = ["water1", "water2", "water_IAPWS95", "water3"]
+# Helmholtz fluids F(rho, T): vapour, liquid and supercritical states
+MATERIALS_HELMHOLTZ = ["water3"]
 MATERIALS_NACL = ["NaClaq", "NaClaq_LP", "NaClaq_HP", "NaClaq_5GPa_2024"]
 ALL_MATERIALS = MATERIALS_ICE + MATERIALS_WATER + MATERIALS_NACL
 
@@ -17,6 +19,7 @@ MATERIAL_LABELS = {
     "water1":           "Water (Bollengier et al., 2019)",
     "water2":           "Water (Brown, 2018)",
     "water_IAPWS95":    "Water IAPWS95 (Wagner & Pruss, 2002)",
+    "water3":           "Water3: vapour, liquid, supercritical (Brown & Journaux, in prep., beta)",
     "NaClaq":           "NaCl(aq) (Brown et al., under review)",
     "NaClaq_LP":        "NaCl(aq) LP (Brown et al., under review)",
     "NaClaq_HP":        "NaCl(aq) HP (Brown et al., under review)",
@@ -34,6 +37,7 @@ MATERIAL_SHORT_LABELS = {
     "water1":           "Water",
     "water2":           "Water (Brown)",
     "water_IAPWS95":    "Water IAPWS95",
+    "water3":           "Water3",
     "NaClaq":           "NaCl(aq)",
     "NaClaq_LP":        "NaCl(aq) LP",
     "NaClaq_HP":        "NaCl(aq) HP",
@@ -45,6 +49,23 @@ def is_nacl(material: str) -> bool:
 
 def is_solid(material: str) -> bool:
     return material in MATERIALS_ICE
+
+def is_helmholtz(material: str) -> bool:
+    return material in MATERIALS_HELMHOLTZ
+
+def supports_rhoT(material: str) -> bool:
+    """(rho, T) input: native for Helmholtz fluids, by P inversion for pure Gibbs phases."""
+    return not is_nacl(material)
+
+# Input bounds and default sweeps where the spline box is not a useful input
+# range.  water3: the surface spans 230-150 000 K, rho <= 16 000 kg/m3 and
+# P up to ~10 TPa (Python/README.md, "Range of validity").
+INPUT_LIMITS = {
+    "water3": dict(P=(1e-10, 1e7), T=(230.0, 150000.0), rho=(1e-10, 16000.0),
+                   P_default=(1e-6, 1e4), T_default=(230.0, 1500.0),
+                   rho_default=(1e-4, 1500.0), P_single=0.101325, T_single=298.15,
+                   rho_single=997.0),
+}
 
 # ── Property metadata: (display name, unit) ──────────────────────────────────
 # Ordered as they should appear in tables / selectors.
@@ -62,7 +83,7 @@ PROPS_ALL = {
     "Ks":    ("Isentropic bulk modulus",     "MPa"),
     "alpha": ("Thermal expansivity",         "1/K"),
     "vel":   ("Sound velocity",              "m/s"),
-    "Js":    ("Joule–Thomson coeff.",   "K/MPa"),
+    "Js":    ("Isentropic dT/dP",            "K/MPa"),
     "gamma_Gruneisen": ("Grüneisen parameter", "—"),
 }
 
@@ -88,7 +109,7 @@ PROPS_NACL = {
 
 PROP_CATEGORIES = [
     ("Thermodynamic potentials", ["G", "S", "U", "H", "A"]),
-    ("Elastic & volumetric",     ["rho", "alpha", "Kt", "Kp", "Ks",
+    ("Elastic & volumetric",     ["P", "rho", "alpha", "Kt", "Kp", "Ks",
                                   "vel", "shear", "Vp", "Vs"]),
     ("Thermal",                  ["Cp", "Cv", "Js", "gamma_Gruneisen"]),
     ("Mixing (NaCl)",            ["mus", "muw", "Vm", "Vw", "Va",
@@ -96,9 +117,16 @@ PROP_CATEGORIES = [
 ]
 
 
-def available_properties(material: str) -> dict:
-    """Return {symbol: (name, unit)} for the given material."""
-    props = dict(PROPS_ALL)
+PROP_PRESSURE = {"P": ("Pressure", "MPa")}
+
+
+def available_properties(material: str, rhoT: bool = False) -> dict:
+    """Return {symbol: (name, unit)} for the given material.
+
+    With (rho, T) input the pressure is an output and is listed first.
+    """
+    props = dict(PROP_PRESSURE) if rhoT else {}
+    props.update(PROPS_ALL)
     if is_solid(material):
         props.update(PROPS_SOLID)
     if is_nacl(material):
@@ -106,12 +134,12 @@ def available_properties(material: str) -> dict:
     return props
 
 
-def categorized_properties(material: str) -> list:
+def categorized_properties(material: str, rhoT: bool = False) -> list:
     """Return [(category_name, [(symbol, display_name, unit), ...])] for material.
 
     Only includes categories that have at least one property available.
     """
-    avail = available_properties(material)
+    avail = available_properties(material, rhoT)
     categories = []
     for cat_name, symbols in PROP_CATEGORIES:
         items = [(s, avail[s][0], avail[s][1]) for s in symbols if s in avail]

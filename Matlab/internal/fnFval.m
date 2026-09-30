@@ -296,9 +296,11 @@ function rho = invert_P(sp, P, T, rlim, Tlim, branch)
 % INVERT_P  Density solving rho^2 dF/drho = P at each point (P in MPa).
 %
 %   Brackets every root on a coarse density grid (per distinct temperature)
-%   where P increases with rho (mechanically stable), refines the least and
-%   the most dense of them with a bracket-safeguarded Newton iteration, and
-%   returns the one selected by branch ('stable': lower Gibbs energy).
+%   where P increases with rho (mechanically stable) and Cv > 0 at both ends
+%   of the bracket (thermally stable: discards roots on spurious loops of the
+%   surface, e.g. inside the dome near Tc), refines the least and the most
+%   dense of them with a bracket-safeguarded Newton iteration, and returns
+%   the one selected by branch ('stable': lower Gibbs energy).
 
     n   = numel(P);
     rho = NaN(n, 1);
@@ -338,10 +340,28 @@ function rho = invert_P(sp, P, T, rlim, Tlim, branch)
     pg  = bsxfun(@times, rg.^2, Fr);                            % P, Pa
     dpg = bsxfun(@times, 2 * rg, Fr) + bsxfun(@times, rg.^2, Frr);   % dP/drho
     col = zeros(n, 1); col(idx) = jT;                            % T column of each point
+    rising = diff(pg, 1, 1) > 0;                                 % (nr-1)-by-nTu
+    % brackets that hold a crossing for some point: check Cv > 0 at their ends
+    cand = false(size(rising));
+    for j = 1:nTu
+        pj = Ppa(idx(jT == j));
+        lo = min(pg(1:end-1, j), pg(2:end, j));
+        hi = max(pg(1:end-1, j), pg(2:end, j));
+        cand(:, j) = rising(:, j) & hi >= min(pj) & lo <= max(pj);
+    end
+    [kc, jc] = find(cand);
+    if ~isempty(kc)
+        nodes = unique([sub2ind([nr nTu], kc, jc); sub2ind([nr nTu], kc + 1, jc)]);
+        [kn, jn] = ind2sub([nr nTu], nodes);
+        dn = helm_derivs(sp, rg(kn), Tu(jn), struct('FTT', true));
+        cv_ok = true(nr, nTu);
+        cv_ok(nodes) = -Tu(jn) .* dn.FTT > 0;                    % Cv > 0 (NaN: rejected)
+        rising = rising & cv_ok(1:end-1, :) & cv_ok(2:end, :);
+    end
     for j = 1:nTu
         pts = idx(jT == j);
         s   = pg(:, j) - Ppa(pts).';                 % nr-by-npts
-        up  = s(1:end-1, :) <= 0 & s(2:end, :) >= 0 & diff(pg(:, j)) > 0;
+        up  = s(1:end-1, :) <= 0 & s(2:end, :) >= 0 & rising(:, j);
         kk  = bsxfun(@times, up, (1:nr-1).');
         khi(pts) = max(kk, [], 1);                   % densest crossing
         kk(~up) = Inf;
