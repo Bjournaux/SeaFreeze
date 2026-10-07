@@ -22,7 +22,7 @@ test_selective_props      % 18 tests : props argument behaviour
 test_fnGval_vs_1p0        % 193 tests : new fnGval vs frozen v1.0 baseline
 test_SF_PhaseLines        % 63 tests : phase-line rewrite vs frozen v1 baseline
 test_SF_rho2P             % 17 tests : pressure-from-density inversion
-test_fnFval               % 47 tests : water3 Helmholtz fluid (1.2)
+test_fnFval               % 48 tests : water3 Helmholtz fluid (1.2)
 test_phase_diagrams       %  5 tests : SF_WPD_PT / SF_WPD_rhoT, triple points (1.2)
 test_water3_internals     % 13 tests : psi_val grid mode, spline cache, warnings, SF_WPD with water3 (1.2)
 test_SeaFreeze_vs_python  % 18 cases, 263 comparisons vs the Python implementation
@@ -32,7 +32,7 @@ runtests('test')          % test_SeaFreeze (34 tests) + test_SF_WhichPhase (20 t
 
 ```
 
-All suites should be green: 11 suites, **465 checks + 263 cross-version comparisons, 0 fail** (MATLAB R2025b). Under GNU Octave: 218 checks + 263 comparisons + `sf_verify_octave`; `test_fnGval_vs_1p0` is skipped (its frozen baseline needs the Curve Fitting Toolbox).
+All suites should be green: 11 suites, **466 checks + 263 cross-version comparisons, 0 fail** (MATLAB R2025b). Under GNU Octave: 219 checks + 263 comparisons + `sf_verify_octave`; `test_fnGval_vs_1p0` is skipped (its frozen baseline needs the Curve Fitting Toolbox).
 `test_SeaFreeze_vs_python` is part of `run_all_tests` since 1.2.
 
 ## Test files
@@ -47,7 +47,7 @@ All suites should be green: 11 suites, **465 checks + 263 cross-version comparis
 | [test_SeaFreeze.m](test_SeaFreeze.m) | Classdef unittest — VI/III/VII shear/Vp/Vs checks against hardcoded expected values. |
 | [test_SF_WhichPhase.m](test_SF_WhichPhase.m) | Classdef unittest — phase identification: single/multi-point scatter, grid, NaCl modes. |
 | [test_SF_rho2P.m](test_SF_rho2P.m) | `SF_rho2P` round trips for water, ices and NaClaq; shape, NaN propagation and error paths. |
-| [test_fnFval.m](test_fnFval.m) | **1.2** — `water3`: `psi_val`/`fnFval` against lbf-thermo's `psiH2O_val` (1e-13; scatter, grid, virial continuation, out-of-box NaN), `Kp` vs dKt/dP, P→ρ→P round trips, thermodynamic identities, stable/liquid/vapour branches, `'input','rhoT'` for water3 and the Gibbs splines (water1 grid, ice VI incl. shear/Vp, NaClaq), `SF_rho2P` / `SF_phase_range`, the plain F(ρ,T) spline path, `SF_WhichPhase` / `SF_PhaseLines` with water3, and `SF_coexistence` (saturation vs IAPWS-95, sublimation vs IAPWS R14-08, dilute extension). |
+| [test_fnFval.m](test_fnFval.m) | **1.2** — `water3`: `psi_val`/`fnFval` against lbf-thermo's `psiH2O_val` (1e-13; scatter, grid, virial continuation, out-of-box NaN), `Kp` vs dKt/dP, P→ρ→P round trips, thermodynamic identities, stable/liquid/vapour branches (only thermodynamically stable roots near T_c), `'input','rhoT'` for water3 and the Gibbs splines (water1 grid, ice VI incl. shear/Vp, NaClaq), `SF_rho2P` / `SF_phase_range`, the plain F(ρ,T) spline path, `SF_WhichPhase` / `SF_PhaseLines` with water3, and `SF_coexistence` (saturation vs IAPWS-95, sublimation vs IAPWS R14-08, dilute extension). |
 | [test_phase_diagrams.m](test_phase_diagrams.m) | **1.2** — `sf_phase_map` spot checks, `sf_triple_points` vs the literature (7 points), `SF_WPD_PT` / `SF_WPD_rhoT` render, `sf_melt_T_dq2026`. |
 | [test_water3_internals.m](test_water3_internals.m) | **1.2** — `psi_val` grid mode == scattered in every regime, the `sf_load_spline` cache, the `SeaFreeze:longRuntime` and `SeaFreeze:diluteExtension` warnings (where, and only where, they should fire), `SF_WPD('liquid','water3')`. |
 | [test_SeaFreeze_vs_python.m](test_SeaFreeze_vs_python.m) | Cross-version comparison against a Python-generated `reference_SeaFreeze.mat` (see below): 18 cases incl. water3 and (ρ,T) input, rtol 1e-6. Per-case rtol overrides for known ice-V drifts. |
