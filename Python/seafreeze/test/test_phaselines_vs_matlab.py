@@ -139,12 +139,12 @@ class TestPhaseLinesVsMatlab(ut.TestCase):
     def test_VI_water_Bollengier2019(self):    self._run_case('VI_water_Bollengier2019')
 
     # NaClaq pairs
-    def test_Ih_NaClaq_m0p5(self):  self._run_case('Ih_NaClaq_m0p5')
-    def test_Ih_NaClaq_m2(self):    self._run_case('Ih_NaClaq_m2')
-    def test_III_NaClaq_m0p5(self): self._run_case('III_NaClaq_m0p5')
-    def test_III_NaClaq_m2(self):   self._run_case('III_NaClaq_m2')
-    def test_V_NaClaq_m0p5(self):   self._run_case('V_NaClaq_m0p5')
-    def test_V_NaClaq_m2(self):     self._run_case('V_NaClaq_m2')
+    def test_Ih_NaClaq_Brown2026_m0p5(self):  self._run_case('Ih_NaClaq_Brown2026_m0p5')
+    def test_Ih_NaClaq_Brown2026_m2(self):    self._run_case('Ih_NaClaq_Brown2026_m2')
+    def test_III_NaClaq_Brown2026_m0p5(self): self._run_case('III_NaClaq_Brown2026_m0p5')
+    def test_III_NaClaq_Brown2026_m2(self):   self._run_case('III_NaClaq_Brown2026_m2')
+    def test_V_NaClaq_Brown2026_m0p5(self):   self._run_case('V_NaClaq_Brown2026_m0p5')
+    def test_V_NaClaq_Brown2026_m2(self):     self._run_case('V_NaClaq_Brown2026_m2')
 
 
 if __name__ == '__main__':

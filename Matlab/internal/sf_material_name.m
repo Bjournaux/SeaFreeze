@@ -8,9 +8,16 @@ function name = sf_material_name(name)
 %   in a session; every other name passes through unchanged.  The old names
 %   keep working through SeaFreeze 1.x and are removed in 2.0.
 %
-%     water1  ->  water_Bollengier2019   (Bollengier et al. 2019)
-%     water2  ->  water_Brown2018        (Brown 2018)
-%     water3  ->  water_Brown2026        (Helmholtz psi surface, lbf-thermo 2026)
+%     water1            ->  water_Bollengier2019   (Bollengier et al. 2019)
+%     water2            ->  water_Brown2018        (Brown 2018)
+%     water3            ->  water_Brown2026        (Helmholtz psi surface, lbf-thermo 2026)
+%     NaClaq_LP         ->  NaClaq_Brown2026_LP
+%     NaClaq_HP         ->  NaClaq_Brown2026_HP
+%     NaClaq_HP_v1..v3  ->  NaClaq_Brown2026_HP_v1..v3
+%     NaClaq_5GPa_2024  ->  NaClaq_Brown2024
+%
+%   'NaClaq' is a permanent shortcut (no warning) for the recommended
+%   NaCl(aq) model, NaClaq_Brown2026.
 %
 %   Suppress with: warning('off', 'SeaFreeze:deprecatedMaterial')
 %   ('clear sf_material_name' shows the warnings again.)
@@ -18,11 +25,15 @@ function name = sf_material_name(name)
 % Baptiste Journaux - 2026
 
 persistent warned
-OLD = {'water1', 'water2', 'water3'};
-NEW = {'water_Bollengier2019', 'water_Brown2018', 'water_Brown2026'};
+OLD = {'water1', 'water2', 'water3', 'NaClaq_LP', 'NaClaq_HP', 'NaClaq_HP_v1', ...
+       'NaClaq_HP_v2', 'NaClaq_HP_v3', 'NaClaq_5GPa_2024'};
+NEW = {'water_Bollengier2019', 'water_Brown2018', 'water_Brown2026', 'NaClaq_Brown2026_LP', ...
+       'NaClaq_Brown2026_HP', 'NaClaq_Brown2026_HP_v1', 'NaClaq_Brown2026_HP_v2', ...
+       'NaClaq_Brown2026_HP_v3', 'NaClaq_Brown2024'};
 
 if isa(name, 'string') && isscalar(name), name = char(name); end
 if ~ischar(name), return; end
+if strcmp(name, 'NaClaq'), name = 'NaClaq_Brown2026'; return; end   % permanent shortcut
 k = find(strcmp(OLD, name), 1);
 if isempty(k), return; end
 

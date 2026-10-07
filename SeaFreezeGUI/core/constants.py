@@ -5,7 +5,7 @@ MATERIALS_ICE = ["Ih", "II", "III", "V", "VI", "VII_X_French"]
 MATERIALS_WATER = ["water_Bollengier2019", "water_Brown2018", "water_IAPWS95", "water_Brown2026"]
 # Helmholtz fluids F(rho, T): vapour, liquid and supercritical states
 MATERIALS_HELMHOLTZ = ["water_Brown2026"]
-MATERIALS_NACL = ["NaClaq", "NaClaq_LP", "NaClaq_HP", "NaClaq_5GPa_2024"]
+MATERIALS_NACL = ["NaClaq_Brown2026", "NaClaq_Brown2026_LP", "NaClaq_Brown2026_HP", "NaClaq_Brown2024"]
 ALL_MATERIALS = MATERIALS_ICE + MATERIALS_WATER + MATERIALS_NACL
 
 # Human-readable labels — full citation style (used in dropdowns / selectors)
@@ -20,10 +20,10 @@ MATERIAL_LABELS = {
     "water_Brown2018":      "Water (Brown, 2018)",
     "water_IAPWS95":        "Water IAPWS-95 (Wagner & Pruss, 2002)",
     "water_Brown2026":      "Water: vapour, liquid, supercritical (Brown & Journaux, 2026, beta)",
-    "NaClaq":           "NaCl(aq) (Brown et al., under review)",
-    "NaClaq_LP":        "NaCl(aq) LP (Brown et al., under review)",
-    "NaClaq_HP":        "NaCl(aq) HP (Brown et al., under review)",
-    "NaClaq_5GPa_2024": "NaCl(aq) 5 GPa (Brown, 2024)",
+    "NaClaq_Brown2026":     "NaCl(aq) (Brown, 2026) — recommended",
+    "NaClaq_Brown2026_LP":  "NaCl(aq) low-P only (Brown, 2026)",
+    "NaClaq_Brown2026_HP":  "NaCl(aq) high-P only (Brown, 2026)",
+    "NaClaq_Brown2024":     "NaCl(aq) to 5 GPa (Brown, 2024)",
 }
 
 # Short labels — for plot legends and phase diagram traces
@@ -38,10 +38,10 @@ MATERIAL_SHORT_LABELS = {
     "water_Brown2018":      "Water (Brown 2018)",
     "water_IAPWS95":        "Water IAPWS-95",
     "water_Brown2026":      "Water (Brown 2026)",
-    "NaClaq":           "NaCl(aq)",
-    "NaClaq_LP":        "NaCl(aq) LP",
-    "NaClaq_HP":        "NaCl(aq) HP",
-    "NaClaq_5GPa_2024": "NaCl(aq) 5GPa",
+    "NaClaq_Brown2026":     "NaCl(aq) (Brown 2026)",
+    "NaClaq_Brown2026_LP":  "NaCl(aq) LP (Brown 2026)",
+    "NaClaq_Brown2026_HP":  "NaCl(aq) HP (Brown 2026)",
+    "NaClaq_Brown2024":     "NaCl(aq) (Brown 2024)",
 }
 
 def is_nacl(material: str) -> bool:

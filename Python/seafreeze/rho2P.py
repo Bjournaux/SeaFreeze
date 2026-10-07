@@ -29,7 +29,7 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
     phase : str
         Any SeaFreeze material code: 'water_Bollengier2019', 'water_Brown2018', 'water_IAPWS95',
         'Ih', 'II', 'III', 'V', 'VI', 'VII_X_French',
-        'NaClaq', 'NaClaq_LP', 'NaClaq_HP', 'NaClaq_5GPa_2024'.
+        'NaClaq_Brown2026', 'NaClaq_Brown2026_LP', 'NaClaq_Brown2026_HP', 'NaClaq_Brown2024'.
     m : float or array-like, optional
         Molality in mol/kg — required for NaClaq phases.
         Scalar is broadcast against rho_target.
@@ -73,7 +73,7 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
     >>> sf.rho2P([1310., 1350., 1390.], [255., 260., 265.], 'VI')
 
     >>> # NaClaq at 1 mol/kg
-    >>> sf.rho2P(1050.0, 300.0, 'NaClaq', m=1.0)
+    >>> sf.rho2P(1050.0, 300.0, 'NaClaq_Brown2026', m=1.0)
     """
     phase = canonical_material(phase)
     # ---- Validate phase --------------------------------------------------------

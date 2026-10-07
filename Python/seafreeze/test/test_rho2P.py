@@ -39,7 +39,7 @@ class TestRho2P_RoundTrip(unittest.TestCase):
     # Pure phases
     # ------------------------------------------------------------------
 
-    def test_water1_scatter(self):
+    def test_water_Bollengier2019_scatter(self):
         P_ref = [0.1, 100., 500., 1000., 2000.]
         T_ref = [280., 300., 320.,  340.,  355.]
         out = sf.getProp(_scatter(P_ref, T_ref), 'water_Bollengier2019', sf.seafreeze.defpath, 'rho')
@@ -64,7 +64,7 @@ class TestRho2P_RoundTrip(unittest.TestCase):
         np.testing.assert_allclose(P_rec, P_ref, atol=TOL_P,
                                    err_msg='ice Ih round-trip failed')
 
-    def test_water2_high_T(self):
+    def test_water_Brown2018_high_T(self):
         """water_Brown2018 is monotone at high T (T=1000 K), wider tolerance allowed."""
         P_ref = [200., 400., 600., 800., 1000.]
         T_ref = [1000.] * 5
@@ -82,20 +82,20 @@ class TestRho2P_RoundTrip(unittest.TestCase):
         T_ref = [280., 300., 320.,  350.,  400.]
         m_ref = [1.0] * 5
         out = sf.getProp(_scatter_nacl(P_ref, T_ref, m_ref),
-                         'NaClaq', sf.seafreeze.defpath, 'rho')
-        P_rec = sf.rho2P(out.rho, T_ref, 'NaClaq', m=1.0)
+                         'NaClaq_Brown2026', sf.seafreeze.defpath, 'rho')
+        P_rec = sf.rho2P(out.rho, T_ref, 'NaClaq_Brown2026', m=1.0)
         np.testing.assert_allclose(P_rec, P_ref, atol=TOL_P,
                                    err_msg='NaClaq m=1 round-trip failed')
 
-    def test_NaClaq_5GPa_2024_scatter_m2(self):
+    def test_NaClaq_Brown2024_scatter_m2(self):
         P_ref = [100., 500., 1000., 2000., 3000.]
         T_ref = [280., 300.,  320.,  350.,  400.]
         m_ref = [2.0] * 5
         out = sf.getProp(_scatter_nacl(P_ref, T_ref, m_ref),
-                         'NaClaq_5GPa_2024', sf.seafreeze.defpath, 'rho')
-        P_rec = sf.rho2P(out.rho, T_ref, 'NaClaq_5GPa_2024', m=2.0)
+                         'NaClaq_Brown2024', sf.seafreeze.defpath, 'rho')
+        P_rec = sf.rho2P(out.rho, T_ref, 'NaClaq_Brown2024', m=2.0)
         np.testing.assert_allclose(P_rec, P_ref, atol=TOL_P,
-                                   err_msg='NaClaq_5GPa_2024 m=2 round-trip failed')
+                                   err_msg='NaClaq_Brown2024 m=2 round-trip failed')
 
 
 class TestRho2P_OutputShape(unittest.TestCase):
@@ -200,7 +200,7 @@ class TestRho2P_Errors(unittest.TestCase):
 
     def test_NaClaq_without_m_raises(self):
         with self.assertRaises(ValueError):
-            sf.rho2P(1000., 300., 'NaClaq')
+            sf.rho2P(1000., 300., 'NaClaq_Brown2026')
 
     def test_T_size_mismatch_raises(self):
         with self.assertRaises(ValueError):

@@ -188,17 +188,17 @@ class TestGetPropVsMatlab(ut.TestCase):
     def test_VI_scatter(self):      self._run_case('VI_scatter')
     def test_VI_grid(self):         self._run_case('VI_grid')
     def test_Ih_scatter(self):      self._run_case('Ih_scatter')
-    def test_water1_scatter(self):  self._run_case('water1_scatter')
-    def test_water1_grid(self):     self._run_case('water1_grid')
+    def test_water_Bollengier2019_scatter(self):  self._run_case('water_Bollengier2019_scatter')
+    def test_water_Bollengier2019_grid(self):     self._run_case('water_Bollengier2019_grid')
     def test_NaClaq_scatter(self):          self._run_case('NaClaq_scatter')
     def test_NaClaq_grid(self):             self._run_case('NaClaq_grid')
     def test_NaClaq_stitch_scatter(self):   self._run_case('NaClaq_stitch_scatter')
     def test_NaClaq_stitch_grid(self):      self._run_case('NaClaq_stitch_grid')
     # 1.2: Helmholtz water_Brown2026 and (rho,T) input
-    def test_water3_scatter(self):          self._run_case('water3_scatter')
-    def test_water3_grid(self):             self._run_case('water3_grid')
-    def test_water3_rhoT(self):             self._run_case('water3_rhoT')
-    def test_water1_rhoT(self):             self._run_case('water1_rhoT')
+    def test_water_Brown2026_scatter(self):          self._run_case('water_Brown2026_scatter')
+    def test_water_Brown2026_grid(self):             self._run_case('water_Brown2026_grid')
+    def test_water_Brown2026_rhoT(self):             self._run_case('water_Brown2026_rhoT')
+    def test_water_Bollengier2019_rhoT(self):             self._run_case('water_Bollengier2019_rhoT')
 
 
 if __name__ == '__main__':

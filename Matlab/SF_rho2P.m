@@ -16,7 +16,7 @@ function P_out = SF_rho2P(rho_target, T, material, varargin)
 %   material    – any SF_getprop material string
 %                 ('water_Bollengier2019', 'water_Brown2018', 'water_IAPWS95',
 %                  'Ih','II','III','V','VI','VII_X_French',
-%                  'NaClaq', 'NaClaq_LP', 'NaClaq_HP', 'NaClaq_5GPa_2024')
+%                  'NaClaq_Brown2026', 'NaClaq_Brown2026_LP', 'NaClaq_Brown2026_HP', 'NaClaq_Brown2024')
 %   m           – (NaClaq only) molality in mol/kg, scalar or array matching
 %                 rho_target (positional 4th argument before any name-value pairs)
 %
@@ -47,7 +47,7 @@ function P_out = SF_rho2P(rho_target, T, material, varargin)
 %   P = SF_rho2P([1310 1350 1390], [255 260 265], 'VI')
 %
 %   % NaClaq at 1 mol/kg
-%   P = SF_rho2P(1050, 300, 'NaClaq', 1.0)
+%   P = SF_rho2P(1050, 300, 'NaClaq_Brown2026', 1.0)
 %
 % See also: SF_getprop, SF_phase_range.
 

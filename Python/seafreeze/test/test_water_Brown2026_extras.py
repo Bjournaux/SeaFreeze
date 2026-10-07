@@ -81,8 +81,8 @@ def test_equal_length_grid_nacl():
     assert grid.shape == (3, 3)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        g = sf.getProp(grid, 'NaClaq_LP', defpath, 'G', 'rho')
-        s = sf.getProp(_scatter([200.0], [290.0], [1.0]), 'NaClaq_LP', defpath, 'G', 'rho')
+        g = sf.getProp(grid, 'NaClaq_Brown2026_LP', defpath, 'G', 'rho')
+        s = sf.getProp(_scatter([200.0], [290.0], [1.0]), 'NaClaq_Brown2026_LP', defpath, 'G', 'rho')
     assert np.squeeze(g.rho).shape == (3, 3, 3)
     np.testing.assert_allclose(np.squeeze(g.rho)[1, 1, 1], s.rho[0], rtol=1e-12)
 
@@ -90,7 +90,7 @@ def test_equal_length_grid_nacl():
 # --------------------------------------------------------------------------
 # wpd with the Helmholtz liquid
 # --------------------------------------------------------------------------
-def test_wpd_with_water3_liquid():
+def test_wpd_with_water_Brown2026_liquid():
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt

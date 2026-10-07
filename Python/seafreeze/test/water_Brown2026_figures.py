@@ -1,13 +1,13 @@
 """Diagnostic figures for the Helmholtz liquid 'water_Brown2026' (psi surface).
 
-    python3 -m seafreeze.test.water3_figures [outdir]
+    python3 -m seafreeze.test.water_Brown2026_figures [outdir]
 
 Writes, to outdir (default: current directory):
-  water3_phase_diagram.png   ice–liquid melting curves, water_Brown2026 vs water_Bollengier2019, plus
+  water_Brown2026_phase_diagram.png   ice–liquid melting curves, water_Brown2026 vs water_Bollengier2019, plus
                              the melting-temperature difference along each curve
-  water3_properties.png      rho, Cp, sound speed, alpha along isobars for
+  water_Brown2026_properties.png      rho, Cp, sound speed, alpha along isobars for
                              water_Brown2026, water_Bollengier2019 and water_IAPWS95 (Gibbs spline)
-  water3_deviation_map.png   relative difference water_Brown2026 - water_Bollengier2019 in rho and Cp
+  water_Brown2026_deviation_map.png   relative difference water_Brown2026 - water_Bollengier2019 in rho and Cp
                              over the water_Bollengier2019 domain
 """
 import os
@@ -70,7 +70,7 @@ def phase_diagram(outdir):
     ax2.set_xlabel('Pressure (MPa)'); ax2.set_ylabel('T_melt(water_Brown2026) − T_melt(water_Bollengier2019)  (mK)')
     ax2.set_title('Melting-temperature difference (stable segments)', loc='left', color=INK)
     fig.tight_layout()
-    f = os.path.join(outdir, 'water3_phase_diagram.png')
+    f = os.path.join(outdir, 'water_Brown2026_phase_diagram.png')
     fig.savefig(f, dpi=150); plt.close(fig)
     return f
 
@@ -99,7 +99,7 @@ def properties(outdir):
     # Cp at 0.1 MPa below ~260 K: water_Bollengier2019 and IAPWS-95 are extrapolating
     fig.suptitle('Liquid-water properties along isobars', x=0.01, ha='left', color=INK)
     fig.tight_layout()
-    f = os.path.join(outdir, 'water3_properties.png')
+    f = os.path.join(outdir, 'water_Brown2026_properties.png')
     fig.savefig(f, dpi=150); plt.close(fig)
     return f
 
@@ -118,7 +118,7 @@ def deviation_map(outdir):
         d = 100 * (getattr(w3, k) / getattr(w1, k) - 1)
         d = np.where(ph == 0, d, np.nan)            # stable liquid only
         m = ax.pcolormesh(P, T, d.T, cmap='RdBu_r', vmin=-lim, vmax=lim, shading='auto')
-        cb = fig.colorbar(m, ax=ax); cb.set_label(f'100·({lab}_water3/{lab}_water1 − 1)  (%)')
+        cb = fig.colorbar(m, ax=ax); cb.set_label(f'100·({lab}_water_Brown2026/{lab}_water_Bollengier2019 − 1)  (%)')
         ax.set_title(f'{lab}: water_Brown2026 vs water_Bollengier2019 (stable liquid)', loc='left', color=INK)
         ax.set_xlabel('Pressure (MPa)'); ax.grid(False)
         rms = np.sqrt(np.nanmean(d ** 2)); mx = np.nanmax(np.abs(d))
@@ -126,7 +126,7 @@ def deviation_map(outdir):
                 va='top', color=INK, fontsize=9, bbox=dict(fc='#fcfcfb', ec='none', alpha=0.8))
     axs[0].set_ylabel('Temperature (K)')
     fig.tight_layout()
-    f = os.path.join(outdir, 'water3_deviation_map.png')
+    f = os.path.join(outdir, 'water_Brown2026_deviation_map.png')
     fig.savefig(f, dpi=150); plt.close(fig)
     return f
 

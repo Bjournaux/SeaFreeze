@@ -25,7 +25,8 @@ Aqueous NaCl equation of state publication is in preparation.
 covering 230 K – 150 000 K and the dilute vapour to 16 000 kg/m³; density–temperature input for every material;
 liquid–vapour and ice–vapour equilibria; and full phase diagrams in (P,T) and (ρ,T) with the vapour, the critical
 point, the ices, the two-phase regions and the triple points. The water materials now have author–year names
-(`water1`, `water2`, `water3` → `water_Bollengier2019`, `water_Brown2018`, `water_Brown2026`; the old names still
+(`water1`, `water2`, `water3` → `water_Bollengier2019`, `water_Brown2018`, `water_Brown2026`; the NaCl(aq) models
+→ `NaClaq_Brown2026`, `_LP`, `_HP` and `NaClaq_Brown2024`, with `NaClaq` kept as a shortcut; the old names still
 work through 1.x with a once-per-session warning). See
 [New in 1.2 beta](#new-in-12-beta-water_brown2026-vapour-equilibria-and-full-phase-diagrams).
 
@@ -94,9 +95,9 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 * 'water_Brown2018' for the modified EOS in Brown 2018 extending to 100 GPa and 10,000 K
 * 'water_IAPWS95' for IAPWS95 water (Wagner and Pruss, 2002)
 * 'water_Brown2026' for fluid water — vapour, liquid and supercritical — from a Helmholtz energy surface F(ρ,T) (psi-spline stage5_23c, Brown & Journaux, lbf-thermo 2026), 230 K – 150 000 K, up to 16 000 kg/m³ (**new in 1.2**, see [New in 1.2 beta](#new-in-12-beta-water_brown2026-vapour-equilibria-and-full-phase-diagrams))
-* 'NaClaq' for aqueous NaCl solution (Brown and Journaux et al., in prep.)
+* 'NaClaq_Brown2026' for aqueous NaCl solution, stitched low-P + high-P (Brown and Journaux et al., in prep.; recommended — the shortcut 'NaClaq' gives the same model); 'NaClaq_Brown2026_LP' / 'NaClaq_Brown2026_HP' for the single low-P / high-P splines, and 'NaClaq_Brown2024' for the legacy 5 GPa spline
 
-**Renamed materials (1.2).** The numbered water names are replaced by author–year names. The old names keep working throughout SeaFreeze 1.x: they are mapped to the new name with a warning (Matlab `SeaFreeze:deprecatedMaterial`, Python `seafreeze.SeaFreezeDeprecationWarning`), shown once per session for each old name, and give identical results. They will be removed in SeaFreeze 2.0. Functions that return material names (e.g. `phasenum2phase`, phase-diagram labels) return the new names. Silence the warning with `warning('off','SeaFreeze:deprecatedMaterial')` (Matlab) or `warnings.filterwarnings('ignore', category=seafreeze.SeaFreezeDeprecationWarning)` (Python).
+**Renamed materials (1.2).** The numbered water names and the NaCl(aq) names are replaced by author–year names. The old names keep working throughout SeaFreeze 1.x: they are mapped to the new name with a warning (Matlab `SeaFreeze:deprecatedMaterial`, Python `seafreeze.SeaFreezeDeprecationWarning`), shown once per session for each old name, and give identical results. They will be removed in SeaFreeze 2.0. Functions that return material names (e.g. `phasenum2phase`, phase-diagram labels) return the new names. Silence the warning with `warning('off','SeaFreeze:deprecatedMaterial')` (Matlab) or `warnings.filterwarnings('ignore', category=seafreeze.SeaFreezeDeprecationWarning)` (Python).
 
 | Old name | New name | Equation of state |
 |---|---|---|
@@ -104,6 +105,11 @@ PT is a structure (gridded output) or array (scatter output) containing pressure
 | `water2` | `water_Brown2018` | liquid water, Brown 2018 (to 100 GPa) |
 | `water3` | `water_Brown2026` | fluid water (vapour, liquid, supercritical), Helmholtz surface, Brown & Journaux 2026 |
 | `water_IAPWS95` | `water_IAPWS95` (unchanged) | IAPWS-95, Wagner & Pruss 2002 |
+| `NaClaq_LP` | `NaClaq_Brown2026_LP` | NaCl(aq) low-P spline, Brown 2026 |
+| `NaClaq_HP` | `NaClaq_Brown2026_HP` | NaCl(aq) high-P spline, Brown 2026 |
+| `NaClaq_5GPa_2024` | `NaClaq_Brown2024` | NaCl(aq) to 5 GPa, Brown 2024 (legacy) |
+| `NaClaq_HP_v1` … `_v3` | `NaClaq_Brown2026_HP_v1` … `_v3` | alternative high-P fits (Matlab only) |
+| `NaClaq` | `NaClaq_Brown2026` | stitched LP+HP NaCl(aq), Brown 2026 — **`NaClaq` stays a permanent shortcut** (no warning) for the recommended NaCl(aq) model |
 
 
 ### Outputs
@@ -248,7 +254,7 @@ Single point for NaCl(aq) of 0.5 M at 900 MPa and 280 K:
 
 ```Matlab
 PTm = {900, 280, 0.5};
-out = SF_getprop(PTm, 'NaClaq')
+out = SF_getprop(PTm, 'NaClaq_Brown2026')
 ```
 Output :
 
@@ -288,7 +294,7 @@ Grid of points every 10 MPa from 0.1 to 1000 MPa, every 2 K from 240 to 501 K, a
 
 ```Matlab
 PTm = {0.1:10:1000.2,240:2:501,1:0.5:6}; 
-out = SF_getprop(PTm, 'NaClaq')
+out = SF_getprop(PTm, 'NaClaq_Brown2026')
 ```
 
 Output :
@@ -363,8 +369,8 @@ returns the metastable liquid or vapour instead.
 | Triple points | within 0.06 K of the literature values; Ih–liquid–vapour at 273.1664 K, 611.9 Pa |
 | Stable liquid vs `water_Bollengier2019` (240–500 K, ≤ 2.3 GPa) | ρ rms 0.05 % (max 0.13 %), Cp rms 0.8 % |
 
-![water_Brown2026 vs water_Bollengier2019: ice-liquid equilibrium](assets/water_Brown2026/water3_phase_diagram.png)
-![water_Brown2026, water_Bollengier2019 and IAPWS-95 along isobars](assets/water_Brown2026/water3_properties.png)
+![water_Brown2026 vs water_Bollengier2019: ice-liquid equilibrium](assets/water_Brown2026/water_Brown2026_phase_diagram.png)
+![water_Brown2026, water_Bollengier2019 and IAPWS-95 along isobars](assets/water_Brown2026/water_Brown2026_properties.png)
 
 **Evaluating `water_Brown2026`**
 
@@ -390,7 +396,7 @@ Gibbs splines first solve P(ρ,T) with `SF_rho2P` / `rho2P` (1e-6 MPa).
 ```matlab
 out = SF_getprop([1000 300; 1100 300], 'water_Brown2026', {'P','Cp'}, 'input', 'rhoT');   % out.P = [7.833; 299.53] MPa
 out = SF_getprop([1330 260], 'VI', {'P','Vp'}, 'input', 'rhoT');
-out = SF_getprop([1050 300 1.0], 'NaClaq', {'P','muw'}, 'input', 'rhoT');
+out = SF_getprop([1050 300 1.0], 'NaClaq_Brown2026', {'P','muw'}, 'input', 'rhoT');
 ```
 ```python
 rT = np.empty(2, dtype=object); rT[0] = (1000.0, 300.0); rT[1] = (1100.0, 300.0)
@@ -416,8 +422,8 @@ sub = sf.sublimation(np.linspace(170, 273.16, 150))
 sub = sf.sublimation([200.0], dilute_extension=False)
 ```
 
-![Sublimation of ice Ih: water_Brown2026 vs IAPWS R14-08 and NIST measurements](assets/water_Brown2026/water3_sublimation.png)
-![Vapour densities: water_Brown2026 vs NIST WebBook and measurements](assets/water_Brown2026/water3_vapor_density.png)
+![Sublimation of ice Ih: water_Brown2026 vs IAPWS R14-08 and NIST measurements](assets/water_Brown2026/water_Brown2026_sublimation.png)
+![Vapour densities: water_Brown2026 vs NIST WebBook and measurements](assets/water_Brown2026/water_Brown2026_vapor_density.png)
 
 ### Full phase diagrams in (P,T) and (ρ,T)
 
@@ -440,9 +446,9 @@ sf.wpd_rhoT(rho=(850, 1700), T=(150, 500), P=(1e-10, 1e4), xscale='linear')
 pm = sf.phase_map(np.geomspace(1e-9, 3e3, 400), np.linspace(180, 420, 200)); sf.triple_points(pm)
 ```
 
-![Full phase diagram in (P,T)](assets/water_Brown2026/water3_wpd_PT.png)
-![Full phase diagram in (rho,T)](assets/water_Brown2026/water3_wpd_rhoT.png)
-![(rho,T) zoom on the ices with the two-phase regions and triple-point tie lines](assets/water_Brown2026/water3_wpd_rhoT_dense.png)
+![Full phase diagram in (P,T)](assets/water_Brown2026/water_Brown2026_wpd_PT.png)
+![Full phase diagram in (rho,T)](assets/water_Brown2026/water_Brown2026_wpd_rhoT.png)
+![(rho,T) zoom on the ices with the two-phase regions and triple-point tie lines](assets/water_Brown2026/water_Brown2026_wpd_rhoT_dense.png)
 
 Typical run times:
 
@@ -465,13 +471,13 @@ sf.whichphase(PT, 'water_Brown2026');   sf.phase_lines('Ih', 'water_Brown2026');
 
 ### Tutorials
 
-[`Python/examples/water3_tutorial.py`](Python/examples/water3_tutorial.py) and
-[`Matlab/examples/water3_tutorial.m`](Matlab/examples/water3_tutorial.m) run all of the above end to end.
+[`Python/examples/water_Brown2026_tutorial.py`](Python/examples/water_Brown2026_tutorial.py) and
+[`Matlab/examples/water_Brown2026_tutorial.m`](Matlab/examples/water_Brown2026_tutorial.m) run all of the above end to end.
 The Python and Matlab READMEs document every option.
 
-![water_Brown2026 tutorial](assets/water_Brown2026/water3_tutorial_python.png)
+![water_Brown2026 tutorial](assets/water_Brown2026/water_Brown2026_tutorial_python.png)
 
-![water_Brown2026 over its full range](assets/water_Brown2026/water3_surface_maps.png)
+![water_Brown2026 over its full range](assets/water_Brown2026/water_Brown2026_surface_maps.png)
 
 ## Utility functions
 
@@ -547,11 +553,11 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 ## Change log
 
 ### Changes since 0.9.0
-- `1.2 beta` (Python `1.2.0b1`, Matlab `1.2.0-beta`): Material names `water1`, `water2`, `water3` renamed `water_Bollengier2019`, `water_Brown2018`, `water_Brown2026` (old names deprecated, removed in 2.0). Added 'water_Brown2026', a Helmholtz energy F(ρ,T) fluid (psi-spline surface) evaluated by `fnFval`/`psi_val` (Matlab) and `lbftd.evalHelmholtz` (Python), with stable / liquid / vapour branch selection; (ρ,T) input for every material; `SF_coexistence` / `saturation`, `sublimation` with a dilute-vapour extension (on by default); full phase diagrams `SF_WPD_PT`/`wpd_PT` and `SF_WPD_rhoT`/`wpd_rhoT` with triple points; `water_Brown2026` as the liquid in `SF_WhichPhase`/`whichphase`, `SF_PhaseLines`/`phase_lines` and `SF_WPD`/`wpd`; the Matlab sources run under GNU Octave; in-memory spline cache. Fixed equal-length P/T grids in `lbftd` and equal-length knot vectors in `mlbspline`.
+- `1.2 beta` (Python `1.2.0b1`, Matlab `1.2.0-beta`): Material names `water1`, `water2`, `water3` renamed `water_Bollengier2019`, `water_Brown2018`, `water_Brown2026`, and `NaClaq_LP`, `NaClaq_HP`, `NaClaq_5GPa_2024` renamed `NaClaq_Brown2026_LP`, `NaClaq_Brown2026_HP`, `NaClaq_Brown2024` (`NaClaq` = `NaClaq_Brown2026`, a permanent shortcut; old names deprecated, removed in 2.0). Added 'water_Brown2026', a Helmholtz energy F(ρ,T) fluid (psi-spline surface) evaluated by `fnFval`/`psi_val` (Matlab) and `lbftd.evalHelmholtz` (Python), with stable / liquid / vapour branch selection; (ρ,T) input for every material; `SF_coexistence` / `saturation`, `sublimation` with a dilute-vapour extension (on by default); full phase diagrams `SF_WPD_PT`/`wpd_PT` and `SF_WPD_rhoT`/`wpd_rhoT` with triple points; `water_Brown2026` as the liquid in `SF_WhichPhase`/`whichphase`, `SF_PhaseLines`/`phase_lines` and `SF_WPD`/`wpd`; the Matlab sources run under GNU Octave; in-memory spline cache. Fixed equal-length P/T grids in `lbftd` and equal-length knot vectors in `mlbspline`.
 - `1.1.3`: Added `SF_rho2P` (Matlab) and `rho2P` (Python) — EOS pressure-from-density inversion via Newton-Raphson + bisection fallback, supporting all materials including NaClaq. Fixed low-pressure convergence for all ice phases (Ih, II, III, V, VI) by separating the Newton/bisection domain floor from the initial-guess seed point.
 - `1.1.2`: Fixed bug in `_get_shear_mod_GPa` where temperature was not cast to a numpy array, causing `np.sqrt` to fail on 2-D grid inputs for solid phases (ice Ih, II, III, V, VI, VII/X). All shear-wave properties (`shear`, `Vp`, `Vs`) on grids now compute correctly.
 - `1.1.1`: Added `matplotlib` to Python dependencies; removed `numpy<2` upper bound for NumPy 2.x compatibility.
-- `1.1.0`: New entry point `SF_getprop` (replaces `SeaFreeze`). Added `Js`, `gamma_Gruneisen` outputs. Removed `gam`, `Gex` outputs. Dynamic phase diagram `SF_WPD` replaces static WPD.mat. Rewritten `SF_PhaseLines` with 28 supported pairs including ice VII/X melting curves. Material name `aq_NaCl` renamed to `NaClaq`. No Curve Fitting Toolbox required.
+- `1.1.0`: New entry point `SF_getprop` (replaces `SeaFreeze`). Added `Js`, `gamma_Gruneisen` outputs. Removed `gam`, `Gex` outputs. Dynamic phase diagram `SF_WPD` replaces static WPD.mat. Rewritten `SF_PhaseLines` with 28 supported pairs including ice VII/X melting curves. Material name `aq_NaCl` renamed to `NaClaq_Brown2026`. No Curve Fitting Toolbox required.
 - `1.0.2`: Fixed output for phaseline now coherent with the rest of the code as (P,T), bug fix with ice II-VI transition
 - `1.0.1`: updated and improved  NaCl aqueous solution EOS and concentration dependent thermodynamic variables. Reasonable stability for conditions in ocean worlds including Earth's crust.  NaN returned for values outside the range of the representation.
 - `1.0.0`: added NaCl aqueous solution EOS and concentration dependent thermodynamic variables.  NaN returned for values outside the range of the representation.

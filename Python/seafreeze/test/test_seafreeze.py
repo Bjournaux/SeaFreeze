@@ -167,25 +167,25 @@ class TestSeafreeze(ut.TestCase):
     def test_getProp_phi_pt(self):
         PT = np.empty((1,), dtype=object)
         PT[0] = (227, 280, 3)
-        out = sf.getProp(PT, 'NaClaq', sf.defpath, 'phi')
+        out = sf.getProp(PT, 'NaClaq_Brown2026', sf.defpath, 'phi')
         self.assertAlmostEqual(1.0721, out.phi[0], places=1)
 
     def test_getProp_NaCl_scatterGridSameOutputForPoint(self):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (50.1, 250, 3.5)
-        out1 = sf.getProp(PTm, 'NaClaq', sf.defpath, 'mus', 'Vex')
+        out1 = sf.getProp(PTm, 'NaClaq_Brown2026', sf.defpath, 'mus', 'Vex')
         P = np.arange(0.1, 1000.2, 10)
         T = np.arange(240, 501, 2)
         m = np.arange(1, 9, 0.5)
         PTM = np.array([P, T, m], dtype=object)
-        out2 = sf.getProp(PTM, 'NaClaq', sf.defpath, 'mus', 'Vex')
+        out2 = sf.getProp(PTM, 'NaClaq_Brown2026', sf.defpath, 'mus', 'Vex')
         self.assertAlmostEqual(out2.G[5][5][5], out1.G[0], places=1)
         self.assertAlmostEqual(out2.mus[5][5][5], out1.mus[0], places=1)
 
     def test_getProp_new_vars(self):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (900, 285, 3)
-        out = sf.getProp(PTm, 'NaClaq', sf.defpath, 'aw', 'Va', 'Vex', 'Cpa', 'muw', 'Cp', 'phi')
+        out = sf.getProp(PTm, 'NaClaq_Brown2026', sf.defpath, 'aw', 'Va', 'Vex', 'Cpa', 'muw', 'Cp', 'phi')
         self.assertAlmostEqual(14006.77, out.muw[0], places=0)
         self.assertAlmostEqual(26.337, out.Va[0],  places=1)
         self.assertAlmostEqual(3402.97, out.Cp[0], places=0)
@@ -200,8 +200,8 @@ class TestSeafreeze(ut.TestCase):
         PTm = np.array([P, T, m], dtype = object)
         PTM = np.empty((1,), dtype=object)
         PTM[0] = (140.1, 500, 6.5)
-        out2 = sf.getProp(PTM, 'NaClaq', sf.defpath, 'Cp', 'Va', 'Vex', 'aw', 'rho', 'mus')
-        out1 = sf.getProp(PTm, 'NaClaq', sf.defpath, 'Cp', 'Va', 'Vex', 'aw', 'rho', 'mus')
+        out2 = sf.getProp(PTM, 'NaClaq_Brown2026', sf.defpath, 'Cp', 'Va', 'Vex', 'aw', 'rho', 'mus')
+        out1 = sf.getProp(PTm, 'NaClaq_Brown2026', sf.defpath, 'Cp', 'Va', 'Vex', 'aw', 'rho', 'mus')
         self.assertAlmostEqual(out2.G[0], out1.G[14][-1][11], places=0)
         self.assertAlmostEqual(out2.mus[0], out1.mus[14][-1][11], places=0)
 
@@ -210,7 +210,7 @@ class TestSeafreeze(ut.TestCase):
         T = np.arange(240, 501, 2)
         m = np.arange(0.0002, 9, 0.5)
         PTm = np.array([P, T, m], dtype=object)
-        out = sf.getProp(PTm, 'NaClaq', sf.defpath, 'aw')
+        out = sf.getProp(PTm, 'NaClaq_Brown2026', sf.defpath, 'aw')
         self.assertAlmostEqual(1.0000, out.aw[0][0][0], places=1)
 
     def test_seafreeze_deprecation(self):
@@ -219,4 +219,4 @@ class TestSeafreeze(ut.TestCase):
         m = np.arange(0.0002, 9, 0.5)
         PTm = np.array([P, T, m], dtype=object)
         with self.assertWarns(DeprecationWarning):
-            out = sf.seafreeze(PTm, 'NaClaq', sf.defpath, 'aw')
+            out = sf.seafreeze(PTm, 'NaClaq_Brown2026', sf.defpath, 'aw')

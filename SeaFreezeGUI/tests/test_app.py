@@ -77,7 +77,7 @@ def test_page_renders(page):
 
 
 # ── Property Calculator ──────────────────────────────────────────────────────
-@pytest.mark.parametrize("material", ["Ih", "water_Bollengier2019", "NaClaq"])
+@pytest.mark.parametrize("material", ["Ih", "water_Bollengier2019", "NaClaq_Brown2026"])
 def test_single_point(material):
     at = _open()
     at.selectbox(key="pc_material").set_value(material)
@@ -150,7 +150,7 @@ def test_2d_grid_with_boundaries(view_mode):
 
 def test_three_ranges_warns():
     at = _open()
-    at.selectbox(key="pc_material").set_value("NaClaq")
+    at.selectbox(key="pc_material").set_value("NaClaq_Brown2026")
     _run(at)
     for var in ("P", "T", "m"):
         _set_range(at, var, 5)
@@ -203,7 +203,7 @@ def test_phase_diagram_too_few_phases():
     assert any("at least two phases" in i.value for i in at.info)
 
 
-def test_melting_lines_water3_and_log_axes():
+def test_melting_lines_water_Brown2026_and_log_axes():
     at = _melting(_open("Phase Diagram"))
     at.radio(key="pd_liquid").set_value("water_Brown2026")
     at.checkbox(key="pd_logP").check()
@@ -263,7 +263,7 @@ def test_full_diagram_linear_axes():
 # ── water_Brown2026 and (rho, T) input in the calculator ─────────────────────────────
 @pytest.mark.parametrize("branch, lo, hi", [("stable", 990, 1000), ("liquid", 990, 1000),
                                             ("vapor", 0, 0.1)])
-def test_water3_single_point_branches(branch, lo, hi):
+def test_water_Brown2026_single_point_branches(branch, lo, hi):
     at = _open()
     at.selectbox(key="pc_material").set_value("water_Brown2026")
     _run(at)
@@ -279,7 +279,7 @@ def test_water3_single_point_branches(branch, lo, hi):
     assert lo < rho < hi
 
 
-def test_water3_rhoT_log_sweep():
+def test_water_Brown2026_rhoT_log_sweep():
     at = _open()
     at.selectbox(key="pc_material").set_value("water_Brown2026")
     _run(at)
@@ -296,7 +296,7 @@ def test_water3_rhoT_log_sweep():
     assert "P" in [t.label for t in at.tabs]
 
 
-def test_water3_2d_with_phase_diagram_overlay():
+def test_water_Brown2026_2d_with_phase_diagram_overlay():
     at = _open()
     at.selectbox(key="pc_material").set_value("water_Brown2026")
     _run(at)

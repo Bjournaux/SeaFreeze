@@ -1,10 +1,10 @@
 """SeaFreeze tutorial: the Helmholtz fluid 'water_Brown2026', density input, and
 liquid-vapour-ice coexistence.
 
-    python3 water3_tutorial.py [OUTDIR]
+    python3 water_Brown2026_tutorial.py [OUTDIR]
 
 Runs every example of the "water_Brown2026" section of the Python README and saves
-water3_tutorial_python.png in OUTDIR (default: this folder).
+water_Brown2026_tutorial_python.png in OUTDIR (default: this folder).
 """
 import os
 import sys
@@ -60,7 +60,7 @@ w1 = sf.getProp(rT, 'water_Bollengier2019', sf.seafreeze.defpath, 'P', 'Cp', rho
 print('3. P at 1000 and 1100 kg/m3, 300 K:  water_Brown2026', np.round(w3.P, 3), 'MPa;  water_Bollengier2019',
       np.round(w1.P, 3), 'MPa')
 ice = sf.getProp(scatter([1330.0], [260.0]), 'VI', sf.seafreeze.defpath, 'P', 'Vp', 'Vs', rhoT=True)
-brine = sf.getProp(scatter([1050.0], [300.0], [1.0]), 'NaClaq', sf.seafreeze.defpath, 'P', 'muw', rhoT=True)
+brine = sf.getProp(scatter([1050.0], [300.0], [1.0]), 'NaClaq_Brown2026', sf.seafreeze.defpath, 'P', 'muw', rhoT=True)
 print(f'   ice VI at 1330 kg/m3, 260 K: P = {ice.P[0]:.1f} MPa, Vp = {ice.Vp[0]:.0f} m/s;  '
       f'NaCl(aq) 1 mol/kg at 1050 kg/m3, 300 K: P = {brine.P[0]:.2f} MPa')
 print('   rho2P (water_Brown2026):', np.round(sf.rho2P([997.047, 1100], [298.15, 300], 'water_Brown2026'), 4), 'MPa')
@@ -134,7 +134,7 @@ fig.tight_layout()
 
 outdir = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
 os.makedirs(outdir, exist_ok=True)
-f = os.path.join(outdir, 'water3_tutorial_python.png')
+f = os.path.join(outdir, 'water_Brown2026_tutorial_python.png')
 fig.savefig(f, dpi=140)
 print('saved', f)
 
@@ -153,6 +153,6 @@ print('6. triple points:')
 for tp in sorted(sf.triple_points(pm), key=lambda d: d['T']):
     print(f"   {'-'.join(tp['labels']):12s} {tp['T']:8.3f} K  {tp['P']:10.4f} MPa")
 fig2.tight_layout()
-f2 = os.path.join(outdir, 'water3_tutorial_diagrams_python.png')
+f2 = os.path.join(outdir, 'water_Brown2026_tutorial_diagrams_python.png')
 fig2.savefig(f2, dpi=120)
 print('saved', f2)

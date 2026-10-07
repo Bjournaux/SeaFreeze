@@ -1,10 +1,10 @@
-% water3_tutorial.m — SeaFreeze tutorial: the Helmholtz fluid 'water_Brown2026',
+% water_Brown2026_tutorial.m — SeaFreeze tutorial: the Helmholtz fluid 'water_Brown2026',
 % density input, and liquid-vapour-ice coexistence.  Runs under MATLAB and
 % GNU Octave.  Every example of the "water_Brown2026" section of Matlab/README.md,
-% plus a four-panel figure saved as water3_tutorial_matlab.png next to this
+% plus a four-panel figure saved as water_Brown2026_tutorial_matlab.png next to this
 % file.
 %
-%   run('examples/water3_tutorial.m')      % from the Matlab/ folder
+%   run('examples/water_Brown2026_tutorial.m')      % from the Matlab/ folder
 
 here = fileparts(mfilename('fullpath'));
 addpath(genpath(fileparts(here)));
@@ -30,7 +30,7 @@ w3 = SF_getprop([1000 300; 1100 300], 'water_Brown2026', {'P','Cp'}, 'input', 'r
 w1 = SF_getprop([1000 300; 1100 300], 'water_Bollengier2019', {'P','Cp'}, 'input', 'rhoT');   % via SF_rho2P
 fprintf('3. P at 1000/1100 kg/m3, 300 K: water_Brown2026 %s MPa, water_Bollengier2019 %s MPa\n', mat2str(w3.P', 6), mat2str(w1.P', 6));
 ice   = SF_getprop([1330 260], 'VI', {'P','Vp','Vs'}, 'input', 'rhoT');
-brine = SF_getprop([1050 300 1.0], 'NaClaq', {'P','muw'}, 'input', 'rhoT');
+brine = SF_getprop([1050 300 1.0], 'NaClaq_Brown2026', {'P','muw'}, 'input', 'rhoT');
 fprintf('   ice VI at 1330 kg/m3, 260 K: P = %.1f MPa, Vp = %.0f m/s; NaCl(aq) 1 mol/kg, 1050 kg/m3, 300 K: P = %.2f MPa\n', ...
         ice.P, ice.Vp, brine.P);
 fprintf('   SF_rho2P (water_Brown2026): %s MPa\n', mat2str(SF_rho2P([997.047 1100], [298.15 300], 'water_Brown2026')', 6));
@@ -89,8 +89,8 @@ ax = subplot(2, 2, 4);
 SF_WPD('ax', ax, 'liquid', 'water_Brown2026', 'meta', 'none');
 title(ax, 'SF\_WPD(''liquid'',''water_Brown2026'')');
 
-print(fig, fullfile(outdir, 'water3_tutorial_matlab.png'), '-dpng', '-r130');
-fprintf('saved %s\n', fullfile(outdir, 'water3_tutorial_matlab.png'));
+print(fig, fullfile(outdir, 'water_Brown2026_tutorial_matlab.png'), '-dpng', '-r130');
+fprintf('saved %s\n', fullfile(outdir, 'water_Brown2026_tutorial_matlab.png'));
 
 %% 6. Full phase diagrams: vapour, liquid, supercritical fluid, critical point
 %     and the ices, in (P,T) and in (rho,T) with the two-phase regions.
@@ -103,5 +103,5 @@ pm = sf_phase_map(logspace(-9, log10(3000), 400), linspace(180, 420, 200));
 tp = sf_triple_points(pm, 'water_Brown2026');
 fprintf('6. triple points:\n');
 for k = 1:numel(tp), fprintf('   %-12s %8.3f K %10.4f MPa\n', strjoin(tp(k).labels, '-'), tp(k).T, tp(k).P); end
-print(fig2, fullfile(outdir, 'water3_tutorial_diagrams_matlab.png'), '-dpng', '-r110');
-fprintf('saved %s\n', fullfile(outdir, 'water3_tutorial_diagrams_matlab.png'));
+print(fig2, fullfile(outdir, 'water_Brown2026_tutorial_diagrams_matlab.png'), '-dpng', '-r110');
+fprintf('saved %s\n', fullfile(outdir, 'water_Brown2026_tutorial_diagrams_matlab.png'));

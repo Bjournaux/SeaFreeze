@@ -1,6 +1,6 @@
 """How SeaFreeze evaluates a Helmholtz fluid at (P,T): a four-panel explainer.
 
-    python3 -m seafreeze.test.water3_method_figure OUTDIR
+    python3 -m seafreeze.test.water_Brown2026_method_figure OUTDIR
 
   A  one isotherm P(rho): the target P crosses the mechanically stable branches
      (dP/drho > 0) at a vapour-like and a liquid-like root
@@ -146,7 +146,7 @@ def make(outdir):
     axD.legend(loc='lower right', fontsize=8.5)
 
     fig.tight_layout()
-    f = os.path.join(outdir, 'water3_method.png')
+    f = os.path.join(outdir, 'water_Brown2026_method.png')
     fig.savefig(f, dpi=150); plt.close(fig)
     return f
 

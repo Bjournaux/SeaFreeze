@@ -1,8 +1,8 @@
 """Tests for the Helmholtz liquid 'water_Brown2026' (psi surface) and lbftd.evalHelmholtz.
 
-References (Matlab/test/fixtures/, written by Matlab/test/gen_water3_reference.m):
+References (Matlab/test/fixtures/, written by Matlab/test/gen_water_Brown2026_reference.m):
   psi_reference.mat             psiH2O_val.m (lbf-thermo) at (rho,T) states
-  water3_getprop_reference.mat  Matlab SF_getprop(...,'water_Brown2026') on a (P,T) grid
+  water_Brown2026_getprop_reference.mat  Matlab SF_getprop(...,'water_Brown2026') on a (P,T) grid
   water_F_test.mat              plain F(rho,T) spline (IAPWS-95 fit), generic path
 """
 import os
@@ -24,7 +24,7 @@ FIX = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'Matlab', 'test', 'f
 def _fix(name):
     p = os.path.join(FIX, name)
     if not os.path.exists(p):
-        pytest.skip(f'{name} missing; run Matlab/test/gen_water3_reference.m')
+        pytest.skip(f'{name} missing; run Matlab/test/gen_water_Brown2026_reference.m')
     return loadmat(p, squeeze_me=True, struct_as_record=False)
 
 
@@ -85,8 +85,8 @@ def test_psi_grid_and_edges(sp3):
 # --------------------------------------------------------------------------
 # 2. getProp (P,T): Matlab parity, identities, round trip
 # --------------------------------------------------------------------------
-def test_getProp_water3_vs_matlab():
-    w3 = _fix('water3_getprop_reference.mat')['w3']
+def test_getProp_water_Brown2026_vs_matlab():
+    w3 = _fix('water_Brown2026_getprop_reference.mat')['w3']
     o = sf.getProp(_grid(w3.P, w3.T), 'water_Brown2026')
     for k in ['rho', 'G', 'S', 'U', 'H', 'A', 'Cp', 'Cv', 'Kt', 'Kp', 'Ks', 'alpha', 'vel',
               'Js', 'gamma_Gruneisen']:
@@ -100,7 +100,7 @@ def test_getProp_water3_vs_matlab():
         assert e < (1e-4 if k == 'Kp' else 1e-8), k
 
 
-def test_getProp_water3_grid_scatter_and_identities():
+def test_getProp_water_Brown2026_grid_scatter_and_identities():
     P = np.array([0.1, 50, 500, 1500.]); T = np.array([260., 300, 350, 400])
     g = sf.getProp(_grid(P, T), 'water_Brown2026')
     assert g.rho.shape == (4, 4)
@@ -116,7 +116,7 @@ def test_getProp_water3_grid_scatter_and_identities():
     assert np.max(np.abs(b.P - Pm.ravel())) < 1e-7
 
 
-def test_getProp_water3_ambient_and_domain():
+def test_getProp_water_Brown2026_ambient_and_domain():
     a = sf.getProp(_scatter([0.101325], [298.15]), 'water_Brown2026')
     assert abs(a.rho[0] - 997.05) < 0.05
     assert abs(a.Cp[0] - 4181.5) < 5
@@ -125,7 +125,7 @@ def test_getProp_water3_ambient_and_domain():
     assert np.all(np.isnan(z.rho)) and np.all(np.isnan(z.G))
 
 
-def test_branch_selection_water3():
+def test_branch_selection_water_Brown2026():
     pts = _scatter([1e-3, 0.1, 0.1, 10], [300, 400, 300, 400])
     v = sf.getProp(pts, 'water_Brown2026', defpath, 'rho', 'G')
     assert v.rho[0] < 0.01 and v.rho[1] < 1 and v.rho[2] > 990 and v.rho[3] > 930
@@ -140,7 +140,7 @@ def test_branch_refused_for_gibbs():
         sf.getProp(_scatter([100], [300]), 'water_Bollengier2019', defpath, 'rho', branch='liquid')
 
 
-def test_rhoT_gibbs_grid_water1():
+def test_rhoT_gibbs_grid_water_Bollengier2019():
     rho = np.array([1000., 1050, 1100]); T = np.array([280., 300, 330])
     g = sf.getProp(_grid(rho, T), 'water_Bollengier2019', defpath, 'P', 'rho', 'G', 'T', rhoT=True)
     assert g.P.shape == (3, 3)
@@ -156,22 +156,22 @@ def test_rhoT_gibbs_ice_and_nacl():
     assert np.all(np.isfinite(s6.P[:2])) and np.all(np.isfinite(s6.Vp[:2]))
     assert np.isnan(s6.P[2]) and np.isnan(s6.Vp[2])
     pts = np.empty(2, dtype=object); pts[0] = (1050., 300., 1.); pts[1] = (1100., 320., 2.)
-    n = sf.getProp(pts, 'NaClaq', defpath, 'P', 'rho', 'muw', rhoT=True)
+    n = sf.getProp(pts, 'NaClaq_Brown2026', defpath, 'P', 'rho', 'muw', rhoT=True)
     back = np.empty(2, dtype=object); back[0] = (n.P[0], 300., 1.); back[1] = (n.P[1], 320., 2.)
-    assert np.max(np.abs(sf.getProp(back, 'NaClaq', defpath, 'rho').rho - [1050, 1100])) < 1e-4
+    assert np.max(np.abs(sf.getProp(back, 'NaClaq_Brown2026', defpath, 'rho').rho - [1050, 1100])) < 1e-4
 
 
-def test_rhoT_matlab_parity_water1():
-    w3 = _fix('water3_getprop_reference.mat')['w3']
-    if not hasattr(w3, 'rhoT_water1'):
-        pytest.skip('reference predates Gibbs rhoT; rerun gen_water3_reference.m')
-    r = w3.rhoT_water1
+def test_rhoT_matlab_parity_water_Bollengier2019():
+    w3 = _fix('water_Brown2026_getprop_reference.mat')['w3']
+    if not hasattr(w3, 'rhoT_water_Bollengier2019'):
+        pytest.skip('reference predates Gibbs rhoT; rerun gen_water_Brown2026_reference.m')
+    r = w3.rhoT_water_Bollengier2019
     o = sf.getProp(_grid(r.rho, r.T), 'water_Bollengier2019', defpath, 'P', 'G', 'Cp', rhoT=True)
     for k in ('P', 'G', 'Cp'):
         assert _relerr(getattr(o, k), getattr(r, k)) < 1e-6, k
 
 
-def test_rho2P_and_range_water3():
+def test_rho2P_and_range_water_Brown2026():
     P = sf.rho2P([997.047, 1100.0, 1200.0], [298.15, 300.0, 350.0], 'water_Brown2026')
     back = sf.getProp(_scatter(P, [298.15, 300.0, 350.0]), 'water_Brown2026', defpath, 'rho')
     assert np.max(np.abs(back.rho - [997.047, 1100.0, 1200.0])) < 1e-6
@@ -182,21 +182,21 @@ def test_rho2P_and_range_water3():
 # --------------------------------------------------------------------------
 # 3. phase equilibria: reference state consistent with the ice splines
 # --------------------------------------------------------------------------
-def test_whichphase_water3_matches_water1():
+def test_whichphase_water_Brown2026_matches_water_Bollengier2019():
     PT = _grid([0.1, 100, 300, 800, 1500], [250, 260, 270, 276, 300, 330])
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         assert np.array_equal(sf.whichphase(PT, 'water_Brown2026'), sf.whichphase(PT))
 
 
-def test_melting_Ih_water3():
+def test_melting_Ih_water_Brown2026():
     r = sf.phase_lines('Ih', 'water_Brown2026', P=np.array([0.1, 0.101325, 1.0]),
                        T=np.arange(270, 276, 0.005))
     T01 = np.interp(0.101325, np.sort(r.P), r.T[np.argsort(r.P)])
     assert abs(T01 - 273.152) < 0.01
 
 
-def test_melting_curves_water3_vs_water1():
+def test_melting_curves_water_Brown2026_vs_water_Bollengier2019():
     for ice, tol in [('Ih', 0.03), ('III', 0.03), ('V', 0.08), ('VI', 0.5)]:
         a = sf.phase_lines(ice, 'water_Brown2026', segment='stable')
         b = sf.phase_lines(ice, 'water_Bollengier2019', segment='stable')
@@ -249,7 +249,7 @@ def test_sublimation_vs_R1408_and_NIST():
     assert np.max(np.abs(s.P / cx.psub_iapws(T) - 1)) < 2e-4
     # below 230 K: NaN when the dilute-vapour extension is switched off
     assert np.all(np.isnan(sf.sublimation([175.0, 200.0], dilute_extension=False).P))
-    from seafreeze.test.water3_vapor_figures import BIELSKA2013
+    from seafreeze.test.water_Brown2026_vapor_figures import BIELSKA2013
     Tb, pb, ub = BIELSKA2013.T
     e = sf.sublimation(Tb)                                   # extension on by default
     # every NIST Bielska et al. (2013) point within 3 sigma
@@ -257,9 +257,9 @@ def test_sublimation_vs_R1408_and_NIST():
 
 
 def test_coexistence_vs_matlab():
-    w3 = _fix('water3_getprop_reference.mat')['w3']
+    w3 = _fix('water_Brown2026_getprop_reference.mat')['w3']
     if not hasattr(w3, 'sat'):
-        pytest.skip('reference predates SF_coexistence; rerun gen_water3_reference.m')
+        pytest.skip('reference predates SF_coexistence; rerun gen_water_Brown2026_reference.m')
     s = sf.saturation(w3.sat.T)
     assert _relerr(s.P, w3.sat.P) < 1e-9
     b = sf.sublimation(w3.sub.T, dilute_extension=True)

@@ -63,7 +63,7 @@ _W3_SQ = (np.linspace(950, 1150, 4), np.array([260., 300, 400, 500]))
 
 
 @pytest.mark.parametrize('axes', [_W3_NONSQ, _W3_SQ], ids=['nonsquare', 'square'])
-def test_water3_rhoT_grid_matches_scatter(axes):
+def test_water_Brown2026_rhoT_grid_matches_scatter(axes):
     g = _get(_grid(*axes), 'water_Brown2026', rhoT=True)
     R, T = np.meshgrid(*axes, indexing='ij')
     s = _get(_scatter(R.ravel(), T.ravel()), 'water_Brown2026', rhoT=True)
@@ -74,7 +74,7 @@ def test_water3_rhoT_grid_matches_scatter(axes):
     assert np.isfinite(g.Js).sum() > 0.5 * g.Js.size
 
 
-def test_water3_rhoT_large_nonsquare_grid():
+def test_water_Brown2026_rhoT_large_nonsquare_grid():
     # the case that crashed: (800, 420) grid, vapour to compressed liquid
     rho = np.geomspace(1e-7, 4e3, 80); T = np.linspace(150, 1800, 42)
     g = _get(_grid(rho, T), 'water_Brown2026', rhoT=True)
@@ -101,7 +101,7 @@ def test_rhoT_grid_selective_props(phase, props):
 @pytest.mark.parametrize('axes', [(np.linspace(1000, 1100, 5), np.linspace(280, 330, 3)),
                                   (np.linspace(1000, 1100, 3), np.linspace(280, 330, 3))],
                          ids=['nonsquare', 'square'])
-def test_water1_rhoT_grid_matches_scatter(axes):
+def test_water_Bollengier2019_rhoT_grid_matches_scatter(axes):
     g = _get(_grid(*axes), 'water_Bollengier2019', rhoT=True)
     R, T = np.meshgrid(*axes, indexing='ij')
     s = _get(_scatter(R.ravel(), T.ravel()), 'water_Bollengier2019', rhoT=True)
@@ -137,9 +137,9 @@ def test_PT_selective_props_strip_prerequisites(props):
                          ids=['nonsquare', 'cube'])
 def test_nacl_rhoT_grid_matches_scatter(axes):
     props = ('P', 'rho', 'T', 'G', 'Js', 'gamma_Gruneisen', 'muw')
-    g = _get(_grid(*axes), 'NaClaq', *props, rhoT=True)
+    g = _get(_grid(*axes), 'NaClaq_Brown2026', *props, rhoT=True)
     R, T, M = np.meshgrid(*axes, indexing='ij')
-    s = _get(_scatter(R.ravel(), T.ravel(), M.ravel()), 'NaClaq', *props, rhoT=True)
+    s = _get(_scatter(R.ravel(), T.ravel(), M.ravel()), 'NaClaq_Brown2026', *props, rhoT=True)
     # echoes broadcast like P and T on a (P,T,m) grid
     assert g.rho.shape == (axes[0].size, 1, 1) and g.T.shape == (1, axes[1].size, 1)
     _assert_grid_matches_scatter(g, s, axes, rhoT=True)
@@ -148,7 +148,7 @@ def test_nacl_rhoT_grid_matches_scatter(axes):
 @pytest.mark.parametrize('props', [('P',), ('xs',), ('m', 'f'), ('Js',)])
 def test_nacl_PT_selective_props(props):
     axes = (np.array([10., 100, 300, 450]), np.array([280., 320]), np.array([0.5, 1.0, 2.0]))
-    for phase in ('NaClaq_LP', 'NaClaq'):
+    for phase in ('NaClaq_Brown2026_LP', 'NaClaq_Brown2026'):
         g = _get(_grid(*axes), phase, *props)
         assert set(vars(g)) == set(props), phase
         for k in props:

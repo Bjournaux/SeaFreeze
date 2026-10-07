@@ -52,20 +52,20 @@ P_rec = SF_rho2P(out.rho, T_ref, 'Ih');
 P_ref = [0.1; 200; 500; 1500; 5000];
 T_ref = [280; 300; 320; 350;  400];
 m_ref = 1.0;
-out = SF_getprop([P_ref T_ref repmat(m_ref, 5, 1)], 'NaClaq', 'rho');
-P_rec = SF_rho2P(out.rho, T_ref, 'NaClaq', m_ref);
+out = SF_getprop([P_ref T_ref repmat(m_ref, 5, 1)], 'NaClaq_Brown2026', 'rho');
+P_rec = SF_rho2P(out.rho, T_ref, 'NaClaq_Brown2026', m_ref);
 [np,nf] = check('roundtrip: NaClaq scatter m=1 mol/kg', ...
     isequal(size(P_rec), size(P_ref)) && all(isfinite(P_rec)) && max(abs(P_rec - P_ref)) < tol_P, np, nf);
 
 % =========================================================================
-% 5. Round-trip: NaClaq_5GPa_2024 legacy spline
+% 5. Round-trip: NaClaq_Brown2024 legacy spline
 % =========================================================================
 P_ref = [100; 500; 1000; 2000; 3000];
 T_ref = [280; 300; 320; 350; 400];
 m_ref = 2.0;
-out = SF_getprop([P_ref T_ref repmat(m_ref, 5, 1)], 'NaClaq_5GPa_2024', 'rho');
-P_rec = SF_rho2P(out.rho, T_ref, 'NaClaq_5GPa_2024', m_ref);
-[np,nf] = check('roundtrip: NaClaq_5GPa_2024 scatter m=2 mol/kg', ...
+out = SF_getprop([P_ref T_ref repmat(m_ref, 5, 1)], 'NaClaq_Brown2024', 'rho');
+P_rec = SF_rho2P(out.rho, T_ref, 'NaClaq_Brown2024', m_ref);
+[np,nf] = check('roundtrip: NaClaq_Brown2024 scatter m=2 mol/kg', ...
     isequal(size(P_rec), size(P_ref)) && all(isfinite(P_rec)) && max(abs(P_rec - P_ref)) < tol_P, np, nf);
 
 % =========================================================================
@@ -154,7 +154,7 @@ end
 % 15. Bad input: NaClaq without m
 % =========================================================================
 try
-    SF_rho2P(1000, 300, 'NaClaq');
+    SF_rho2P(1000, 300, 'NaClaq_Brown2026');
     [np,nf] = check('error: NaClaq no m', false, np, nf);
 catch err
     [np,nf] = check('error: NaClaq no m', ...

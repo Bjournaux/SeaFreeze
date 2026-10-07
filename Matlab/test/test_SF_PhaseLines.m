@@ -37,7 +37,7 @@ for k = 1:length(pure_pairs)
     end
 end
 
-nacl_pairs = {{'Ih','NaClaq'},{'II','NaClaq'},{'III','NaClaq'},{'V','NaClaq'},{'VI','NaClaq'}};
+nacl_pairs = {{'Ih','NaClaq_Brown2026'},{'II','NaClaq_Brown2026'},{'III','NaClaq_Brown2026'},{'V','NaClaq_Brown2026'},{'VI','NaClaq_Brown2026'}};
 for k = 1:length(nacl_pairs)
     p = nacl_pairs{k};
     name = sprintf('smoke %s/%s @ m=1', p{1}, p{2});
@@ -170,7 +170,7 @@ end
 % 4. NaClaq physics: FPD at m=1.0
 % =========================================================================
 try
-    o = SF_PhaseLines('Ih', 'NaClaq', 'm', 1.0);
+    o = SF_PhaseLines('Ih', 'NaClaq_Brown2026', 'm', 1.0);
     [Pmin, idx] = min(o.P);
     Tmelt = o.T(idx);
     fpd = 273.15 - Tmelt;
@@ -186,7 +186,7 @@ end
 % =========================================================================
 try
     m_vec = [0.5, 1.0, 2.0, 4.0];
-    arr = SF_PhaseLines('Ih','NaClaq','m', m_vec);
+    arr = SF_PhaseLines('Ih','NaClaq_Brown2026','m', m_vec);
     cond = numel(arr) == numel(m_vec) && ...
            isequal([arr.m], m_vec) && ...
            all(arrayfun(@(s) ~isempty(s.P) && ~isempty(s.T), arr));
@@ -198,7 +198,7 @@ try
     [np, nf] = check('multi-m: FPD ordering monotone with m', cond_order, np, nf);
 
     % Plot path returns one figure shared across the array
-    arr_plot = SF_PhaseLines('VI','NaClaq','m', [0.5 1.0],'plot',true);
+    arr_plot = SF_PhaseLines('VI','NaClaq_Brown2026','m', [0.5 1.0],'plot',true);
     cond_fig = isfield(arr_plot, 'fig') && all(arrayfun(@(s) ishandle(s.fig), arr_plot));
     if cond_fig, close(arr_plot(1).fig); end
     [np, nf] = check('multi-m: plot returns figure handle on every entry', cond_fig, np, nf);
@@ -212,9 +212,9 @@ end
 [np, nf] = check_throws('unsupported pair (water_Bollengier2019/water_Brown2018)', ...
     @() SF_PhaseLines('water_Bollengier2019','water_Brown2018'), 'SeaFreeze:unsupportedPair', np, nf);
 [np, nf] = check_throws('NaClaq without m', ...
-    @() SF_PhaseLines('Ih','NaClaq'), 'SeaFreeze:badInput', np, nf);
+    @() SF_PhaseLines('Ih','NaClaq_Brown2026'), 'SeaFreeze:badInput', np, nf);
 [np, nf] = check_throws('m out of range', ...
-    @() SF_PhaseLines('Ih','NaClaq','m',20), 'SeaFreeze:badInput', np, nf);
+    @() SF_PhaseLines('Ih','NaClaq_Brown2026','m',20), 'SeaFreeze:badInput', np, nf);
 
 % =========================================================================
 % 6. Plot path
@@ -244,7 +244,7 @@ end
 
 try
     f = figure;
-    o = SF_PhaseLines('Ih','NaClaq','m',[1.0 2.0],'plot',f);
+    o = SF_PhaseLines('Ih','NaClaq_Brown2026','m',[1.0 2.0],'plot',f);
     cond = all(arrayfun(@(s) s.fig == f, o));
     close(f);
     [np, nf] = check('overlay onto figure handle (multi-m)', cond, np, nf);

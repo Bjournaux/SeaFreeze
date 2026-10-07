@@ -38,8 +38,21 @@ def _fresh_session():
     sfm._warned_aliases.clear()
 
 
+NACL_RENAMED = [('NaClaq_LP', 'NaClaq_Brown2026_LP'), ('NaClaq_HP', 'NaClaq_Brown2026_HP'),
+                ('NaClaq_5GPa_2024', 'NaClaq_Brown2024')]
+NACL_POINT = {'NaClaq_LP': (100.0, 300.0, 1.0), 'NaClaq_HP': (1500.0, 400.0, 1.0),
+              'NaClaq_5GPa_2024': (100.0, 300.0, 1.0)}
+
+
+def _pts3(P, T, m):
+    o = np.empty(1, dtype=object)
+    o[0] = (float(P), float(T), float(m))
+    return o
+
+
 def test_alias_table():
-    assert sf.MATERIAL_ALIASES == dict(RENAMED)
+    assert sf.MATERIAL_ALIASES == dict(RENAMED + NACL_RENAMED)
+    assert sf.MATERIAL_SHORTCUTS == {'NaClaq': 'NaClaq_Brown2026'}
     assert issubclass(sf.SeaFreezeDeprecationWarning, FutureWarning)   # shown by default
     for old, new in RENAMED:
         assert old not in [k for k in sf.phases]                        # listings show new names only
@@ -102,3 +115,30 @@ def test_phasenum2phase_returns_new_names():
 def test_unknown_names_still_fail():
     with pytest.raises(ValueError):
         sf.getProp(_pts(0.1, 300.0), 'water4', defpath)
+
+
+@pytest.mark.parametrize('old, new', NACL_RENAMED)
+def test_nacl_old_names_warn_once_and_match(old, new):
+    pts = _pts3(*NACL_POINT[old])
+    a, w1 = _record(lambda: sf.getProp(pts, old, defpath, 'rho', 'muw'))
+    b, w2 = _record(lambda: sf.getProp(pts, old, defpath, 'rho', 'muw'))
+    c, w3 = _record(lambda: sf.getProp(pts, new, defpath, 'rho', 'muw'))
+    assert len(w1) == 1 and not w2 and not w3
+    assert f"'{old}'" in str(w1[0].message) and f"'{new}'" in str(w1[0].message)
+    for k in ('rho', 'muw'):
+        np.testing.assert_array_equal(getattr(a, k), getattr(c, k))
+
+
+def test_naclaq_shortcut_is_silent_and_identical():
+    pts = _pts3(200.0, 290.0, 1.5)
+    a, w = _record(lambda: sf.getProp(pts, 'NaClaq', defpath, 'rho', 'muw'))
+    b, _ = _record(lambda: sf.getProp(pts, 'NaClaq_Brown2026', defpath, 'rho', 'muw'))
+    assert not w                                          # a shortcut, not a deprecation
+    np.testing.assert_array_equal(a.rho, b.rho)
+    np.testing.assert_array_equal(a.muw, b.muw)
+    assert 'NaClaq' in sf.phases and sf.phases['NaClaq'] is sf.phases['NaClaq_Brown2026']
+    r, w = _record(lambda: sf.phase_lines('Ih', 'NaClaq', m=1.0, segment='stable'))
+    assert not w and r.matB == 'NaClaq_Brown2026'
+    g = np.empty(3, dtype=object)
+    g[0] = np.array([0.1, 100.0]); g[1] = np.array([260.0, 300.0]); g[2] = np.array([1.0])
+    np.testing.assert_array_equal(sf.whichphase(g, 'NaClaq'), sf.whichphase(g, 'NaClaq_Brown2026'))

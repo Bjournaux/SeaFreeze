@@ -10,7 +10,7 @@ classdef test_SeaFreeze < matlab.unittest.TestCase
 %   - Tests must be run from the Matlab/ directory (or SeaFreeze_Gibbs.mat
 %     must be on the MATLAB path) so that load() inside SeaFreeze.m succeeds.
 %   - NaCl aqueous solution tests are omitted: the MATLAB SeaFreeze.m does
-%     not expose a 'NaClaq' material case (unlike the Python getProp()).
+%     not expose a 'NaClaq_Brown2026' material case (unlike the Python getProp()).
 %   - The shear modulus, Vp and Vs helper-function tests (Python
 %     test_get_shear_mod_GPa_*, test_get_Vp_*, test_get_Vs_*) are covered
 %     here by (a) verifying the formula directly against known values and
@@ -344,18 +344,18 @@ classdef test_SeaFreeze < matlab.unittest.TestCase
         %  SF_getprop() - liquid water phases (no shear)
         % ================================================================== %
 
-        function test_getProp_water1_no_shear(testCase)
+        function test_getProp_water_Bollengier2019_no_shear(testCase)
             % Liquid water: SeaFreeze.m does not set shear for water phases
             out = SF_getprop([500, 300], 'water_Bollengier2019');
             testCase.verifyFalse(isfield(out, 'shear'));
         end
 
-        function test_getProp_water1_positive_density(testCase)
+        function test_getProp_water_Bollengier2019_positive_density(testCase)
             out = SF_getprop([500, 300], 'water_Bollengier2019');
             testCase.verifyGreaterThan(out.rho, 500);
         end
 
-        function test_getProp_water1_grid(testCase)
+        function test_getProp_water_Bollengier2019_grid(testCase)
             P = (100:200:500)';
             T = (250:25:300)';
             out = SF_getprop({P, T}, 'water_Bollengier2019');

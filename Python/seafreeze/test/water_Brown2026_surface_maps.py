@@ -1,8 +1,8 @@
 """Property maps of the Helmholtz fluid 'water_Brown2026' over its whole (P,T) range.
 
-    python3 -m seafreeze.test.water3_surface_maps OUTDIR
+    python3 -m seafreeze.test.water_Brown2026_surface_maps OUTDIR
 
-Writes water3_surface_maps.png: density, Cp, sound speed, thermal expansivity,
+Writes water_Brown2026_surface_maps.png: density, Cp, sound speed, thermal expansivity,
 compressibility factor Z = P/(rho R T) and the Grueneisen parameter on a log P -
 log T grid (1e-6 MPa - 10 TPa, 230 K - 150 kK), stable branch (vapour below the
 saturation curve).  Overlays: water_Brown2026's own saturation curve and critical point,
@@ -134,7 +134,7 @@ def make(outdir):
                  'and critical point; black: sublimation + melting curve of the stable solid', x=0.01, ha='left',
                  color=INK, fontsize=11)
     fig.tight_layout()
-    f = os.path.join(outdir, 'water3_surface_maps.png')
+    f = os.path.join(outdir, 'water_Brown2026_surface_maps.png')
     fig.savefig(f, dpi=140); plt.close(fig)
     return f
 

@@ -17,14 +17,14 @@ function gen_getProp_reference()
 %   VI_scatter       ice VI,   scatter  5 pts
 %   VI_grid          ice VI,   grid     5×4
 %   Ih_scatter       ice Ih,   scatter  3 pts
-%   water1_scatter   water_Bollengier2019,   scatter  5 pts
-%   water1_grid      water_Bollengier2019,   grid     5×4
-%   NaClaq_scatter   NaClaq_5GPa_2024,  scatter  4 pts  (P,T,m)
-%   NaClaq_grid      NaClaq_5GPa_2024,  grid     4×4×3  {P,T,m}
-%   water3_scatter   water_Brown2026 (Helmholtz), scatter 5 pts (vapour, liquid, supercritical)
-%   water3_grid      water_Brown2026,   grid     4×4
-%   water3_rhoT      water_Brown2026,   (rho,T) scatter 4 pts ('input','rhoT')
-%   water1_rhoT      water_Bollengier2019,   (rho,T) grid 3×3 (Gibbs spline inverted by SF_rho2P)
+%   water_Bollengier2019_scatter   water_Bollengier2019,   scatter  5 pts
+%   water_Bollengier2019_grid      water_Bollengier2019,   grid     5×4
+%   NaClaq_scatter   NaClaq_Brown2024,  scatter  4 pts  (P,T,m)
+%   NaClaq_grid      NaClaq_Brown2024,  grid     4×4×3  {P,T,m}
+%   water_Brown2026_scatter   water_Brown2026 (Helmholtz), scatter 5 pts (vapour, liquid, supercritical)
+%   water_Brown2026_grid      water_Brown2026,   grid     4×4
+%   water_Brown2026_rhoT      water_Brown2026,   (rho,T) scatter 4 pts ('input','rhoT')
+%   water_Bollengier2019_rhoT      water_Bollengier2019,   (rho,T) grid 3×3 (Gibbs spline inverted by SF_rho2P)
 
 here = fileparts(mfilename('fullpath'));
 mat_root = fileparts(here);
@@ -64,31 +64,31 @@ P_vec = [100 200 500 1000 2000]';
 T_vec = [280 300 320 340  350]';
 pts   = [P_vec, T_vec];
 out   = SF_getprop(pts, 'water_Bollengier2019');
-cases.water1_scatter = add_pt_input(out, P_vec, T_vec, [], 'water_Bollengier2019');
-fprintf('  water1_scatter      (%d pts)\n', numel(P_vec));
+cases.water_Bollengier2019_scatter = add_pt_input(out, P_vec, T_vec, [], 'water_Bollengier2019');
+fprintf('  water_Bollengier2019_scatter      (%d pts)\n', numel(P_vec));
 
 % ---- water_Bollengier2019 grid -------------------------------------------------------------
 P_grid = [100 500 1000 2000 2200];
 T_grid = [280 300 320  340];
 out    = SF_getprop({P_grid, T_grid}, 'water_Bollengier2019');
-cases.water1_grid = add_grid_input(out, P_grid, T_grid, [], 'water_Bollengier2019');
-fprintf('  water1_grid         (%d×%d)\n', numel(P_grid), numel(T_grid));
+cases.water_Bollengier2019_grid = add_grid_input(out, P_grid, T_grid, [], 'water_Bollengier2019');
+fprintf('  water_Bollengier2019_grid         (%d×%d)\n', numel(P_grid), numel(T_grid));
 
-% ---- NaClaq_5GPa_2024 scatter ------------------------------------------------
+% ---- NaClaq_Brown2024 scatter ------------------------------------------------
 P_vec = [100  200  500  900]';
 T_vec = [260  270  280  285]';
 m_vec = [1.0  2.0  3.0  0.5]';
 pts3  = [P_vec, T_vec, m_vec];   % N×3 scatter
-out   = SF_getprop(pts3, 'NaClaq_5GPa_2024');
-cases.NaClaq_scatter = add_pt_input(out, P_vec, T_vec, m_vec, 'NaClaq_5GPa_2024');
+out   = SF_getprop(pts3, 'NaClaq_Brown2024');
+cases.NaClaq_scatter = add_pt_input(out, P_vec, T_vec, m_vec, 'NaClaq_Brown2024');
 fprintf('  NaClaq_scatter      (%d pts)\n', numel(P_vec));
 
-% ---- NaClaq_5GPa_2024 grid ---------------------------------------------------
+% ---- NaClaq_Brown2024 grid ---------------------------------------------------
 P_grid3 = [50 100 300 700];
 T_grid3 = [260 270 280 290];
 m_grid3 = [0.5 2.0 4.0];
-out     = SF_getprop({P_grid3, T_grid3, m_grid3}, 'NaClaq_5GPa_2024');
-cases.NaClaq_grid = add_grid_input(out, P_grid3, T_grid3, m_grid3, 'NaClaq_5GPa_2024');
+out     = SF_getprop({P_grid3, T_grid3, m_grid3}, 'NaClaq_Brown2024');
+cases.NaClaq_grid = add_grid_input(out, P_grid3, T_grid3, m_grid3, 'NaClaq_Brown2024');
 fprintf('  NaClaq_grid         (%d×%d×%d)\n', ...
     numel(P_grid3), numel(T_grid3), numel(m_grid3));
 
@@ -97,16 +97,16 @@ P_vec = [200  700  800  2000  5000]';
 T_vec = [270  275  280  290   300]';
 m_vec = [1.0  2.0  0.5  3.0   1.5]';
 pts3  = [P_vec, T_vec, m_vec];
-out   = SF_getprop(pts3, 'NaClaq');
-cases.NaClaq_stitch_scatter = add_pt_input(out, P_vec, T_vec, m_vec, 'NaClaq');
+out   = SF_getprop(pts3, 'NaClaq_Brown2026');
+cases.NaClaq_stitch_scatter = add_pt_input(out, P_vec, T_vec, m_vec, 'NaClaq_Brown2026');
 fprintf('  NaClaq_stitch_scatter (%d pts)\n', numel(P_vec));
 
 % ---- NaClaq stitched grid (P axis spans LP, blend, HP) -----------------------
 P_grid4 = [100 400 700 900 1500 3000];
 T_grid4 = [260 280 300];
 m_grid4 = [0.5 2.0 4.0];
-out     = SF_getprop({P_grid4, T_grid4, m_grid4}, 'NaClaq');
-cases.NaClaq_stitch_grid = add_grid_input(out, P_grid4, T_grid4, m_grid4, 'NaClaq');
+out     = SF_getprop({P_grid4, T_grid4, m_grid4}, 'NaClaq_Brown2026');
+cases.NaClaq_stitch_grid = add_grid_input(out, P_grid4, T_grid4, m_grid4, 'NaClaq_Brown2026');
 fprintf('  NaClaq_stitch_grid    (%d×%d×%d)\n', ...
     numel(P_grid4), numel(T_grid4), numel(m_grid4));
 
@@ -114,29 +114,29 @@ fprintf('  NaClaq_stitch_grid    (%d×%d×%d)\n', ...
 P_vec = [1e-3 0.101325 30 500 2000]';
 T_vec = [300  298.15   700 350 450]';
 out   = SF_getprop([P_vec, T_vec], 'water_Brown2026');
-cases.water3_scatter = add_pt_input(out, P_vec, T_vec, [], 'water_Brown2026');
-fprintf('  water3_scatter      (%d pts)\n', numel(P_vec));
+cases.water_Brown2026_scatter = add_pt_input(out, P_vec, T_vec, [], 'water_Brown2026');
+fprintf('  water_Brown2026_scatter      (%d pts)\n', numel(P_vec));
 
 % ---- water_Brown2026 grid --------------------------------------------------------------
 P_grid = [0.1 10 100 1000];
 T_grid = [300 400 500 700];
 out    = SF_getprop({P_grid, T_grid}, 'water_Brown2026');
-cases.water3_grid = add_grid_input(out, P_grid, T_grid, [], 'water_Brown2026');
-fprintf('  water3_grid         (%d×%d)\n', numel(P_grid), numel(T_grid));
+cases.water_Brown2026_grid = add_grid_input(out, P_grid, T_grid, [], 'water_Brown2026');
+fprintf('  water_Brown2026_grid         (%d×%d)\n', numel(P_grid), numel(T_grid));
 
 % ---- (rho,T) input: water_Brown2026 direct, water_Bollengier2019 through SF_rho2P ----------------------
 R_vec = [1e-2 997 1100 1250]';
 T_vec = [400 298.15 300 350]';
 out   = SF_getprop([R_vec, T_vec], 'water_Brown2026', [], 'input', 'rhoT');
 s = add_pt_input(out, R_vec, T_vec, [], 'water_Brown2026'); s.input_mode = 'rhoT';
-cases.water3_rhoT = s;
-fprintf('  water3_rhoT         (%d pts)\n', numel(R_vec));
+cases.water_Brown2026_rhoT = s;
+fprintf('  water_Brown2026_rhoT         (%d pts)\n', numel(R_vec));
 R_grid = [1000 1050 1100];
 T_grid = [280 300 330];
 out    = SF_getprop({R_grid, T_grid}, 'water_Bollengier2019', [], 'input', 'rhoT');
 s = add_grid_input(out, R_grid, T_grid, [], 'water_Bollengier2019'); s.input_mode = 'rhoT';
-cases.water1_rhoT = s;
-fprintf('  water1_rhoT         (%d×%d)\n', numel(R_grid), numel(T_grid));
+cases.water_Bollengier2019_rhoT = s;
+fprintf('  water_Bollengier2019_rhoT         (%d×%d)\n', numel(R_grid), numel(T_grid));
 
 % ---- Save -------------------------------------------------------------------
 out_path = fullfile(here, 'reference_getProp.mat');

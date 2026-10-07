@@ -138,7 +138,7 @@ def _canonical(material):
     if material in ("water_Bollengier2019", "water_Brown2018", "water_IAPWS95"):
         return "water_Bollengier2019"
     if material.startswith("NaClaq"):
-        return "NaClaq"
+        return "NaClaq_Brown2026"
     return material
 
 
@@ -152,7 +152,7 @@ def get_stability_boundaries(material):
     for matA, matB, *_ in _PAIRS:
         if canon not in (matA, matB):
             continue
-        if matA == "NaClaq" or matB == "NaClaq":
+        if matA == "NaClaq_Brown2026" or matB == "NaClaq_Brown2026":
             continue
         if matA == "water_Bollengier2019" or matB == "water_Bollengier2019":
             pass

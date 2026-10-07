@@ -32,9 +32,9 @@ PURE_PAIRS = [
     'VI_water_Bollengier2019',
 ]
 NACL_PAIRS = [
-    'Ih_NaClaq_m0p5', 'Ih_NaClaq_m2',
-    'III_NaClaq_m0p5', 'III_NaClaq_m2',
-    'V_NaClaq_m0p5', 'V_NaClaq_m2',
+    'Ih_NaClaq_Brown2026_m0p5', 'Ih_NaClaq_Brown2026_m2',
+    'III_NaClaq_Brown2026_m0p5', 'III_NaClaq_Brown2026_m2',
+    'V_NaClaq_Brown2026_m0p5', 'V_NaClaq_Brown2026_m2',
 ]
 
 ALL_CASES = PURE_PAIRS + NACL_PAIRS

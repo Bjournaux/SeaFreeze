@@ -29,7 +29,7 @@ np = 0; nf = 0;
 rtol_overrides = struct('muw', 1e-6, 'aw', 1e-6);
 
 % Load splines once via central loader
-sp_NaCl = sf_load_spline('NaClaq_5GPa_2024');
+sp_NaCl = sf_load_spline('NaClaq_Brown2024');
 if ~isfield(sp_NaCl,'MW'), sp_NaCl.MW = 58.44e-3; end
 if ~isfield(sp_NaCl,'nu'), sp_NaCl.nu = 2;        end
 sp_NaCl.Go = 1;

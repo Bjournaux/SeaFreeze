@@ -1,4 +1,4 @@
-function test_water3_internals()
+function test_water_Brown2026_internals()
 % Tests for the 1.2 internals behind water_Brown2026 and the phase diagrams:
 %   psi_val grid mode, the sf_load_spline cache, the SeaFreeze:longRuntime and
 %   SeaFreeze:diluteExtension warnings, and SF_WPD with a Helmholtz liquid.
@@ -98,7 +98,7 @@ warning(st);
 clear SF_coexistence
 
 fprintf('\n%d passed, %d failed\n', np, nf);
-if nf > 0, error('test_water3_internals:failed', '%d test(s) failed', nf); end
+if nf > 0, error('test_water_Brown2026_internals:failed', '%d test(s) failed', nf); end
 end
 
 

@@ -28,10 +28,10 @@ _SPLINE_MAP = {
     'water_Brown2018':      ('water_Brown',       'water_Brown.mat'),
     'water_IAPWS95':        ('water_IAPWS95',     'water_IAPWS95.mat'),
     'water_Brown2026':      ('water_psi2026',     'water_psi2026.mat'),  # Helmholtz psi surface
-    'NaClaq':          None,  # stitched LP+HP — handled separately
-    'NaClaq_LP':       ('NaCl_aq_LP_2026',     'NaCl_aq_LP_2026.mat'),
-    'NaClaq_HP':       ('NaCl_aq_HP_2026',     'NaCl_aq_HP_2026.mat'),
-    'NaClaq_5GPa_2024':('NaCl_aq_Brown2024',   'NaCl_aq_Brown2024.mat'),
+    'NaClaq_Brown2026':     None,  # stitched LP+HP — handled separately
+    'NaClaq_Brown2026_LP':  ('NaCl_aq_LP_2026',   'NaCl_aq_LP_2026.mat'),
+    'NaClaq_Brown2026_HP':  ('NaCl_aq_HP_2026',   'NaCl_aq_HP_2026.mat'),
+    'NaClaq_Brown2024':     ('NaCl_aq_Brown2024', 'NaCl_aq_Brown2024.mat'),
 }
 
 # ---------------------------------------------------------------------------
@@ -77,9 +77,17 @@ _nw = 1.0 / mH2O_kgmol      # mol water / kg water ≈ 55.508
 # with a once-per-session SeaFreezeDeprecationWarning, and are removed in 2.0.
 # ---------------------------------------------------------------------------
 MATERIAL_ALIASES = {
-    'water1': 'water_Bollengier2019',
-    'water2': 'water_Brown2018',
-    'water3': 'water_Brown2026',
+    'water1':           'water_Bollengier2019',
+    'water2':           'water_Brown2018',
+    'water3':           'water_Brown2026',
+    'NaClaq_LP':        'NaClaq_Brown2026_LP',
+    'NaClaq_HP':        'NaClaq_Brown2026_HP',
+    'NaClaq_5GPa_2024': 'NaClaq_Brown2024',
+}
+
+# Permanent shortcuts (no warning): 'NaClaq' is the recommended NaCl(aq) model.
+MATERIAL_SHORTCUTS = {
+    'NaClaq': 'NaClaq_Brown2026',
 }
 
 
@@ -92,13 +100,18 @@ _warned_aliases = set()
 
 def canonical_material(name, stacklevel=3):
     """The current name of a material: renamed ones are mapped (with a warning
-    the first time each old name is used in a session), others pass through.
+    the first time each old name is used in a session), shortcuts ('NaClaq')
+    are mapped silently, others pass through.
 
     :param name:       material name, e.g. 'water1' or 'water_Bollengier2019'
     :param stacklevel: passed to warnings.warn (3: the caller of the public
                        function that called this one)
     """
-    new = MATERIAL_ALIASES.get(name) if isinstance(name, str) else None
+    if not isinstance(name, str):
+        return name
+    if name in MATERIAL_SHORTCUTS:
+        return MATERIAL_SHORTCUTS[name]
+    new = MATERIAL_ALIASES.get(name)
     if new is None:
         return name
     if name not in _warned_aliases:
@@ -110,14 +123,15 @@ def canonical_material(name, stacklevel=3):
 
 
 class _PhaseTable(dict):
-    """The phases dict; also answers to the deprecated material names."""
+    """The phases dict; also answers to the deprecated material names and shortcuts."""
     def __missing__(self, key):
-        if isinstance(key, str) and key in MATERIAL_ALIASES:
+        if isinstance(key, str) and (key in MATERIAL_ALIASES or key in MATERIAL_SHORTCUTS):
             return self[canonical_material(key)]
         raise KeyError(key)
 
     def __contains__(self, key):
-        return dict.__contains__(self, key) or (isinstance(key, str) and key in MATERIAL_ALIASES)
+        return dict.__contains__(self, key) or (
+            isinstance(key, str) and (key in MATERIAL_ALIASES or key in MATERIAL_SHORTCUTS))
 
     def get(self, key, default=None):
         return self[key] if key in self else default
@@ -138,10 +152,10 @@ phases = _PhaseTable({
     "water_IAPWS95":        PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # IAPWS95; Wagner & Pruss 2002
     "water_Brown2026":      PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # Helmholtz psi-spline F(rho,T); lbf-thermo 2026
     # Aqueous NaCl
-    "NaClaq":          PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # stitched LP+HP 2026 (recommended)
-    "NaClaq_LP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 low-P  spline only
-    "NaClaq_HP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 high-P spline only
-    "NaClaq_5GPa_2024":PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # Brown 2024 legacy spline
+    "NaClaq_Brown2026":     PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # stitched LP+HP 2026 (recommended; shortcut 'NaClaq')
+    "NaClaq_Brown2026_LP":  PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 low-P  spline only
+    "NaClaq_Brown2026_HP":  PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 high-P spline only
+    "NaClaq_Brown2024":     PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # Brown 2024 legacy spline
 })
 max_phase_num = int(np.nanmax([p.phase_num for p in phases.values()]))
 
@@ -178,11 +192,11 @@ def _load_spline(splines_dir, material):
     material = canonical_material(material)
     entry = _SPLINE_MAP.get(material)
     if entry is None:
-        if material == 'NaClaq':
+        if material == 'NaClaq_Brown2026':
             raise ValueError(
-                "'NaClaq' uses LP+HP stitching and cannot be loaded as a single "
-                "spline.  Use getProp(PTm, 'NaClaq') which handles stitching "
-                "automatically, or load 'NaClaq_LP' / 'NaClaq_HP' individually.")
+                "'NaClaq_Brown2026' uses LP+HP stitching and cannot be loaded as a single "
+                "spline.  Use getProp(PTm, 'NaClaq_Brown2026') which handles stitching "
+                "automatically, or load 'NaClaq_Brown2026_LP' / 'NaClaq_Brown2026_HP' individually.")
         else:
             raise ValueError(f"Unknown material '{material}'. Supported: "
                              + ', '.join(k for k, v in _SPLINE_MAP.items() if v is not None))
@@ -292,7 +306,7 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
         want_set  = set(tdvSpec)
         want_all  = len(want_set) == 0
         is_nacl   = phase.startswith('NaClaq')
-        is_stitched = (phase == 'NaClaq')
+        is_stitched = (phase == 'NaClaq_Brown2026')
 
         # ---- Determine which derived props are relevant for this phase ----------
         derived_known = _DERIVED_BASE | (_DERIVED_NACL if is_nacl else set())
@@ -424,7 +438,7 @@ def whichphase(PTm, solute='water_Bollengier2019', path=defpath):
                     Grid: numpy array([P_vec, T_vec]) or ([P, T, m_vec]).
     :param solute:  The liquid phase: a pure-water liquid ('water_Bollengier2019' default,
                     'water_Brown2018', 'water_IAPWS95', 'water_Brown2026') or an aqueous NaCl
-                    material ('NaClaq', 'NaClaq_LP', ...).
+                    material ('NaClaq_Brown2026', 'NaClaq_Brown2026_LP', ...).
     :param path:    Path to the ``splines/`` directory.
     :return:        numpy.ndarray with the stable phase index at each point
                     (0 = liquid).
@@ -432,7 +446,7 @@ def whichphase(PTm, solute='water_Bollengier2019', path=defpath):
     solute = canonical_material(solute)
     if solute not in phases:
         raise ValueError(f"Unknown liquid {solute!r}. Supported: "
-                         + ', '.join(pure_water_liquids) + ', NaClaq, NaClaq_LP, NaClaq_HP, NaClaq_5GPa_2024.')
+                         + ', '.join(pure_water_liquids) + ', NaClaq, NaClaq_Brown2026_LP, NaClaq_Brown2026_HP, NaClaq_Brown2024.')
     is_nacl = solute.startswith('NaClaq')
     if not is_nacl and solute not in pure_water_liquids:
         raise ValueError(f"{solute!r} is not a liquid phase.")
@@ -454,9 +468,9 @@ def whichphase(PTm, solute='water_Bollengier2019', path=defpath):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (0,)
-        if solute == 'NaClaq':
+        if solute == 'NaClaq_Brown2026':
             # stitched LP+HP: getProp handles the blending
-            liq = getProp(PTm, 'NaClaq', path, 'muw').muw
+            liq = getProp(PTm, 'NaClaq_Brown2026', path, 'muw').muw
         elif is_nacl:
             sp = _load_spline(path, solute)
             sp['nu'] = phases[solute].nu
@@ -504,10 +518,10 @@ def _nacl_stitch(PTm, isscatter, path, *tdvSpec):
     Returns a plain dict of property arrays (same format as getProp's internal
     ``props`` dict).
     """
-    sp_lp = _load_spline(path, 'NaClaq_LP')
-    sp_hp = _load_spline(path, 'NaClaq_HP')
+    sp_lp = _load_spline(path, 'NaClaq_Brown2026_LP')
+    sp_hp = _load_spline(path, 'NaClaq_Brown2026_HP')
     # Ensure cutoff is set (lbftd needs it for apparent-property evaluation)
-    cutoff = phases['NaClaq'].cutoff
+    cutoff = phases['NaClaq_Brown2026'].cutoff
     if 'cutoff' not in sp_lp or sp_lp['cutoff'] is None:
         sp_lp['cutoff'] = cutoff
     if 'cutoff' not in sp_hp or sp_hp['cutoff'] is None:
@@ -656,7 +670,7 @@ def _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path
     """Attach Matlab-parity derived properties to the *props* dict in-place.
 
     :param props:    Plain dict built from lbftd output (modified in-place).
-    :param sp:       Spline dict (None for stitched 'NaClaq').
+    :param sp:       Spline dict (None for stitched 'NaClaq_Brown2026').
     :param path:     Splines directory (needed for stitched Vw).
     :param want_set: set of requested property names; empty = compute all.
     """
@@ -723,7 +737,7 @@ def _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path
     # Vw: partial molar volume of water [cm³/mol]
     # = ∂muw/∂P  (central-difference, δP = 0.1 MPa)
     if want('Vw'):
-        if phase == 'NaClaq':
+        if phase == 'NaClaq_Brown2026':
             # Stitched mode: use _nacl_stitch at shifted P for correct blend-zone Vw
             props['Vw'] = _compute_Vw_stitched(PTm, isscatter, path)
         else:
@@ -756,8 +770,8 @@ def _compute_Vw_stitched(PTm, isscatter, path, dP=0.1):
     the blending-weight function that would appear if we finite-differenced
     the already-blended muw.
     """
-    sp_lp = _load_spline(path, 'NaClaq_LP')
-    sp_hp = _load_spline(path, 'NaClaq_HP')
+    sp_lp = _load_spline(path, 'NaClaq_Brown2026_LP')
+    sp_hp = _load_spline(path, 'NaClaq_Brown2026_HP')
 
     P_arr = np.asarray(_get_P(PTm, isscatter), dtype=float).ravel()
     nP = P_arr.size

@@ -78,13 +78,13 @@ def phase_range(material: str, path: str = defpath) -> PhaseRange:
     if material not in phases:
         raise ValueError(
             f"Unknown material {material!r}. Valid: {', '.join(phases.keys())}.")
-    if material == 'NaClaq':
+    if material == 'NaClaq_Brown2026':
         # Stitched LP+HP: report the intersection domain for T/m (both sub-splines
         # must be valid in the blend zone), full P coverage LP_lo → HP_hi.
         # At LP-only pressures T ≥ LP_Tlo = 229.9 K is required; using the
         # intersection avoids spurious extrapolation artifacts at phase boundaries.
-        sp_lp = _load_spline(path, 'NaClaq_LP')
-        sp_hp = _load_spline(path, 'NaClaq_HP')
+        sp_lp = _load_spline(path, 'NaClaq_Brown2026_LP')
+        sp_hp = _load_spline(path, 'NaClaq_Brown2026_HP')
         P = (float(sp_lp['knots'][0][0]), float(sp_hp['knots'][0][-1]))
         T = (max(float(sp_lp['knots'][1][0]),  float(sp_hp['knots'][1][0])),
              min(float(sp_lp['knots'][1][-1]), float(sp_hp['knots'][1][-1])))
@@ -180,15 +180,15 @@ _PAIRS = [
         _tps(_TP_IhIIIII, _TP_IIIIIV)),
     # NaClaq pairs - whole curve marked stable (m-dependent triple points
     # out of scope for this rewrite, matching Matlab v1.1.x).
-    ('Ih',  'NaClaq', 'T', -np.inf,           np.inf,
+    ('Ih',  'NaClaq_Brown2026', 'T', -np.inf,           np.inf,
         _tps(_TP_IhLiqIII, _TP_atm)),
-    ('III', 'NaClaq', 'T', -np.inf,           np.inf,
+    ('III', 'NaClaq_Brown2026', 'T', -np.inf,           np.inf,
         _tps(_TP_IhLiqIII, _TP_IIIVLiq)),
-    ('V',   'NaClaq', 'T', -np.inf,           np.inf,
+    ('V',   'NaClaq_Brown2026', 'T', -np.inf,           np.inf,
         _tps(_TP_IIIVLiq, _TP_VVILiq)),
-    ('VI',  'NaClaq', 'T', -np.inf,           np.inf,
+    ('VI',  'NaClaq_Brown2026', 'T', -np.inf,           np.inf,
         _tps(_TP_VVILiq)),
-    ('II',  'NaClaq', 'T', -np.inf,           np.inf,
+    ('II',  'NaClaq_Brown2026', 'T', -np.inf,           np.inf,
         _tps(_TP_IhIIIII)),
 ]
 
@@ -223,7 +223,7 @@ def phase_lines(matA: str,
     matA, matB : str
         Material names from `seafreeze.phases`. Order is symmetric.
     m : float or array-like, optional
-        Molality (mol/kg) - required when one of the phases is 'NaClaq'.
+        Molality (mol/kg) - required when one of the phases is 'NaClaq_Brown2026'.
         If a vector, returns a list of results (one per molality value).
     P, T : array-like, optional
         Override the auto-built sampling grid. P in MPa, T in K, both 1D
@@ -249,7 +249,7 @@ def phase_lines(matA: str,
     matA_canon, matB_canon = entry[0], entry[1]
     var, lo, hi, tps = entry[2], entry[3], entry[4], entry[5]
 
-    nacl_involved = 'NaClaq' in (matA_canon, matB_canon)
+    nacl_involved = 'NaClaq_Brown2026' in (matA_canon, matB_canon)
 
     # Validate molality argument
     if nacl_involved:
@@ -258,7 +258,7 @@ def phase_lines(matA: str,
                 f"Pair ({matA_canon}, {matB_canon}) involves NaClaq; "
                 f"pass molality via m= (mol/kg).")
         m_iter = np.atleast_1d(np.asarray(m, dtype=float)).ravel()
-        rng_nacl = phase_range('NaClaq', path)
+        rng_nacl = phase_range('NaClaq_Brown2026', path)
         if (np.any(m_iter < rng_nacl.m[0]) or
                 np.any(m_iter > rng_nacl.m[1])):
             raise ValueError(
@@ -366,11 +366,11 @@ def _g_pure(material, P, T, path):
 def _muw_nacl(P, T, m_val, path):
     """muw on a (nP, nT) grid, in J/mol of H2O.
 
-    Uses getProp('NaClaq', ...) which handles LP+HP stitching automatically.
+    Uses getProp('NaClaq_Brown2026', ...) which handles LP+HP stitching automatically.
     """
     from .seafreeze import getProp
     PTm = np.array([P, T, np.array([m_val], dtype=float)], dtype=object)
-    out = getProp(PTm, 'NaClaq', path, 'muw')
+    out = getProp(PTm, 'NaClaq_Brown2026', path, 'muw')
     G = np.squeeze(np.asarray(out.muw))
     if G.ndim == 1:
         # safety: if either P or T has length 1 and squeeze collapsed wrong
@@ -380,11 +380,11 @@ def _muw_nacl(P, T, m_val, path):
 
 def _compute_surfaces(matA, matB, P, T, m_val, path):
     """Return (Ga, Gb), each shape (nP, nT), in J/mol of H2O."""
-    if matA == 'NaClaq':
+    if matA == 'NaClaq_Brown2026':
         Ga = _muw_nacl(P, T, m_val, path)
     else:
         Ga = _g_pure(matA, P, T, path)
-    if matB == 'NaClaq':
+    if matB == 'NaClaq_Brown2026':
         Gb = _muw_nacl(P, T, m_val, path)
     else:
         Gb = _g_pure(matB, P, T, path)
@@ -480,7 +480,7 @@ def wpd(ax=None,
     ax : matplotlib Axes, optional
         Target axes; if omitted a new figure is created.
     solute : {'none', 'NaCl', 'NaClaq'}
-        If 'NaCl' (or 'NaClaq'), overlay Ih/III/V/VI -- NaClaq melting
+        If 'NaCl' (or 'NaClaq_Brown2026'), overlay Ih/III/V/VI -- NaClaq melting
         curves at the molalities given by `m`.
     m : float or array-like, optional
         Molality value(s) for the NaCl overlay. Required when solute is set.
@@ -539,7 +539,7 @@ def wpd(ax=None,
         for ice in ('Ih', 'III', 'V', 'VI'):
             for i, mv in enumerate(m_arr):
                 try:
-                    r = phase_lines(ice, 'NaClaq', m=mv, path=path)
+                    r = phase_lines(ice, 'NaClaq_Brown2026', m=mv, path=path)
                 except (RuntimeError, ValueError):
                     continue
                 color = cmap(i / max(len(m_arr) - 1, 1))

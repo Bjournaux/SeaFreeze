@@ -45,12 +45,12 @@ PURE_PAIRS = {
 
 % --- NaClaq cases (3 ices x 2 molalities) -----------------------------------
 NACL_PAIRS = {
-    {'Ih',  'NaClaq', 0.5};
-    {'Ih',  'NaClaq', 2.0};
-    {'III', 'NaClaq', 0.5};
-    {'III', 'NaClaq', 2.0};
-    {'V',   'NaClaq', 0.5};
-    {'V',   'NaClaq', 2.0};
+    {'Ih',  'NaClaq_Brown2026', 0.5};
+    {'Ih',  'NaClaq_Brown2026', 2.0};
+    {'III', 'NaClaq_Brown2026', 0.5};
+    {'III', 'NaClaq_Brown2026', 2.0};
+    {'V',   'NaClaq_Brown2026', 0.5};
+    {'V',   'NaClaq_Brown2026', 2.0};
 };
 
 cases = struct();

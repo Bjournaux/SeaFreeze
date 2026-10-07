@@ -55,8 +55,8 @@ _PURE_PAIRS = [
 
 # NaCl melting pairs
 _NACL_PAIRS = [
-    ("Ih", "NaClaq"), ("II", "NaClaq"), ("III", "NaClaq"),
-    ("V", "NaClaq"), ("VI", "NaClaq"),
+    ("Ih", "NaClaq_Brown2026"), ("II", "NaClaq_Brown2026"), ("III", "NaClaq_Brown2026"),
+    ("V", "NaClaq_Brown2026"), ("VI", "NaClaq_Brown2026"),
 ]
 
 # All phases that can be toggled
@@ -73,7 +73,7 @@ _PHASE_LABEL = {
 }
 
 
-_LIQUIDS = {"water_Bollengier2019", "water_Brown2026", "NaClaq"}
+_LIQUIDS = {"water_Bollengier2019", "water_Brown2026", "NaClaq_Brown2026"}
 
 
 def _add_boundary_traces(fig, P, T, stable, color, name, custom_row,
@@ -159,7 +159,7 @@ def _render_transition_jump(event):
         return
 
     def _props(mat):
-        m_arg = (m_val,) if mat == "NaClaq" else None
+        m_arg = (m_val,) if mat == "NaClaq_Brown2026" else None
         res = compute_properties((P_clk,), (T_clk,), m_arg, mat,
                                  ("rho", "S", "H"), "scatter")
         return (float(np.ravel(res["rho"])[0]),
@@ -324,7 +324,7 @@ def _render_melting_lines():
                 continue
             for j, m_val in enumerate(nacl_molalities):
                 try:
-                    res = get_phase_line(matA, "NaClaq", segment=segment, m=m_val)
+                    res = get_phase_line(matA, "NaClaq_Brown2026", segment=segment, m=m_val)
                     if res is None:
                         continue
                     P_line, T_line = res
@@ -336,7 +336,7 @@ def _render_melting_lines():
                         mode="lines",
                         line=dict(color=color, width=line_width, dash="dot"),
                         name=f"{short_label(matA)} – NaCl(aq) m={m_val}",
-                        customdata=[[matA, "NaClaq", "nacl", str(m_val)]] * len(P_line),
+                        customdata=[[matA, "NaClaq_Brown2026", "nacl", str(m_val)]] * len(P_line),
                         hovertemplate=(
                             f"m = {m_val} mol/kg<br>"
                             "P: %{x:.1f} MPa<br>"

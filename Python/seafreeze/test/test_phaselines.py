@@ -26,13 +26,13 @@ class TestPhaseRange(ut.TestCase):
         self.assertAlmostEqual(r.T[1], 301.0, places=6)
         self.assertIsNone(r.m)
 
-    def test_water1(self):
+    def test_water_Bollengier2019(self):
         r = phase_range('water_Bollengier2019')
         self.assertIsNone(r.m)
         self.assertGreaterEqual(r.T[1], 500.0)
 
     def test_NaClaq_has_m(self):
-        r = phase_range('NaClaq')
+        r = phase_range('NaClaq_Brown2026')
         self.assertIsNotNone(r.m)
         self.assertAlmostEqual(r.m[0], 0.0, places=6)
         self.assertGreater(r.m[1], 6.5)  # spline goes to ~7 mol/kg
@@ -45,7 +45,7 @@ class TestPhaseRange(ut.TestCase):
 class TestPhaseLinesPureWater(ut.TestCase):
     """Smoke-and-shape tests for the 12 pure-water pairs."""
 
-    def test_Ih_water1_basic(self):
+    def test_Ih_water_Bollengier2019_basic(self):
         r = phase_lines('Ih', 'water_Bollengier2019')
         self.assertIsInstance(r, PhaseLineResult)
         self.assertEqual((r.matA, r.matB), ('Ih', 'water_Bollengier2019'))
@@ -58,7 +58,7 @@ class TestPhaseLinesPureWater(ut.TestCase):
         # Negative-slope curve: highest P should give lowest T
         self.assertLess(r.T[np.argmax(r.P)], r.T[np.argmin(r.P)])
 
-    def test_VI_water1_high_pressure(self):
+    def test_VI_water_Bollengier2019_high_pressure(self):
         r = phase_lines('VI', 'water_Bollengier2019')
         # Curve should extend to high pressure
         self.assertGreater(r.P.max(), 2000.0)
@@ -89,7 +89,7 @@ class TestPhaseLinesPureWater(ut.TestCase):
         rm = phase_lines('Ih', 'water_Bollengier2019', segment='meta')
         self.assertEqual(ra.P.size, rs.P.size + rm.P.size)
 
-    def test_II_water1_all_metastable(self):
+    def test_II_water_Bollengier2019_all_metastable(self):
         """II <-> water_Bollengier2019 has no stable equilibrium curve in the standard
         phase diagram (II is surrounded by Ih/III/V/VI)."""
         r = phase_lines('II', 'water_Bollengier2019', segment='all')
@@ -131,20 +131,20 @@ class TestPhaseLinesPureWater(ut.TestCase):
 class TestPhaseLinesNaCl(ut.TestCase):
     def test_requires_m(self):
         with self.assertRaises(ValueError):
-            phase_lines('Ih', 'NaClaq')
+            phase_lines('Ih', 'NaClaq_Brown2026')
 
     def test_pure_pair_rejects_m(self):
         with self.assertRaises(ValueError):
             phase_lines('Ih', 'water_Bollengier2019', m=0.5)
 
     def test_scalar_m_returns_single(self):
-        r = phase_lines('Ih', 'NaClaq', m=0.5)
+        r = phase_lines('Ih', 'NaClaq_Brown2026', m=0.5)
         self.assertIsInstance(r, PhaseLineResult)
         self.assertAlmostEqual(r.m, 0.5)
         self.assertGreater(r.P.size, 50)
 
     def test_vector_m_returns_list(self):
-        rs = phase_lines('Ih', 'NaClaq', m=[0.5, 2.0])
+        rs = phase_lines('Ih', 'NaClaq_Brown2026', m=[0.5, 2.0])
         self.assertIsInstance(rs, list)
         self.assertEqual(len(rs), 2)
         self.assertAlmostEqual(rs[0].m, 0.5)
@@ -152,8 +152,8 @@ class TestPhaseLinesNaCl(ut.TestCase):
 
     def test_freezing_point_depression(self):
         """Higher molality lowers the Ih melting temperature at fixed P."""
-        r0p5 = phase_lines('Ih', 'NaClaq', m=0.5)
-        r2p0 = phase_lines('Ih', 'NaClaq', m=2.0)
+        r0p5 = phase_lines('Ih', 'NaClaq_Brown2026', m=0.5)
+        r2p0 = phase_lines('Ih', 'NaClaq_Brown2026', m=2.0)
         # Compare at P near 100 MPa
         def T_at(curve, P_target):
             order = np.argsort(curve.P)
@@ -166,10 +166,10 @@ class TestPhaseLinesNaCl(ut.TestCase):
 
     def test_m_out_of_range(self):
         with self.assertRaises(ValueError):
-            phase_lines('Ih', 'NaClaq', m=100.0)  # > spline max ~7
+            phase_lines('Ih', 'NaClaq_Brown2026', m=100.0)  # > spline max ~7
 
     def test_NaClaq_marked_stable(self):
-        r = phase_lines('Ih', 'NaClaq', m=1.0)
+        r = phase_lines('Ih', 'NaClaq_Brown2026', m=1.0)
         # Per Matlab parity: ice-NaClaq curves are flagged 'all stable'
         self.assertTrue(r.stable.all())
 

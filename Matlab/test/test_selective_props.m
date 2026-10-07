@@ -28,9 +28,9 @@ cases = {
     {'cell with 1 elem',              PT_ice,   'VI',       {'G'},                      {'G'}}
     {'multi-property cell (solid)',   PT_ice,   'VI',       {'G','rho','Cp'},           {'G','rho','Cp'}}
     {'liquid: base only',             PT_water, 'water_Bollengier2019',   {'G','rho','Cp'},           {'G','rho','Cp'}}
-    {'NaClaq base subset',            PTm_nacl, 'NaClaq',   {'rho','Cp'},               {'rho','Cp'}}
-    {'NaClaq mixing only',            PTm_nacl, 'NaClaq',   {'phi','aw'},               {'phi','aw'}}
-    {'NaClaq mixed base+mixing',      PTm_nacl, 'NaClaq',   {'G','rho','muw','phi'},    {'G','rho','muw','phi'}}
+    {'NaClaq base subset',            PTm_nacl, 'NaClaq_Brown2026',   {'rho','Cp'},               {'rho','Cp'}}
+    {'NaClaq mixing only',            PTm_nacl, 'NaClaq_Brown2026',   {'phi','aw'},               {'phi','aw'}}
+    {'NaClaq mixed base+mixing',      PTm_nacl, 'NaClaq_Brown2026',   {'G','rho','muw','phi'},    {'G','rho','muw','phi'}}
     {'grid input, subset',            PT_grid,  'V',        {'G','rho'},                {'G','rho'}}
     % --- shear/Vp/Vs strip-internals invariants -----------------------------
     {'Vp only -> rho/Ks stripped',    PT_ice,   'VI',       'Vp',                       {'Vp'}}
@@ -73,7 +73,7 @@ all_cases = {
     % name,                  PT,        material,    expected superset
     {'all (water_Bollengier2019)',         PT_water,  'water_Bollengier2019',    BASE}
     {'all (ice VI)',         PT_ice,    'VI',        [BASE, SHEAR]}
-    {'all (NaClaq)',         PTm_nacl,  'NaClaq',    [BASE, MIX]}
+    {'all (NaClaq)',         PTm_nacl,  'NaClaq_Brown2026',    [BASE, MIX]}
 };
 for i = 1:size(all_cases,1)
     name = all_cases{i}{1};
@@ -87,7 +87,7 @@ for i = 1:size(all_cases,1)
         % those defined as valid for the material; no foreign fields).
         missing = setdiff(want, got);
         % Allow extras only if they're in the valid set for the material.
-        if strcmp(mat,'NaClaq'),  valid = [BASE, MIX];
+        if strcmp(mat,'NaClaq_Brown2026'),  valid = [BASE, MIX];
         elseif any(strcmp(mat,{'water_Bollengier2019','water_Brown2018','water_IAPWS95'})), valid = BASE;
         else, valid = [BASE, SHEAR]; end
         extra = setdiff(got, valid);

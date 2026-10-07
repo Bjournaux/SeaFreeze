@@ -92,7 +92,7 @@ for k = 1:length(ice_phases)
     for j = 1:length(molalities)
         m = molalities(j);
         try
-            o = SF_PhaseLines(ice, 'NaClaq', 'm', m, 'segment','all');
+            o = SF_PhaseLines(ice, 'NaClaq_Brown2026', 'm', m, 'segment','all');
             if ~isempty(o.P)
                 plot(o.P, o.T, '-', 'Color', colors(j,:), 'LineWidth', 1.2, ...
                      'DisplayName', sprintf('m=%.2g mol/kg', m));

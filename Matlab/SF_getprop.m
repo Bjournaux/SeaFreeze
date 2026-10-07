@@ -61,20 +61,21 @@ function out = SF_getprop(PT, material, props, varargin)
 % Material options:
 %   Ih, II, III, V, VI                  Journaux et al. 2020 / Feistel & Wagner 2006
 %   VII_X_French                        French and Redmer 2015
-%   water_Bollengier2019                              Bollengier et al. 2019 (<=500 K, <=2300 MPa)
-%   water_Brown2018                              Brown 2018 (up to 100 GPa)
+%   water_Bollengier2019                Bollengier et al. 2019 (<=500 K, <=2300 MPa)
+%   water_Brown2018                     Brown 2018 (up to 100 GPa)
 %   water_IAPWS95                       IAPWS95, Wagner & Pruss 2002
-%   water_Brown2026                              psi-spline Helmholtz surface F(rho,T)
+%   water_Brown2026                     psi-spline Helmholtz surface F(rho,T)
 %                                         (lbf-thermo, stage5_23c, 2026);
 %                                         P,T input is inverted to rho on the
-%                                         densest stable branch (see fnFval)
-%   NaClaq                              aqueous NaCl — stitched LP+HP 2026 (default, recommended)
+%                                         stable branch (see fnFval)
+%   NaClaq_Brown2026                    aqueous NaCl — stitched LP+HP 2026 (recommended;
+%                                         shortcut 'NaClaq')
 %                                         P=[0,10001] MPa, T=[229,2001] K, m=[0,7.01] mol/kg
-%   NaClaq_LP                           2026 low-P  NaCl(aq) LBF spline only
+%   NaClaq_Brown2026_LP                 2026 low-P  NaCl(aq) LBF spline only
 %                                         P=[0,1001] MPa, T=[229.9,501] K
-%   NaClaq_HP                           2026 high-P NaCl(aq) LBF spline only
+%   NaClaq_Brown2026_HP                 2026 high-P NaCl(aq) LBF spline only
 %                                         P=[499.9,10001] MPa, T=[229,2001] K
-%   NaClaq_5GPa_2024                    Brown 2024 NaCl(aq) legacy spline
+%   NaClaq_Brown2024                    Brown 2024 NaCl(aq) legacy spline
 %                                         P=[0,5000] MPa, T=[229,501] K
 %
 % The ice Gibbs parametrizations are optimized for use with 'water_Bollengier2019'
@@ -87,7 +88,7 @@ function out = SF_getprop(PT, material, props, varargin)
 %   - Only rho and Cp for an ice V grid:
 %         out = SF_getprop({400:2:500, 240:0.5:250}, 'V', {'rho','Cp'})
 %   - Only G for NaClaq:
-%         out = SF_getprop({0.1:10:500, 273:400, 0.1:0.5:5}, 'NaClaq', 'G')
+%         out = SF_getprop({0.1:10:500, 273:400, 0.1:0.5:5}, 'NaClaq_Brown2026', 'G')
 %
 % References:
 %   Bollengier, Brown & Shaw (2019) J. Chem. Phys. 151
@@ -226,15 +227,15 @@ else
 end
 
 % ---- NaClaq family: 3D LBF splines ----------------------------------------
-% 'NaClaq'         → stitched LP+HP 2026 via SF_NaCl_stitch (recommended)
-% 'NaClaq_LP'      → 2026 low-P spline only  (P ≤ 1001 MPa, T ≤ 501 K)
-% 'NaClaq_HP'      → 2026 high-P spline only (P ≥ 499.9 MPa, T ≤ 2001 K)
-% 'NaClaq_5GPa_2024' → Brown 2024 legacy spline (P ≤ 5000 MPa, T ≤ 501 K)
+% 'NaClaq_Brown2026'         → stitched LP+HP 2026 via SF_NaCl_stitch (recommended)
+% 'NaClaq_Brown2026_LP'      → 2026 low-P spline only  (P ≤ 1001 MPa, T ≤ 501 K)
+% 'NaClaq_Brown2026_HP'      → 2026 high-P spline only (P ≥ 499.9 MPa, T ≤ 2001 K)
+% 'NaClaq_Brown2024' → Brown 2024 legacy spline (P ≤ 5000 MPa, T ≤ 501 K)
 if ismember(material, nacl_materials)
     switch material
-        case 'NaClaq'
-            spLP = sf_load_spline('NaClaq_LP');
-            spHP = sf_load_spline('NaClaq_HP');
+        case 'NaClaq_Brown2026'
+            spLP = sf_load_spline('NaClaq_Brown2026_LP');
+            spHP = sf_load_spline('NaClaq_Brown2026_HP');
             if ~isfield(spLP,'MW'), spLP.MW = 58.44e-3; end
             if ~isfield(spLP,'nu'), spLP.nu = 2;        end
             if ~isfield(spHP,'MW'), spHP.MW = 58.44e-3; end
@@ -244,7 +245,7 @@ if ismember(material, nacl_materials)
             else
                 out = SF_NaCl_stitch(spLP, spHP, PT, eval_props);
             end
-        case {'NaClaq_LP','NaClaq_HP','NaClaq_5GPa_2024'}
+        case {'NaClaq_Brown2026_LP','NaClaq_Brown2026_HP','NaClaq_Brown2024'}
             sp = sf_load_spline(material);
             if ~isfield(sp,'MW'), sp.MW = 58.44e-3; end
             if ~isfield(sp,'nu'), sp.nu = 2;        end

@@ -388,11 +388,11 @@ function check_errors()
 expect_error(@() SF_getprop([900 255], 'nosuchphase'),  'SeaFreeze:unknownMaterial');
 expect_error(@() SF_getprop([900 255], 'VI', 'nope'),   'SeaFreeze:unknownProperty');
 expect_error(@() SF_getprop([900 255 1], 'VI'),         'SeaFreeze:badInput');
-expect_error(@() SF_getprop([900 255], 'NaClaq'),       'SeaFreeze:badInput');
+expect_error(@() SF_getprop([900 255], 'NaClaq_Brown2026'),       'SeaFreeze:badInput');
 expect_error(@() SF_phase_range('nosuchphase'),         'SeaFreeze:unknownMaterial');
 expect_error(@() sf_load_spline('nosuchphase'),         'sf_load_spline:unknown');
 expect_error(@() SF_PhaseLines('Ih', 'VI'),             'SeaFreeze:unsupportedPair');
-expect_error(@() SF_PhaseLines('Ih', 'NaClaq'),         'SeaFreeze:badInput');
+expect_error(@() SF_PhaseLines('Ih', 'NaClaq_Brown2026'),         'SeaFreeze:badInput');
 end
 
 
@@ -400,14 +400,14 @@ function check_phaselines_multi()
 % Several molalities at once returns a struct array, which drives a different
 % branch of render_plot (colours from lines(), a hand-built legend).
 T = 250:0.5:273;
-out = SF_PhaseLines('Ih', 'NaClaq', 'm', [0.5 2], 'T', T, 'segment', 'all');
+out = SF_PhaseLines('Ih', 'NaClaq_Brown2026', 'm', [0.5 2], 'T', T, 'segment', 'all');
 assert_true(numel(out) == 2, sprintf('expected 2 curves, got %d', numel(out)));
 % Render them too: the struct-array branch of render_plot is the only caller of
 % lines() and of the hand-assembled legend.
 old_vis = get(0, 'defaultfigurevisible');
 set(0, 'defaultfigurevisible', 'off');
 cleanup = onCleanup(@() set(0, 'defaultfigurevisible', old_vis)); %#ok<NASGU>
-plotted = SF_PhaseLines('Ih', 'NaClaq', 'm', [0.5 2], 'T', T, 'plot', true);
+plotted = SF_PhaseLines('Ih', 'NaClaq_Brown2026', 'm', [0.5 2], 'T', T, 'plot', true);
 assert_true(sf_ishandle_type(plotted(1).fig, 'figure'), ...
             'SF_PhaseLines plot path did not return a figure');
 close(plotted(1).fig);

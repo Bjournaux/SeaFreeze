@@ -120,7 +120,7 @@ if is_nacl
     for j = 1:nm
         for ic = 1:numel(ice_phases)
             try
-                r = SF_PhaseLines(ice_phases{ic}, 'NaClaq', 'm', m_arr(j));
+                r = SF_PhaseLines(ice_phases{ic}, 'NaClaq_Brown2026', 'm', m_arr(j));
             catch
                 continue
             end

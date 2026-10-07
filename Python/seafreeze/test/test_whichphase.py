@@ -53,17 +53,17 @@ class TestWhichPhase(ut.TestCase):
         P = np.arange(0, 1001, 200)
         T = np.arange(200, 351, 50)
         M = np.arange(1, 2, 1)
-        out = sf.whichphase(np.array([P, T, M], dtype=object), 'NaClaq')
+        out = sf.whichphase(np.array([P, T, M], dtype=object), 'NaClaq_Brown2026')
         self.assertEqual(1, out[0][0])
 
     def test_NaCl_singlePt(self):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (100, 250, 3)
-        out = sf.whichphase(PTm, 'NaClaq')
+        out = sf.whichphase(PTm, 'NaClaq_Brown2026')
         self.assertEqual(1, out)
 
     def test_NaCl_singlePt2(self):
         PTm = np.empty((1,), dtype=object)
         PTm[0] = (900, 285, 3)
-        out = sf.whichphase(PTm, 'NaClaq')
+        out = sf.whichphase(PTm, 'NaClaq_Brown2026')
         self.assertEqual(0, out)

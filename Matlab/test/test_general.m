@@ -26,7 +26,7 @@ tol_phys = 1e-2;      % loose, for thermodynamic-identity sanity (away from ref 
 % 1. Smoke test: every material runs and returns finite values.
 % =========================================================================
 materials = {'Ih','II','III','V','VI','VII_X_French','water_Bollengier2019','water_Brown2018', ...
-             'water_IAPWS95','NaClaq','NaClaq_LP','NaClaq_HP','NaClaq_5GPa_2024'};
+             'water_IAPWS95','NaClaq_Brown2026','NaClaq_Brown2026_LP','NaClaq_Brown2026_HP','NaClaq_Brown2024'};
 sample_PT = struct( ...
     'Ih',            [50  255], ...
     'II',            [300 245], ...
@@ -37,11 +37,11 @@ sample_PT = struct( ...
     'water_Bollengier2019',        [200 300], ...
     'water_Brown2018',        [200 300], ...
     'water_IAPWS95', [50  300], ...
-    'NaClaq',        [200 300 1.0]);
+    'NaClaq_Brown2026',        [200 300 1.0]);
 % Field names with underscores cannot be assigned via struct() literal
-sample_PT = setfield(sample_PT, 'NaClaq_LP',        [200  300 1.0]);  %#ok<SFLD>
-sample_PT = setfield(sample_PT, 'NaClaq_HP',        [2000 400 1.0]);  %#ok<SFLD>
-sample_PT = setfield(sample_PT, 'NaClaq_5GPa_2024', [200  300 1.0]);  %#ok<SFLD>
+sample_PT = setfield(sample_PT, 'NaClaq_Brown2026_LP',        [200  300 1.0]);  %#ok<SFLD>
+sample_PT = setfield(sample_PT, 'NaClaq_Brown2026_HP',        [2000 400 1.0]);  %#ok<SFLD>
+sample_PT = setfield(sample_PT, 'NaClaq_Brown2024', [200  300 1.0]);  %#ok<SFLD>
 for i = 1:length(materials)
     m = materials{i};
     try
@@ -68,7 +68,7 @@ out = SF_getprop(PTs, 'VI', 'rho');
 % NaClaq prepends a baseline molality for apparent-property calculations
 % then strips it before returning — output m dimension equals length(m).
 P = [100 200 300]; T = [280 300]; m = [0.1 0.5 1.0 2.0];
-out = SF_getprop({P,T,m}, 'NaClaq', 'rho');
+out = SF_getprop({P,T,m}, 'NaClaq_Brown2026', 'rho');
 [np,nf] = check('shape: NaCl grid 3x2x4', ...
                 isequal(size(out.rho),[3 2 4]), np, nf);
 
@@ -103,16 +103,16 @@ out = SF_getprop([0.1 268], 'Ih');
 
 % Adding salt should raise solution density above pure water.
 op = SF_getprop([0.1 298],     'water_Bollengier2019', 'rho');
-on = SF_getprop([0.1 298 1.0], 'NaClaq', 'rho');
+on = SF_getprop([0.1 298 1.0], 'NaClaq_Brown2026', 'rho');
 [np,nf] = check('NaCl(1m) rho > pure water rho', on.rho > op.rho + 30, np, nf);
 
 % Stitched NaClaq reaches high-P/high-T zone unreachable by Brown2024 (T>501 K).
-out_hi = SF_getprop([5000 400 1.0], 'NaClaq', 'rho');
+out_hi = SF_getprop([5000 400 1.0], 'NaClaq_Brown2026', 'rho');
 [np,nf] = check('NaClaq stitched: finite rho at 5 GPa / 400 K', isfinite(out_hi.rho), np, nf);
 
 % Brown2024 is NaN at T=400 K (> 501 K limit); stitched is finite there.
-out_b24 = SF_getprop([5000 600 1.0], 'NaClaq_5GPa_2024', 'rho');
-[np,nf] = check('NaClaq_5GPa_2024: NaN at T=600 K (beyond range)', ~isfinite(out_b24.rho), np, nf);
+out_b24 = SF_getprop([5000 600 1.0], 'NaClaq_Brown2024', 'rho');
+[np,nf] = check('NaClaq_Brown2024: NaN at T=600 K (beyond range)', ~isfinite(out_b24.rho), np, nf);
 
 % =========================================================================
 % 5. Thermodynamic identity: Cp - Cv = T * alpha^2 * Kt / rho

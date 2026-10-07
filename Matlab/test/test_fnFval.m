@@ -118,8 +118,8 @@ chk1 = SF_getprop([Pg Tg], 'water_Bollengier2019', {'rho','G','Cp'});
 g6 = SF_getprop([1330 260; 1360 270; 2000 270], 'VI', {'P','Vp','shear'}, 'input', 'rhoT');
 [np,nf] = check('rhoT scatter ice VI incl. shear/Vp; out-of-range -> NaN', ...
     all(isfinite(g6.P(1:2))) && all(isfinite(g6.Vp(1:2))) && isnan(g6.P(3)) && isnan(g6.Vp(3)), np, nf);
-gn = SF_getprop([1050 300 1; 1100 320 2], 'NaClaq', {'P','rho','muw'}, 'input', 'rhoT');
-bk = SF_getprop([gn.P gn.rho(:)*0 + [300; 320] [1; 2]], 'NaClaq', 'rho');
+gn = SF_getprop([1050 300 1; 1100 320 2], 'NaClaq_Brown2026', {'P','rho','muw'}, 'input', 'rhoT');
+bk = SF_getprop([gn.P gn.rho(:)*0 + [300; 320] [1; 2]], 'NaClaq_Brown2026', 'rho');
 [np,nf] = check('rhoT scatter NaClaq (P,T,m) round trip', max(abs(bk.rho - [1050; 1100])) < 1e-4, np, nf);
 
 % branch selection: vapour below the saturation pressure, liquid above

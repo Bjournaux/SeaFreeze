@@ -31,12 +31,12 @@ here = fileparts(mfilename('fullpath'));
 addpath(fileparts(here));                  % Matlab/
 addpath(fullfile(fileparts(here), 'LocalBasisFunction'));
 
-spLP = sf_load_spline('NaClaq_LP');
-spHP = sf_load_spline('NaClaq_HP');
+spLP = sf_load_spline('NaClaq_Brown2026_LP');
+spHP = sf_load_spline('NaClaq_Brown2026_HP');
 
-% Older NaClaq spline (currently used by SF_getprop 'NaClaq')
+% Older NaClaq spline (currently used by SF_getprop 'NaClaq_Brown2026')
 try
-    spOLD   = sf_load_spline('NaClaq_5GPa_2024');
+    spOLD   = sf_load_spline('NaClaq_Brown2024');
     has_old = true;
     fprintf('Older NaClaq: P=[%.1f, %.1f] MPa  T=[%.1f, %.1f] K\n', ...
             spOLD.knots{1}(1), spOLD.knots{1}(end), ...

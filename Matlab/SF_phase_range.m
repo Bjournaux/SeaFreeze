@@ -10,14 +10,14 @@ function rng = SF_phase_range(material)
 %       rng.P = [0     400]    % MPa
 %       rng.T = [1     301]    % K
 %
-%   rng = SF_phase_range('NaClaq')         % stitched LP+HP 2026 (default)
+%   rng = SF_phase_range('NaClaq_Brown2026')         % stitched LP+HP 2026 (default)
 %       rng.P = [0     10001]  % MPa
 %       rng.T = [229   2001]   % K
 %       rng.m = [0     7.01]   % mol/kg
 %
-%   rng = SF_phase_range('NaClaq_LP')      % 2026 low-P spline only
-%   rng = SF_phase_range('NaClaq_HP')      % 2026 high-P spline only
-%   rng = SF_phase_range('NaClaq_5GPa_2024') % Brown 2024 legacy
+%   rng = SF_phase_range('NaClaq_Brown2026_LP')      % 2026 low-P spline only
+%   rng = SF_phase_range('NaClaq_Brown2026_HP')      % 2026 high-P spline only
+%   rng = SF_phase_range('NaClaq_Brown2024') % Brown 2024 legacy
 %
 %   rng = SF_phase_range('water_Brown2026')         % Helmholtz spline F(rho,T)
 %       rng.rho = [rho_lo rho_hi]  % kg/m^3, knot range
@@ -42,11 +42,11 @@ if ~ismember(material, known_materials)
     error('SeaFreeze:unknownMaterial', 'Unknown material ''%s''.', material);
 end
 
-if strcmp(material, 'NaClaq')
+if strcmp(material, 'NaClaq_Brown2026')
     % Stitched: report the intersection domain for T/m (avoids LP extrapolation
     % artifacts at phase boundaries), full P coverage LP_lo -> HP_hi.
-    spLP = sf_load_spline('NaClaq_LP');
-    spHP = sf_load_spline('NaClaq_HP');
+    spLP = sf_load_spline('NaClaq_Brown2026_LP');
+    spHP = sf_load_spline('NaClaq_Brown2026_HP');
     rng.P = [spLP.knots{1}(1),  spHP.knots{1}(end)];
     rng.T = [max(spLP.knots{2}(1), spHP.knots{2}(1)), ...
              min(spLP.knots{2}(end), spHP.knots{2}(end))];

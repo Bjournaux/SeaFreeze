@@ -49,7 +49,7 @@ end
 is_nacl = strcmpi(solute, 'NaCl') || strcmpi(solute, 'NaClaq');
 
 % Validate PT against the implied material.
-if is_nacl, mat_check = 'NaClaq'; else, mat_check = 'water_Bollengier2019'; end
+if is_nacl, mat_check = 'NaClaq_Brown2026'; else, mat_check = 'water_Bollengier2019'; end
 sf_validate_PT(PT, mat_check);
 
 G_iceIh         = sf_load_spline('Ih');
@@ -80,7 +80,7 @@ if is_nacl
         PT_pt = PT(:,1:2);
         is_grid = false;
     end
-    sol  = SF_getprop(PT, 'NaClaq', 'muw');
+    sol  = SF_getprop(PT, 'NaClaq_Brown2026', 'muw');
     Gliq = sol.muw;       % J/mol of H2O in solution
     ice_scale = MW_H2O;   % convert ice G (J/kg) to J/mol of H2O
 else

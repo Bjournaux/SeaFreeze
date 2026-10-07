@@ -1,13 +1,13 @@
 """Vapour-side validation figures for the Helmholtz fluid 'water_Brown2026'.
 
-    python3 -m seafreeze.test.water3_vapor_figures OUTDIR [NISTDIR] [IAPWS95_DATA_DIR]
+    python3 -m seafreeze.test.water_Brown2026_vapor_figures OUTDIR [NISTDIR] [IAPWS95_DATA_DIR]
 
 Writes to OUTDIR:
-  water3_sublimation.png     ice Ih sublimation pressure: water_Brown2026 (+ dilute-vapour
+  water_Brown2026_sublimation.png     ice Ih sublimation pressure: water_Brown2026 (+ dilute-vapour
                              extension below 230 K) vs IAPWS R14-08 and the NIST
                              measurements of Bielska et al. (2013); supercooled-
                              liquid vapour pressure for context
-  water3_vapor_density.png   saturated-vapour density and vapour isotherms vs the
+  water_Brown2026_vapor_density.png   saturated-vapour density and vapour isotherms vs the
                              NIST Chemistry WebBook (IAPWS-95) and the saturated-
                              vapour density measurements used to build IAPWS-95
 
@@ -116,7 +116,7 @@ def sublimation_figure(outdir):
     ax2.legend(loc='upper left', fontsize=8.5)
     ax2.set_ylim(-1.0, 1.0)
     fig.tight_layout()
-    f = os.path.join(outdir, 'water3_sublimation.png')
+    f = os.path.join(outdir, 'water_Brown2026_sublimation.png')
     fig.savefig(f, dpi=150); plt.close(fig)
     dev = 100 * (full.P / cx.psub_iapws(Tfull) - 1)
     print(f'sublimation 230-273.16 K: water_Brown2026 vs R14-08 {dev.min():+.4f} .. {dev.max():+.4f} %')
@@ -186,7 +186,7 @@ def vapor_density_figure(outdir, nistdir, datadir):
     ax4.set_title('Isotherm density deviations from NIST WebBook', loc='left', color=INK)
     ax4.legend(loc='upper left', fontsize=8.5, ncol=2)
     fig.tight_layout()
-    f = os.path.join(outdir, 'water3_vapor_density.png')
+    f = os.path.join(outdir, 'water_Brown2026_vapor_density.png')
     fig.savefig(f, dpi=150); plt.close(fig)
     d = 100 * (sat.rho_B / rvn - 1)
     print(f'saturated vapour density vs NIST: {np.nanmin(d):+.4f} .. {np.nanmax(d):+.4f} % (275-646 K)')

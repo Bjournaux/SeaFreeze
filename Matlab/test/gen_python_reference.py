@@ -135,10 +135,10 @@ def main():
     # ---- Liquid water ----
     P = np.arange(0.1, 2000.1, 500.0)
     T = np.arange(260.0, 460.0, 50.0)
-    add_case(cases, 'water1_grid', 'water_Bollengier2019', grid(P, T), BASE, {'P': P, 'T': T})
+    add_case(cases, 'water_Bollengier2019_grid', 'water_Bollengier2019', grid(P, T), BASE, {'P': P, 'T': T})
     Ps = np.array([100.0, 500.0, 1500.0])
     Ts = np.array([280.0, 320.0, 380.0])
-    add_case(cases, 'water1_scatter', 'water_Bollengier2019', scatter(Ps, Ts), BASE,
+    add_case(cases, 'water_Bollengier2019_scatter', 'water_Bollengier2019', scatter(Ps, Ts), BASE,
              {'P': Ps, 'T': Ts})
 
     P = np.array([1.0, 50.0, 200.0])
@@ -149,43 +149,43 @@ def main():
     # water_Brown2018 — Brown 2018 EOS, valid up to 100 GPa.
     P = np.array([100.0, 1000.0, 5000.0])
     T = np.array([300.0, 500.0, 800.0])
-    add_case(cases, 'water2_grid', 'water_Brown2018', grid(P, T), BASE, {'P': P, 'T': T})
+    add_case(cases, 'water_Brown2018_grid', 'water_Brown2018', grid(P, T), BASE, {'P': P, 'T': T})
 
     # ---- water_Brown2026: Helmholtz fluid (vapour, liquid, supercritical) ----
     P = np.array([0.1, 10.0, 100.0, 1000.0])
     T = np.array([300.0, 400.0, 500.0, 700.0])
-    add_case(cases, 'water3_grid', 'water_Brown2026', grid(P, T), BASE, {'P': P, 'T': T})
+    add_case(cases, 'water_Brown2026_grid', 'water_Brown2026', grid(P, T), BASE, {'P': P, 'T': T})
     Ps = np.array([1e-3, 0.101325, 30.0, 500.0, 2000.0])        # vapour, liquid, supercritical, ...
     Ts = np.array([300.0, 298.15, 700.0, 350.0, 450.0])
-    add_case(cases, 'water3_scatter', 'water_Brown2026', scatter(Ps, Ts), BASE, {'P': Ps, 'T': Ts})
+    add_case(cases, 'water_Brown2026_scatter', 'water_Brown2026', scatter(Ps, Ts), BASE, {'P': Ps, 'T': Ts})
 
     # ---- (rho,T) input: Helmholtz water_Brown2026 (direct) and Gibbs water_Bollengier2019 (via rho2P) ----
     R = np.array([1e-2, 997.0, 1100.0, 1250.0])
     Tr = np.array([400.0, 298.15, 300.0, 350.0])
-    add_case(cases, 'water3rhoT_scatter', 'water_Brown2026', scatter(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
+    add_case(cases, 'water_Brown2026_rhoT_scatter', 'water_Brown2026', scatter(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
     R = np.array([1000.0, 1050.0, 1100.0])
     Tr = np.array([280.0, 300.0, 330.0])
-    add_case(cases, 'water1rhoT_grid', 'water_Bollengier2019', grid(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
+    add_case(cases, 'water_Bollengier2019_rhoT_grid', 'water_Bollengier2019', grid(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
 
     # ---- Aqueous NaCl (3D) ----
     P = np.arange(0.1, 500.1, 100.0)
     T = np.arange(273.0, 401.0, 25.0)
     m = np.array([0.1, 0.5, 1.0, 3.0])
-    add_case(cases, 'NaClaq_grid', 'NaClaq', grid(P, T, m), NACL,
+    add_case(cases, 'NaClaq_grid', 'NaClaq_Brown2026', grid(P, T, m), NACL,
              {'P': P, 'T': T, 'm': m})
 
     # NaClaq edges: m at the cutoff (2e-4), middle, and near upper knot (~7).
     P = np.array([1.0, 200.0, 500.0])
     T = np.array([275.0, 300.0, 380.0])
     m = np.array([2e-4, 0.5, 5.0])
-    add_case(cases, 'NaClaq_edges_grid', 'NaClaq', grid(P, T, m), NACL,
+    add_case(cases, 'NaClaq_edges_grid', 'NaClaq_Brown2026', grid(P, T, m), NACL,
              {'P': P, 'T': T, 'm': m})
 
     # NaClaq scatter — locks in the recently fixed scatter mixing path.
     Ps = np.array([100.0, 200.0, 500.0])
     Ts = np.array([280.0, 300.0, 350.0])
     ms = np.array([0.5, 1.5, 3.0])
-    add_case(cases, 'NaClaq_scatter', 'NaClaq', scatter(Ps, Ts, ms), NACL,
+    add_case(cases, 'NaClaq_scatter', 'NaClaq_Brown2026', scatter(Ps, Ts, ms), NACL,
              {'P': Ps, 'T': Ts, 'm': ms})
 
     out_path = os.path.join(HERE, 'reference_SeaFreeze.mat')

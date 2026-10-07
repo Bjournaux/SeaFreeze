@@ -9,7 +9,7 @@ addpath(fullfile(here, '..'));
 fprintf('=== SeaFreeze timing benchmark (%s) ===\n\n', datestr(now));
 
 % ---- 1. sf_load_spline cold (first call, no persistent cache) ----
-materials = {'Ih', 'water_Bollengier2019', 'VI', 'NaClaq_LP', 'NaClaq_HP', 'NaClaq_5GPa_2024'};
+materials = {'Ih', 'water_Bollengier2019', 'VI', 'NaClaq_Brown2026_LP', 'NaClaq_Brown2026_HP', 'NaClaq_Brown2024'};
 
 fprintf('--- sf_load_spline (cold, persistent cache cleared before each) ---\n');
 for k = 1:numel(materials)
@@ -51,7 +51,7 @@ test_cases = {
     'VI',     300, 1000, NaN;
     'water_Bollengier2019', 300,  100, NaN;
     'Ih',     250,  100, NaN;
-    'NaClaq', 300,  500, 1.0;
+    'NaClaq_Brown2026', 300,  500, 1.0;
 };
 
 for k = 1:size(test_cases, 1)

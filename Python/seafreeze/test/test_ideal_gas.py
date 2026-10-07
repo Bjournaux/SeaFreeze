@@ -36,13 +36,13 @@ def _relerr(a, b):
     return np.max(np.abs(a - b) / np.maximum(np.abs(b), 1e-300))
 
 
-def test_same_fields_as_getProp_water3(sp3):
+def test_same_fields_as_getProp_water_Brown2026(sp3):
     o = eh.ideal_gas_props(sp3, 1e-7, 300.0)
     w = sf.getProp(_scatter([0.1], [300.0]), 'water_Brown2026')
     assert set(vars(o)) == set(vars(w))
 
 
-def test_matches_water3_in_the_dilute_limit(sp3):
+def test_matches_water_Brown2026_in_the_dilute_limit(sp3):
     # the real fluid tends to its ideal-gas part as P -> 0.  Above ~700 K
     # the surface's reacting-mixture reference term takes over, so stay below.
     T = np.repeat(np.arange(300.0, 651.0, 50.0), 3)

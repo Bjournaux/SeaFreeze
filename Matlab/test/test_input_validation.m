@@ -13,11 +13,11 @@ cases = {
     {'non-string material',       @() SF_getprop([100 280], 5),                              'SeaFreeze:badInput'}
     % --- Bad PT shape -------------------------------------------------------
     {'wrong cell length (water)', @() SF_getprop({100, 280, 0.5}, 'water_Bollengier2019'),                 'SeaFreeze:badInput'}
-    {'wrong cell length (NaCl)',  @() SF_getprop({100, 280}, 'NaClaq'),                      'SeaFreeze:badInput'}
-    {'wrong cell length (NaCl_LP)',@() SF_getprop({100, 280}, 'NaClaq_LP'),                  'SeaFreeze:badInput'}
+    {'wrong cell length (NaCl)',  @() SF_getprop({100, 280}, 'NaClaq_Brown2026'),                      'SeaFreeze:badInput'}
+    {'wrong cell length (NaCl_LP)',@() SF_getprop({100, 280}, 'NaClaq_Brown2026_LP'),                  'SeaFreeze:badInput'}
     {'scatter wrong cols (water)',@() SF_getprop([100 280 0.5], 'water_Bollengier2019'),                   'SeaFreeze:badInput'}
-    {'scatter wrong cols (NaCl)', @() SF_getprop([100 280], 'NaClaq'),                       'SeaFreeze:badInput'}
-    {'scatter wrong cols (NaCl_HP)',@() SF_getprop([100 280], 'NaClaq_HP'),                  'SeaFreeze:badInput'}
+    {'scatter wrong cols (NaCl)', @() SF_getprop([100 280], 'NaClaq_Brown2026'),                       'SeaFreeze:badInput'}
+    {'scatter wrong cols (NaCl_HP)',@() SF_getprop([100 280], 'NaClaq_Brown2026_HP'),                  'SeaFreeze:badInput'}
     {'PT not numeric',            @() SF_getprop('hello', 'water_Bollengier2019'),                         'SeaFreeze:badInput'}
     {'PT empty',                  @() SF_getprop(zeros(0,2), 'water_Bollengier2019'),                      'SeaFreeze:badInput'}
     {'PT contains NaN',           @() SF_getprop([100 NaN], 'water_Bollengier2019'),                       'SeaFreeze:badInput'}
@@ -54,10 +54,10 @@ end
 % --- Sanity: valid inputs still work --------------------------------------
 try
     SF_getprop([100 280], 'water_Bollengier2019', 'rho');
-    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq',          {'rho','Cp'});
-    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq_LP',       {'rho','Cp'});
-    SF_getprop({1000:500:3000, 300:100:500, [0.1 0.5]}, 'NaClaq_HP',  {'rho','Cp'});
-    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq_5GPa_2024',{'rho','Cp'});
+    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq_Brown2026',          {'rho','Cp'});
+    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq_Brown2026_LP',       {'rho','Cp'});
+    SF_getprop({1000:500:3000, 300:100:500, [0.1 0.5]}, 'NaClaq_Brown2026_HP',  {'rho','Cp'});
+    SF_getprop({0.1:50:200, 273:5:300, [0.1 0.5]}, 'NaClaq_Brown2024',{'rho','Cp'});
     SF_WhichPhase({0.1, 280});
     SF_WhichPhase({0.1, 280, 1.0}, 'solute', 'NaCl');
     fprintf('  [pass] valid inputs still work\n');
@@ -100,7 +100,10 @@ end
 DM = 'SeaFreeze:deprecatedMaterial';
 renamed = {'water1', 'water_Bollengier2019', [100 280]; ...
            'water2', 'water_Brown2018',      [1000 400]; ...
-           'water3', 'water_Brown2026',      [0.1 300]};
+           'water3', 'water_Brown2026',      [0.1 300]; ...
+           'NaClaq_LP', 'NaClaq_Brown2026_LP', [100 300 1]; ...
+           'NaClaq_HP', 'NaClaq_Brown2026_HP', [1500 400 1]; ...
+           'NaClaq_5GPa_2024', 'NaClaq_Brown2024', [100 300 1]};
 for k = 1:size(renamed, 1)
     old = renamed{k,1}; new = renamed{k,2}; PT = renamed{k,3};
     try
@@ -137,6 +140,24 @@ try
     n_pass = n_pass + 1;
 catch err
     fprintf('  [FAIL] old names in the other entry points: %s\n', err.message);
+    n_fail = n_fail + 1;
+end
+% 'NaClaq' is a permanent shortcut for NaClaq_Brown2026: no warning, same results
+try
+    clear sf_material_name
+    w = issues_warning(@() SF_getprop([200 290 1.5], 'NaClaq', {'rho','muw'}), DM);
+    a = SF_getprop([200 290 1.5], 'NaClaq', {'rho','muw'});
+    b = SF_getprop([200 290 1.5], 'NaClaq_Brown2026', {'rho','muw'});
+    c = SF_PhaseLines('Ih', 'NaClaq', 'm', 1, 'segment', 'stable');
+    d = SF_PhaseLines('Ih', 'NaClaq_Brown2026', 'm', 1, 'segment', 'stable');
+    if w, error('the NaClaq shortcut issued %s', DM); end
+    if ~isequal(a.rho, b.rho) || ~isequal(a.muw, b.muw) || ~isequal(c.T, d.T)
+        error('NaClaq and NaClaq_Brown2026 differ');
+    end
+    fprintf('  [pass] NaClaq shortcut = NaClaq_Brown2026, no warning\n');
+    n_pass = n_pass + 1;
+catch err
+    fprintf('  [FAIL] NaClaq shortcut: %s\n', err.message);
     n_fail = n_fail + 1;
 end
 clear sf_material_name

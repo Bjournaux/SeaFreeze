@@ -65,13 +65,13 @@ end
 if swapped, [matA, matB] = deal(matB, matA); end
 
 % ------------ Validate molality if NaClaq is involved -----------------------
-nacl_involved = any(strcmp({matA, matB}, 'NaClaq'));
+nacl_involved = any(strcmp({matA, matB}, 'NaClaq_Brown2026'));
 if nacl_involved
     if any(isnan(m_val))
         error('SeaFreeze:badInput', ...
             'Pair (%s, %s) involves NaClaq; pass molality via ''m'' (mol/kg).', matA, matB);
     end
-    rng_nacl = SF_phase_range('NaClaq');
+    rng_nacl = SF_phase_range('NaClaq_Brown2026');
     if any(m_val < rng_nacl.m(1)) || any(m_val > rng_nacl.m(2))
         error('SeaFreeze:badInput', ...
             'Molality value(s) outside the NaClaq spline range [%.3g, %.3g] mol/kg: %s.', ...
@@ -190,8 +190,8 @@ end
 
 function G = phase_surface(material, P, T, m, MW_H2O)
     % Returns a P-by-T matrix in J/mol-of-H2O.
-    if strcmp(material, 'NaClaq')
-        s = SF_getprop({P, T, m}, 'NaClaq', 'muw');
+    if strcmp(material, 'NaClaq_Brown2026')
+        s = SF_getprop({P, T, m}, 'NaClaq_Brown2026', 'muw');
         % muw is P-by-T-by-1 because m is scalar; squeeze to 2D.
         G = squeeze(s.muw);
         if size(G, 1) == 1, G = G.'; end   % keep P down columns
@@ -422,11 +422,11 @@ function [pair, swapped] = lookup_pair(matA, matB)
         % stable vs metastable for ice ↔ NaClaq requires triple points that
         % depend on molality (out of scope for this rewrite). Triple-point
         % markers are inherited from the pure-ice ↔ water_Bollengier2019 pair as a guide.
-        {'Ih',     'NaClaq',    'T', -Inf,             Inf,               [TP_IhLiqIII; TP_atm]}
-        {'III',    'NaClaq',    'T', -Inf,             Inf,               [TP_IhLiqIII; TP_IIIVLiq]}
-        {'V',      'NaClaq',    'T', -Inf,             Inf,               [TP_IIIVLiq; TP_VVILiq]}
-        {'VI',     'NaClaq',    'T', -Inf,             Inf,               [TP_VVILiq]}
-        {'II',     'NaClaq',    'T', -Inf,             Inf,               [TP_IhIIIII]}
+        {'Ih',     'NaClaq_Brown2026',    'T', -Inf,             Inf,               [TP_IhLiqIII; TP_atm]}
+        {'III',    'NaClaq_Brown2026',    'T', -Inf,             Inf,               [TP_IhLiqIII; TP_IIIVLiq]}
+        {'V',      'NaClaq_Brown2026',    'T', -Inf,             Inf,               [TP_IIIVLiq; TP_VVILiq]}
+        {'VI',     'NaClaq_Brown2026',    'T', -Inf,             Inf,               [TP_VVILiq]}
+        {'II',     'NaClaq_Brown2026',    'T', -Inf,             Inf,               [TP_IhIIIII]}
     };
 
     swapped = false;
