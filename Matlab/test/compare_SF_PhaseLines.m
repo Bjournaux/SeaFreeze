@@ -23,10 +23,10 @@ warning('off','SeaFreeze:negativePressure');
 % Figure 1: pure pairs — 11 panels in a 4x3 grid
 % =========================================================================
 pure_pairs = {
-    {'Ih','water1'}, {'Ih','II'},     {'Ih','III'}, ...
+    {'Ih','water_Bollengier2019'}, {'Ih','II'},     {'Ih','III'}, ...
     {'II','III'},    {'II','V'},      {'II','VI'}, ...
-    {'III','V'},     {'III','water1'},{'V','water1'}, ...
-    {'V','VI'},      {'VI','water1'}};
+    {'III','V'},     {'III','water_Bollengier2019'},{'V','water_Bollengier2019'}, ...
+    {'V','VI'},      {'VI','water_Bollengier2019'}};
 
 f1 = figure('Position', [50 50 1400 1100], 'Color', 'w');
 sgtitle(f1, 'SF\_PhaseLines: v1 vs new (pure phases)', 'FontWeight','bold');
@@ -83,7 +83,7 @@ for k = 1:length(ice_phases)
     subplot(2, 2, k); hold on; grid on;
 
     % pure-water reference (black, from new code)
-    pure = SF_PhaseLines(ice, 'water1', 'segment','all');
+    pure = SF_PhaseLines(ice, 'water_Bollengier2019', 'segment','all');
     if ~isempty(pure.P)
         plot(pure.P, pure.T, '-', 'Color', [0.2 0.2 0.2], 'LineWidth', 1.8, ...
              'DisplayName','pure water');

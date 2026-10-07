@@ -12,10 +12,10 @@ function sp = sf_load_spline(material)
 %   sp = sf_load_spline('V')              % ice V
 %   sp = sf_load_spline('VI')             % ice VI
 %   sp = sf_load_spline('VII_X_French')   % ice VII/X (French & Redmer 2015)
-%   sp = sf_load_spline('water1')         % Bollengier 2019 (<=2 GPa, <=500 K)
-%   sp = sf_load_spline('water2')         % Brown 2018 (up to 100 GPa)
+%   sp = sf_load_spline('water_Bollengier2019')         % Bollengier 2019 (<=2 GPa, <=500 K)
+%   sp = sf_load_spline('water_Brown2018')         % Brown 2018 (up to 100 GPa)
 %   sp = sf_load_spline('water_IAPWS95')  % IAPWS95, Wagner & Pruss 2002
-%   sp = sf_load_spline('water3')         % psi-spline Helmholtz surface (lbf-thermo 2026; sp.eos = 'psi')
+%   sp = sf_load_spline('water_Brown2026')         % psi-spline Helmholtz surface (lbf-thermo 2026; sp.eos = 'psi')
 %   sp = sf_load_spline('NaClaq_LP')      % 2026 low-P  NaCl(aq) LBF spline
 %   sp = sf_load_spline('NaClaq_HP')      % 2026 high-P NaCl(aq) LBF spline (r3)
 %   sp = sf_load_spline('NaClaq_5GPa_2024') % Brown 2024 NaCl(aq) spline (legacy)
@@ -50,7 +50,7 @@ if ~sf_ischarlike(material)
     error('sf_load_spline:badInput', ...
           '''material'' must be a character vector or scalar string.');
 end
-material = char(material);
+material = sf_material_name(char(material));   % renamed materials
 
 row = find(strcmp(MAP(:,1), material), 1);
 if isempty(row)
@@ -77,7 +77,7 @@ if isempty(matfile)
 end
 
 % In-memory cache: repeated calls (SF_coexistence, phase diagrams, SF_rho2P)
-% would otherwise re-read the file every time (water3 is 2.2 MB).  Keyed by
+% would otherwise re-read the file every time (water_Brown2026 is 2.2 MB).  Keyed by
 % file path; 'clear sf_load_spline' or 'clear functions' empties it.
 persistent CACHE_KEYS CACHE_SP
 if isempty(CACHE_KEYS), CACHE_KEYS = {}; CACHE_SP = {}; end
@@ -112,10 +112,10 @@ MAP = {
     'V',                'ice_V',               'ice_V.mat'
     'VI',               'ice_VI',              'ice_VI.mat'
     'VII_X_French',     'ice_VII_X_French',    'ice_VII_X_French.mat'
-    'water1',           'water_Bollengier',    'water_Bollengier.mat'
-    'water2',           'water_Brown',         'water_Brown.mat'
+    'water_Bollengier2019',           'water_Bollengier',    'water_Bollengier.mat'
+    'water_Brown2018',           'water_Brown',         'water_Brown.mat'
     'water_IAPWS95',    'water_IAPWS95',       'water_IAPWS95.mat'
-    'water3',           'water_psi2026',       'water_psi2026.mat'
+    'water_Brown2026',           'water_psi2026',       'water_psi2026.mat'
     'NaClaq_LP',        'NaCl_aq_LP_2026',     'NaCl_aq_LP_2026.mat'
     'NaClaq_HP',        'NaCl_aq_HP_2026',     'NaCl_aq_HP_2026.mat'
     'NaClaq_5GPa_2024', 'NaCl_aq_Brown2024',   'NaCl_aq_Brown2024.mat'

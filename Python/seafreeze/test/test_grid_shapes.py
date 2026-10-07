@@ -56,7 +56,7 @@ def _assert_grid_matches_scatter(g, s, axes, rhoT):
         np.testing.assert_allclose(v.ravel(), ref, rtol=1e-9, atol=0, equal_nan=True, err_msg=k)
 
 
-# (rho, T) axes: non-square and square.  water3 spans the dilute vapour to
+# (rho, T) axes: non-square and square.  water_Brown2026 spans the dilute vapour to
 # the dense liquid; the square case exercises the silent broadcast.
 _W3_NONSQ = (np.r_[np.geomspace(1e-5, 10, 5), np.linspace(900, 1300, 6)], np.linspace(250, 700, 4))
 _W3_SQ = (np.linspace(950, 1150, 4), np.array([260., 300, 400, 500]))
@@ -64,9 +64,9 @@ _W3_SQ = (np.linspace(950, 1150, 4), np.array([260., 300, 400, 500]))
 
 @pytest.mark.parametrize('axes', [_W3_NONSQ, _W3_SQ], ids=['nonsquare', 'square'])
 def test_water3_rhoT_grid_matches_scatter(axes):
-    g = _get(_grid(*axes), 'water3', rhoT=True)
+    g = _get(_grid(*axes), 'water_Brown2026', rhoT=True)
     R, T = np.meshgrid(*axes, indexing='ij')
-    s = _get(_scatter(R.ravel(), T.ravel()), 'water3', rhoT=True)
+    s = _get(_scatter(R.ravel(), T.ravel()), 'water_Brown2026', rhoT=True)
     assert g.P.shape == R.shape and g.Js.shape == R.shape
     assert np.array_equal(g.rho, axes[0]) and np.array_equal(g.T, axes[1])
     _assert_grid_matches_scatter(g, s, axes, rhoT=True)
@@ -77,20 +77,20 @@ def test_water3_rhoT_grid_matches_scatter(axes):
 def test_water3_rhoT_large_nonsquare_grid():
     # the case that crashed: (800, 420) grid, vapour to compressed liquid
     rho = np.geomspace(1e-7, 4e3, 80); T = np.linspace(150, 1800, 42)
-    g = _get(_grid(rho, T), 'water3', rhoT=True)
+    g = _get(_grid(rho, T), 'water_Brown2026', rhoT=True)
     for k, v in vars(g).items():
         assert np.shape(v) == ((80,) if k == 'rho' else (42,) if k == 'T' else (80, 42)), k
     i = np.array([5, 40, 60, 75]); j = np.array([10, 3, 20, 41])
-    s = _get(_scatter(rho[i], T[j]), 'water3', 'Js', 'gamma_Gruneisen', 'P', rhoT=True)
+    s = _get(_scatter(rho[i], T[j]), 'water_Brown2026', 'Js', 'gamma_Gruneisen', 'P', rhoT=True)
     for k in ('Js', 'gamma_Gruneisen', 'P'):
         np.testing.assert_allclose(getattr(g, k)[i, j], getattr(s, k), rtol=1e-9, equal_nan=True, err_msg=k)
 
 
 @pytest.mark.parametrize('props', [('Js',), ('gamma_Gruneisen',), ('rho',), ('P',), ('T',),
                                    ('Js', 'P'), ('rho', 'Js', 'T')])
-@pytest.mark.parametrize('phase', ['water3', 'water1'])
+@pytest.mark.parametrize('phase', ['water_Brown2026', 'water_Bollengier2019'])
 def test_rhoT_grid_selective_props(phase, props):
-    axes = (np.linspace(1000, 1100, 5), np.linspace(280, 330, 3)) if phase == 'water1' else _W3_NONSQ
+    axes = (np.linspace(1000, 1100, 5), np.linspace(280, 330, 3)) if phase == 'water_Bollengier2019' else _W3_NONSQ
     g = _get(_grid(*axes), phase, *props, rhoT=True)
     assert set(vars(g)) == set(props)                # nothing leaks (no bare prerequisites)
     R, T = np.meshgrid(*axes, indexing='ij')
@@ -102,16 +102,16 @@ def test_rhoT_grid_selective_props(phase, props):
                                   (np.linspace(1000, 1100, 3), np.linspace(280, 330, 3))],
                          ids=['nonsquare', 'square'])
 def test_water1_rhoT_grid_matches_scatter(axes):
-    g = _get(_grid(*axes), 'water1', rhoT=True)
+    g = _get(_grid(*axes), 'water_Bollengier2019', rhoT=True)
     R, T = np.meshgrid(*axes, indexing='ij')
-    s = _get(_scatter(R.ravel(), T.ravel()), 'water1', rhoT=True)
+    s = _get(_scatter(R.ravel(), T.ravel()), 'water_Bollengier2019', rhoT=True)
     _assert_grid_matches_scatter(g, s, axes, rhoT=True)
 
 
-@pytest.mark.parametrize('phase', ['water3', 'water1', 'VI'])
+@pytest.mark.parametrize('phase', ['water_Brown2026', 'water_Bollengier2019', 'VI'])
 def test_PT_grid_matches_scatter(phase):
-    axes = {'water3': (np.array([1e-4, 0.1, 50, 500, 1500]), np.array([260., 300, 450])),
-            'water1': (np.array([0.1, 50, 500, 1500]), np.array([260., 300, 350])),
+    axes = {'water_Brown2026': (np.array([1e-4, 0.1, 50, 500, 1500]), np.array([260., 300, 450])),
+            'water_Bollengier2019': (np.array([0.1, 50, 500, 1500]), np.array([260., 300, 350])),
             'VI': (np.array([800., 1000, 1200, 1500]), np.array([250., 270]))}[phase]
     g = _get(_grid(*axes), phase)
     P, T = np.meshgrid(*axes, indexing='ij')

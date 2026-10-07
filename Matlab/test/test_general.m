@@ -25,7 +25,7 @@ tol_phys = 1e-2;      % loose, for thermodynamic-identity sanity (away from ref 
 % =========================================================================
 % 1. Smoke test: every material runs and returns finite values.
 % =========================================================================
-materials = {'Ih','II','III','V','VI','VII_X_French','water1','water2', ...
+materials = {'Ih','II','III','V','VI','VII_X_French','water_Bollengier2019','water_Brown2018', ...
              'water_IAPWS95','NaClaq','NaClaq_LP','NaClaq_HP','NaClaq_5GPa_2024'};
 sample_PT = struct( ...
     'Ih',            [50  255], ...
@@ -34,8 +34,8 @@ sample_PT = struct( ...
     'V',             [500 250], ...
     'VI',            [900 255], ...
     'VII_X_French',  [5000 500], ...
-    'water1',        [200 300], ...
-    'water2',        [200 300], ...
+    'water_Bollengier2019',        [200 300], ...
+    'water_Brown2018',        [200 300], ...
     'water_IAPWS95', [50  300], ...
     'NaClaq',        [200 300 1.0]);
 % Field names with underscores cannot be assigned via struct() literal
@@ -84,17 +84,17 @@ rel = max(abs(g.rho(:) - s.rho(:)) ./ abs(g.rho(:)));
 [np,nf] = check('grid==scatter (ice VI rho)', rel < tol_num, np, nf);
 
 P = [0.1 100 500]; T = [280 320 360];
-g = SF_getprop({P,T}, 'water1', 'rho');
-s = SF_getprop(combvec_2d(P,T), 'water1', 'rho');
+g = SF_getprop({P,T}, 'water_Bollengier2019', 'rho');
+s = SF_getprop(combvec_2d(P,T), 'water_Bollengier2019', 'rho');
 rel = max(abs(g.rho(:) - s.rho(:)) ./ abs(g.rho(:)));
-[np,nf] = check('grid==scatter (water1 rho)', rel < tol_num, np, nf);
+[np,nf] = check('grid==scatter (water_Bollengier2019 rho)', rel < tol_num, np, nf);
 
 % =========================================================================
 % 4. Physical sanity at standard conditions.
 % =========================================================================
-out = SF_getprop([0.1 298], 'water1');
-[np,nf] = check('water1 rho ~ 997 (0.1 MPa, 298 K)',  abs(out.rho - 997)  < 5,  np, nf);
-[np,nf] = check('water1 vel ~ 1497 (0.1 MPa, 298 K)', abs(out.vel - 1497) < 20, np, nf);
+out = SF_getprop([0.1 298], 'water_Bollengier2019');
+[np,nf] = check('water_Bollengier2019 rho ~ 997 (0.1 MPa, 298 K)',  abs(out.rho - 997)  < 5,  np, nf);
+[np,nf] = check('water_Bollengier2019 vel ~ 1497 (0.1 MPa, 298 K)', abs(out.vel - 1497) < 20, np, nf);
 
 out = SF_getprop([0.1 268], 'Ih');
 [np,nf] = check('ice Ih rho ~ 917 (0.1 MPa, 268 K)', abs(out.rho - 917)  < 5,   np, nf);
@@ -102,7 +102,7 @@ out = SF_getprop([0.1 268], 'Ih');
 [np,nf] = check('ice Ih vel ~ 3100 (0.1 MPa, 268 K)', abs(out.vel - 3100) < 200, np, nf);
 
 % Adding salt should raise solution density above pure water.
-op = SF_getprop([0.1 298],     'water1', 'rho');
+op = SF_getprop([0.1 298],     'water_Bollengier2019', 'rho');
 on = SF_getprop([0.1 298 1.0], 'NaClaq', 'rho');
 [np,nf] = check('NaCl(1m) rho > pure water rho', on.rho > op.rho + 30, np, nf);
 
@@ -117,10 +117,10 @@ out_b24 = SF_getprop([5000 600 1.0], 'NaClaq_5GPa_2024', 'rho');
 % =========================================================================
 % 5. Thermodynamic identity: Cp - Cv = T * alpha^2 * Kt / rho
 % =========================================================================
-out = SF_getprop([100 300], 'water1');
+out = SF_getprop([100 300], 'water_Bollengier2019');
 lhs = out.Cp - out.Cv;
 rhs = 300 * out.alpha^2 * out.Kt * 1e6 / out.rho;   % Kt MPa -> Pa
-[np,nf] = check('Cp-Cv identity (water1)', abs(lhs-rhs)/abs(lhs) < tol_phys, np, nf);
+[np,nf] = check('Cp-Cv identity (water_Bollengier2019)', abs(lhs-rhs)/abs(lhs) < tol_phys, np, nf);
 
 out = SF_getprop([900 255], 'VI');
 lhs = out.Cp - out.Cv;
@@ -130,8 +130,8 @@ rhs = 255 * out.alpha^2 * out.Kt * 1e6 / out.rho;
 % =========================================================================
 % 6. Reech identity: Ks / Kt = Cp / Cv
 % =========================================================================
-out = SF_getprop([100 300], 'water1');
-[np,nf] = check('Ks/Kt = Cp/Cv (water1)', ...
+out = SF_getprop([100 300], 'water_Bollengier2019');
+[np,nf] = check('Ks/Kt = Cp/Cv (water_Bollengier2019)', ...
     abs(out.Ks/out.Kt - out.Cp/out.Cv) / (out.Ks/out.Kt) < tol_phys, np, nf);
 
 % =========================================================================
@@ -142,8 +142,8 @@ out = SF_getprop([100 300], 'water1');
 out = SF_getprop([1e9 5000], 'Ih', 'rho');
 [np,nf] = check('Ih extreme P -> non-finite', ~isfinite(out.rho), np, nf);
 
-out = SF_getprop([0.1 298; 1e9 5000], 'water1', 'rho');
-[np,nf] = check('water1 mixed in/out of range', ...
+out = SF_getprop([0.1 298; 1e9 5000], 'water_Bollengier2019', 'rho');
+[np,nf] = check('water_Bollengier2019 mixed in/out of range', ...
                 isfinite(out.rho(1)) && ~isfinite(out.rho(2)), np, nf);
 
 % =========================================================================

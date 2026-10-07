@@ -2,9 +2,9 @@
 
 # ── Material groups (display order) ──────────────────────────────────────────
 MATERIALS_ICE = ["Ih", "II", "III", "V", "VI", "VII_X_French"]
-MATERIALS_WATER = ["water1", "water2", "water_IAPWS95", "water3"]
+MATERIALS_WATER = ["water_Bollengier2019", "water_Brown2018", "water_IAPWS95", "water_Brown2026"]
 # Helmholtz fluids F(rho, T): vapour, liquid and supercritical states
-MATERIALS_HELMHOLTZ = ["water3"]
+MATERIALS_HELMHOLTZ = ["water_Brown2026"]
 MATERIALS_NACL = ["NaClaq", "NaClaq_LP", "NaClaq_HP", "NaClaq_5GPa_2024"]
 ALL_MATERIALS = MATERIALS_ICE + MATERIALS_WATER + MATERIALS_NACL
 
@@ -16,10 +16,10 @@ MATERIAL_LABELS = {
     "V":                "Ice V (Journaux et al., 2020)",
     "VI":               "Ice VI (Journaux et al., 2020)",
     "VII_X_French":     "Ice VII/X (French & Redmer, 2015)",
-    "water1":           "Water (Bollengier et al., 2019)",
-    "water2":           "Water (Brown, 2018)",
-    "water_IAPWS95":    "Water IAPWS95 (Wagner & Pruss, 2002)",
-    "water3":           "Water3: vapour, liquid, supercritical (Brown & Journaux, in prep., beta)",
+    "water_Bollengier2019": "Water (Bollengier et al., 2019)",
+    "water_Brown2018":      "Water (Brown, 2018)",
+    "water_IAPWS95":        "Water IAPWS-95 (Wagner & Pruss, 2002)",
+    "water_Brown2026":      "Water: vapour, liquid, supercritical (Brown & Journaux, 2026, beta)",
     "NaClaq":           "NaCl(aq) (Brown et al., under review)",
     "NaClaq_LP":        "NaCl(aq) LP (Brown et al., under review)",
     "NaClaq_HP":        "NaCl(aq) HP (Brown et al., under review)",
@@ -34,10 +34,10 @@ MATERIAL_SHORT_LABELS = {
     "V":                "Ice V",
     "VI":               "Ice VI",
     "VII_X_French":     "Ice VII/X",
-    "water1":           "Water",
-    "water2":           "Water (Brown)",
-    "water_IAPWS95":    "Water IAPWS95",
-    "water3":           "Water3",
+    "water_Bollengier2019": "Water (Bollengier 2019)",
+    "water_Brown2018":      "Water (Brown 2018)",
+    "water_IAPWS95":        "Water IAPWS-95",
+    "water_Brown2026":      "Water (Brown 2026)",
     "NaClaq":           "NaCl(aq)",
     "NaClaq_LP":        "NaCl(aq) LP",
     "NaClaq_HP":        "NaCl(aq) HP",
@@ -58,10 +58,10 @@ def supports_rhoT(material: str) -> bool:
     return not is_nacl(material)
 
 # Input bounds and default sweeps where the spline box is not a useful input
-# range.  water3: the surface spans 230-150 000 K, rho <= 16 000 kg/m3 and
+# range.  water_Brown2026: the surface spans 230-150 000 K, rho <= 16 000 kg/m3 and
 # P up to ~10 TPa (Python/README.md, "Range of validity").
 INPUT_LIMITS = {
-    "water3": dict(P=(1e-10, 1e7), T=(230.0, 150000.0), rho=(1e-10, 16000.0),
+    "water_Brown2026": dict(P=(1e-10, 1e7), T=(230.0, 150000.0), rho=(1e-10, 16000.0),
                    P_default=(1e-6, 1e4), T_default=(230.0, 1500.0),
                    rho_default=(1e-4, 1500.0), P_single=0.101325, T_single=298.15,
                    rho_single=997.0),

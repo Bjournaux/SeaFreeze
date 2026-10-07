@@ -12,11 +12,11 @@ np = 0; nf = 0;
 m = sf_phase_map([1e-6 0.1 0.1 300 1000], [300 260 300 230 250]);
 st = arrayfun(@(i) m.stable(i, i), 1:5);
 [np,nf] = check('phase map spot checks (vapour, Ih, liquid, II, VI)', ...
-    isequal(m.names(st), {'water3','Ih','water3','II','VI'}) && m.rho_stable(1,1) < 1e-3 && m.rho_stable(3,3) > 990, np, nf);
+    isequal(m.names(st), {'water_Brown2026','Ih','water_Brown2026','II','VI'}) && m.rho_stable(1,1) < 1e-3 && m.rho_stable(3,3) > 990, np, nf);
 
 % triple points vs literature (SF_PhaseLines table)
 pm = sf_phase_map(logspace(-9, log10(3000), 500), linspace(180, 420, 240));
-tp = sf_triple_points(pm, 'water3');
+tp = sf_triple_points(pm, 'water_Brown2026');
 lit = {{'Ih','II','III'}, 238.237, 209.885; {'II','III','V'}, 249.418, 355.504; ...
        {'II','V','VI'}, 201.934, 670.840; {'Ih','III','L'}, 251.165, 207.593; ...
        {'III','L','V'}, 256.164, 350.110; {'L','V','VI'}, 273.407, 634.400};

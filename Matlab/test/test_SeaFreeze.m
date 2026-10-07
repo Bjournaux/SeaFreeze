@@ -346,19 +346,19 @@ classdef test_SeaFreeze < matlab.unittest.TestCase
 
         function test_getProp_water1_no_shear(testCase)
             % Liquid water: SeaFreeze.m does not set shear for water phases
-            out = SF_getprop([500, 300], 'water1');
+            out = SF_getprop([500, 300], 'water_Bollengier2019');
             testCase.verifyFalse(isfield(out, 'shear'));
         end
 
         function test_getProp_water1_positive_density(testCase)
-            out = SF_getprop([500, 300], 'water1');
+            out = SF_getprop([500, 300], 'water_Bollengier2019');
             testCase.verifyGreaterThan(out.rho, 500);
         end
 
         function test_getProp_water1_grid(testCase)
             P = (100:200:500)';
             T = (250:25:300)';
-            out = SF_getprop({P, T}, 'water1');
+            out = SF_getprop({P, T}, 'water_Bollengier2019');
             testCase.verifySize(out.rho, [numel(P), numel(T)]);
             testCase.verifyGreaterThan(min(out.rho(:)), 500);
         end

@@ -27,7 +27,7 @@ class TestPhaseRange(ut.TestCase):
         self.assertIsNone(r.m)
 
     def test_water1(self):
-        r = phase_range('water1')
+        r = phase_range('water_Bollengier2019')
         self.assertIsNone(r.m)
         self.assertGreaterEqual(r.T[1], 500.0)
 
@@ -46,9 +46,9 @@ class TestPhaseLinesPureWater(ut.TestCase):
     """Smoke-and-shape tests for the 12 pure-water pairs."""
 
     def test_Ih_water1_basic(self):
-        r = phase_lines('Ih', 'water1')
+        r = phase_lines('Ih', 'water_Bollengier2019')
         self.assertIsInstance(r, PhaseLineResult)
-        self.assertEqual((r.matA, r.matB), ('Ih', 'water1'))
+        self.assertEqual((r.matA, r.matB), ('Ih', 'water_Bollengier2019'))
         self.assertGreater(r.P.size, 100)
         self.assertEqual(r.P.shape, r.T.shape)
         self.assertEqual(r.P.shape, r.stable.shape)
@@ -59,7 +59,7 @@ class TestPhaseLinesPureWater(ut.TestCase):
         self.assertLess(r.T[np.argmax(r.P)], r.T[np.argmin(r.P)])
 
     def test_VI_water1_high_pressure(self):
-        r = phase_lines('VI', 'water1')
+        r = phase_lines('VI', 'water_Bollengier2019')
         # Curve should extend to high pressure
         self.assertGreater(r.P.max(), 2000.0)
         # Monotonic positive slope: VI-liquid melts hotter at higher P
@@ -67,40 +67,40 @@ class TestPhaseLinesPureWater(ut.TestCase):
         self.assertTrue(np.all(np.diff(r.T[order]) > -0.5))  # mostly monotonic
 
     def test_freezing_point_low_P(self):
-        """Ih-water1 at near-zero pressure should be ~273.15 K."""
-        r = phase_lines('Ih', 'water1')
+        """Ih-water_Bollengier2019 at near-zero pressure should be ~273.15 K."""
+        r = phase_lines('Ih', 'water_Bollengier2019')
         idx = np.argmin(r.P)
         self.assertLess(r.P[idx], 1.0)
         self.assertAlmostEqual(r.T[idx], 273.15, delta=0.05)
 
     def test_segment_stable(self):
-        r = phase_lines('Ih', 'water1', segment='stable')
+        r = phase_lines('Ih', 'water_Bollengier2019', segment='stable')
         self.assertTrue(r.stable.all())
         self.assertEqual(r.segment, 'stable')
 
     def test_segment_meta(self):
-        r = phase_lines('Ih', 'water1', segment='meta')
+        r = phase_lines('Ih', 'water_Bollengier2019', segment='meta')
         self.assertFalse(r.stable.any())
         self.assertEqual(r.segment, 'meta')
 
     def test_segment_all_partition(self):
-        ra = phase_lines('Ih', 'water1', segment='all')
-        rs = phase_lines('Ih', 'water1', segment='stable')
-        rm = phase_lines('Ih', 'water1', segment='meta')
+        ra = phase_lines('Ih', 'water_Bollengier2019', segment='all')
+        rs = phase_lines('Ih', 'water_Bollengier2019', segment='stable')
+        rm = phase_lines('Ih', 'water_Bollengier2019', segment='meta')
         self.assertEqual(ra.P.size, rs.P.size + rm.P.size)
 
     def test_II_water1_all_metastable(self):
-        """II <-> water1 has no stable equilibrium curve in the standard
+        """II <-> water_Bollengier2019 has no stable equilibrium curve in the standard
         phase diagram (II is surrounded by Ih/III/V/VI)."""
-        r = phase_lines('II', 'water1', segment='all')
+        r = phase_lines('II', 'water_Bollengier2019', segment='all')
         self.assertEqual(r.stable.sum(), 0)
         # 'stable' segment should be empty
-        rs = phase_lines('II', 'water1', segment='stable')
+        rs = phase_lines('II', 'water_Bollengier2019', segment='stable')
         self.assertEqual(rs.P.size, 0)
 
     def test_symmetric_lookup(self):
-        r1 = phase_lines('Ih', 'water1')
-        r2 = phase_lines('water1', 'Ih')
+        r1 = phase_lines('Ih', 'water_Bollengier2019')
+        r2 = phase_lines('water_Bollengier2019', 'Ih')
         # Should normalize to canonical (matA, matB) order
         self.assertEqual((r1.matA, r1.matB), (r2.matA, r2.matB))
         self.assertEqual(r1.P.size, r2.P.size)
@@ -109,7 +109,7 @@ class TestPhaseLinesPureWater(ut.TestCase):
 
     def test_invalid_segment(self):
         with self.assertRaises(ValueError):
-            phase_lines('Ih', 'water1', segment='invalid')
+            phase_lines('Ih', 'water_Bollengier2019', segment='invalid')
 
     def test_unknown_pair(self):
         with self.assertRaises(ValueError):
@@ -122,7 +122,7 @@ class TestPhaseLinesPureWater(ut.TestCase):
     def test_user_grid_override(self):
         # Custom T grid should be respected (within tolerance)
         T_user = np.arange(240.0, 273.0, 1.0)
-        r = phase_lines('Ih', 'water1', T=T_user)
+        r = phase_lines('Ih', 'water_Bollengier2019', T=T_user)
         # Resulting curve should stay within user T range
         self.assertGreaterEqual(r.T.min(), 239.0)
         self.assertLessEqual(r.T.max(), 274.0)
@@ -135,7 +135,7 @@ class TestPhaseLinesNaCl(ut.TestCase):
 
     def test_pure_pair_rejects_m(self):
         with self.assertRaises(ValueError):
-            phase_lines('Ih', 'water1', m=0.5)
+            phase_lines('Ih', 'water_Bollengier2019', m=0.5)
 
     def test_scalar_m_returns_single(self):
         r = phase_lines('Ih', 'NaClaq', m=0.5)

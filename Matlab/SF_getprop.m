@@ -61,10 +61,10 @@ function out = SF_getprop(PT, material, props, varargin)
 % Material options:
 %   Ih, II, III, V, VI                  Journaux et al. 2020 / Feistel & Wagner 2006
 %   VII_X_French                        French and Redmer 2015
-%   water1                              Bollengier et al. 2019 (<=500 K, <=2300 MPa)
-%   water2                              Brown 2018 (up to 100 GPa)
+%   water_Bollengier2019                              Bollengier et al. 2019 (<=500 K, <=2300 MPa)
+%   water_Brown2018                              Brown 2018 (up to 100 GPa)
 %   water_IAPWS95                       IAPWS95, Wagner & Pruss 2002
-%   water3                              psi-spline Helmholtz surface F(rho,T)
+%   water_Brown2026                              psi-spline Helmholtz surface F(rho,T)
 %                                         (lbf-thermo, stage5_23c, 2026);
 %                                         P,T input is inverted to rho on the
 %                                         densest stable branch (see fnFval)
@@ -77,7 +77,7 @@ function out = SF_getprop(PT, material, props, varargin)
 %   NaClaq_5GPa_2024                    Brown 2024 NaCl(aq) legacy spline
 %                                         P=[0,5000] MPa, T=[229,501] K
 %
-% The ice Gibbs parametrizations are optimized for use with 'water1'
+% The ice Gibbs parametrizations are optimized for use with 'water_Bollengier2019'
 % (Bollengier et al. 2019) — use that for melting curves in 200-355 K
 % and up to 2300 MPa.
 %
@@ -115,7 +115,7 @@ known_materials = defs.known_materials;
 if ~sf_ischarlike(material)
     error('SeaFreeze:badInput', '''material'' must be a string or character vector.');
 end
-material = char(material);
+material = sf_material_name(char(material));   % renamed materials: new name + one-time warning
 if ~ismember(material, known_materials)
     error('SeaFreeze:unknownMaterial', ...
           'Unknown material ''%s''. Valid options: %s', ...
@@ -282,14 +282,14 @@ switch material
     case 'VII_X_French'
         sp = sf_load_spline('VII_X_French');
         shear_mod = [10    0.0033  0.000048 -0.014   1300 273];
-    case 'water1'
-        sp = sf_load_spline('water1');
-    case 'water2'
-        sp = sf_load_spline('water2');
+    case 'water_Bollengier2019'
+        sp = sf_load_spline('water_Bollengier2019');
+    case 'water_Brown2018'
+        sp = sf_load_spline('water_Brown2018');
     case 'water_IAPWS95'
         sp = sf_load_spline('water_IAPWS95');
-    case 'water3'
-        sp = sf_load_spline('water3');
+    case 'water_Brown2026'
+        sp = sf_load_spline('water_Brown2026');
     otherwise
         % unreachable: material was validated against known_materials above
         error('SeaFreeze:unknownMaterial', 'Unknown material ''%s''', material);

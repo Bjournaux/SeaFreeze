@@ -8,10 +8,10 @@ function out = SF_WhichPhase(PT, varargin)
 %   out = SF_WhichPhase([P T])                       % scatter form
 %   out = SF_WhichPhase({P,T,m}, 'solute','NaCl')    % NaCl(aq) liquid
 %   out = SF_WhichPhase([P T m], 'solute','NaCl')
-%   out = SF_WhichPhase({P,T}, 'liquid','water3')    % Helmholtz liquid water
+%   out = SF_WhichPhase({P,T}, 'liquid','water_Brown2026')    % Helmholtz liquid water
 %
 % Returns a numerical phase code:
-%   0 = liquid  (pure water1 by default, NaCl(aq) when 'solute','NaCl')
+%   0 = liquid  (pure water_Bollengier2019 by default, NaCl(aq) when 'solute','NaCl')
 %   1 = ice Ih
 %   2 = ice II
 %   3 = ice III
@@ -33,10 +33,10 @@ function out = SF_WhichPhase(PT, varargin)
 p = inputParser;
 p.PartialMatching = false;   % exact option names (see SF_WPD.m)
 addParameter(p, 'solute', 'none', @sf_ischarlike);
-addParameter(p, 'liquid', 'water1', @sf_ischarlike);
+addParameter(p, 'liquid', 'water_Bollengier2019', @sf_ischarlike);
 parse(p, varargin{:});
 solute = char(p.Results.solute);
-liquid = char(p.Results.liquid);
+liquid = sf_material_name(char(p.Results.liquid));   % renamed materials
 defs0 = sf_material_defs();
 if ~ismember(liquid, defs0.liquid_phases)
     error('SF_WhichPhase:badInput', '''liquid'' must be one of %s (got ''%s'').', ...
@@ -49,7 +49,7 @@ end
 is_nacl = strcmpi(solute, 'NaCl') || strcmpi(solute, 'NaClaq');
 
 % Validate PT against the implied material.
-if is_nacl, mat_check = 'NaClaq'; else, mat_check = 'water1'; end
+if is_nacl, mat_check = 'NaClaq'; else, mat_check = 'water_Bollengier2019'; end
 sf_validate_PT(PT, mat_check);
 
 G_iceIh         = sf_load_spline('Ih');
@@ -57,7 +57,7 @@ G_iceII         = sf_load_spline('II');
 G_iceIII        = sf_load_spline('III');
 G_iceV          = sf_load_spline('V');
 G_iceVI         = sf_load_spline('VI');
-if strcmp(liquid, 'water1'), G_H2O_2GPa_500K = sf_load_spline('water1'); end
+if strcmp(liquid, 'water_Bollengier2019'), G_H2O_2GPa_500K = sf_load_spline('water_Bollengier2019'); end
 
 defs = sf_material_defs();
 MW_H2O = defs.MW_H2O;
@@ -91,7 +91,7 @@ else
         PT_pt = PT(:,1:2);
         is_grid = false;
     end
-    if strcmp(liquid, 'water1')
+    if strcmp(liquid, 'water_Bollengier2019')
         Gliq = sp_val(G_H2O_2GPa_500K, PT_pt);   % J/kg
     else
         lq = SF_getprop(PT_pt, liquid, 'G');     % Helmholtz / other liquids

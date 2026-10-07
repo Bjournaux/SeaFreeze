@@ -2,7 +2,7 @@ function pm = sf_phase_map(P, T, varargin)
 % SF_PHASE_MAP  Stable phase of H2O on a (P,T) grid by Gibbs-energy minimisation.
 %
 %   pm = sf_phase_map(P, T)
-%   pm = sf_phase_map(P, T, 'fluid', 'water3', 'ices', {'Ih','II','III','V','VI'}, ...
+%   pm = sf_phase_map(P, T, 'fluid', 'water_Brown2026', 'ices', {'Ih','II','III','V','VI'}, ...
 %                     'dilute_extension', true, 'sanity', true, 'melt_mask', true)
 %
 % The fluid is a Helmholtz material (vapour, liquid, supercritical); the
@@ -20,7 +20,7 @@ function pm = sf_phase_map(P, T, varargin)
 %   G, rho (nphase x nP x nT), stable (nP x nT, index into names, 0 = none),
 %   rho_stable (nP x nT).
 p = inputParser;
-addParameter(p, 'fluid', 'water3');
+addParameter(p, 'fluid', 'water_Brown2026');
 addParameter(p, 'ices', {'Ih','II','III','V','VI'});
 addParameter(p, 'dilute_extension', true);
 addParameter(p, 'sanity', true);

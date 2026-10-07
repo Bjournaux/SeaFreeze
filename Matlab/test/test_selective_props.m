@@ -27,7 +27,7 @@ cases = {
     {'single string -> single field', PT_ice,   'VI',       'rho',                      {'rho'}}
     {'cell with 1 elem',              PT_ice,   'VI',       {'G'},                      {'G'}}
     {'multi-property cell (solid)',   PT_ice,   'VI',       {'G','rho','Cp'},           {'G','rho','Cp'}}
-    {'liquid: base only',             PT_water, 'water1',   {'G','rho','Cp'},           {'G','rho','Cp'}}
+    {'liquid: base only',             PT_water, 'water_Bollengier2019',   {'G','rho','Cp'},           {'G','rho','Cp'}}
     {'NaClaq base subset',            PTm_nacl, 'NaClaq',   {'rho','Cp'},               {'rho','Cp'}}
     {'NaClaq mixing only',            PTm_nacl, 'NaClaq',   {'phi','aw'},               {'phi','aw'}}
     {'NaClaq mixed base+mixing',      PTm_nacl, 'NaClaq',   {'G','rho','muw','phi'},    {'G','rho','muw','phi'}}
@@ -71,7 +71,7 @@ end
 % --- "All properties" cases: no props arg / empty props ----------------------
 all_cases = {
     % name,                  PT,        material,    expected superset
-    {'all (water1)',         PT_water,  'water1',    BASE}
+    {'all (water_Bollengier2019)',         PT_water,  'water_Bollengier2019',    BASE}
     {'all (ice VI)',         PT_ice,    'VI',        [BASE, SHEAR]}
     {'all (NaClaq)',         PTm_nacl,  'NaClaq',    [BASE, MIX]}
 };
@@ -88,7 +88,7 @@ for i = 1:size(all_cases,1)
         missing = setdiff(want, got);
         % Allow extras only if they're in the valid set for the material.
         if strcmp(mat,'NaClaq'),  valid = [BASE, MIX];
-        elseif any(strcmp(mat,{'water1','water2','water_IAPWS95'})), valid = BASE;
+        elseif any(strcmp(mat,{'water_Bollengier2019','water_Brown2018','water_IAPWS95'})), valid = BASE;
         else, valid = [BASE, SHEAR]; end
         extra = setdiff(got, valid);
         if isempty(missing) && isempty(extra)

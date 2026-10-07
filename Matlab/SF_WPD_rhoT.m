@@ -37,10 +37,11 @@ addParameter(p, 'nP', 900);
 addParameter(p, 'nT', 320);
 addParameter(p, 'nrho', 700);
 addParameter(p, 'xscale', 'log');
-addParameter(p, 'fluid', 'water3');
+addParameter(p, 'fluid', 'water_Brown2026');
 addParameter(p, 'ices', {'Ih','II','III','V','VI'});
 parse(p, varargin{:});
 o = p.Results;
+o.fluid = sf_material_name(char(o.fluid));   % renamed materials
 warning('SeaFreeze:longRuntime', ['SF_WPD_rhoT: computing the stable phase at %d (P,T) states ' ...
         '(Gibbs minimisation over the Helmholtz fluid and the ices). This typically takes ' ...
         '0.5-2 min depending on your machine; reduce ''nP''/''nT'' for a faster preview. ' ...

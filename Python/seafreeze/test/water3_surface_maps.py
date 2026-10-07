@@ -1,11 +1,11 @@
-"""Property maps of the Helmholtz fluid 'water3' over its whole (P,T) range.
+"""Property maps of the Helmholtz fluid 'water_Brown2026' over its whole (P,T) range.
 
     python3 -m seafreeze.test.water3_surface_maps OUTDIR
 
 Writes water3_surface_maps.png: density, Cp, sound speed, thermal expansivity,
 compressibility factor Z = P/(rho R T) and the Grueneisen parameter on a log P -
 log T grid (1e-6 MPa - 10 TPa, 230 K - 150 kK), stable branch (vapour below the
-saturation curve).  Overlays: water3's own saturation curve and critical point,
+saturation curve).  Overlays: water_Brown2026's own saturation curve and critical point,
 and the melting curve of the stable solid (psiEOS 'dq2026' model: IAPWS R14-08,
 Datchi 2000, Queyroux 2020, French & Hamel) — below it the surface still returns
 numbers but the stable phase is a solid (hatched).
@@ -84,7 +84,7 @@ def make(outdir):
     t0 = time.time()
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        o = sf.getProp(np.array([P, T], dtype=object), 'water3', defpath,
+        o = sf.getProp(np.array([P, T], dtype=object), 'water_Brown2026', defpath,
                        'rho', 'Cp', 'vel', 'alpha', 'gamma_Gruneisen')
     print(f'evaluated {P.size * T.size} states in {time.time() - t0:.1f} s')
     R = 461.5231157260608
@@ -130,7 +130,7 @@ def make(outdir):
     ax0.text(3e-6, 280, 'vapour', color=INK, fontsize=9)
     ax0.text(2e1, 300, 'liquid', color='white', fontsize=9)
     ax0.text(3e3, 250, 'solid\n(hatched)', color=INK, fontsize=8.5)
-    fig.suptitle('water3 (psi surface stage5_23c) over its full range — stable branch; orange: saturation curve '
+    fig.suptitle('water_Brown2026 (psi surface stage5_23c) over its full range — stable branch; orange: saturation curve '
                  'and critical point; black: sublimation + melting curve of the stable solid', x=0.01, ha='left',
                  color=INK, fontsize=11)
     fig.tight_layout()

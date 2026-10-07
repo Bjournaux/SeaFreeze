@@ -1,7 +1,7 @@
 """Full H2O phase diagram data for the GUI: precomputed defaults + cached live runs.
 
 The diagrams come from seafreeze.phasediagram (phase_diagram_PT /
-phase_diagram_rhoT, fluid water3 + ices Ih-VI) and the property maps from
+phase_diagram_rhoT, fluid water_Brown2026 + ices Ih-VI) and the property maps from
 seafreeze.phasediagram.property_map.  The default window at the default
 resolution is shipped precomputed in assets/diagrams/ (regenerate with
 tools/precompute_diagrams.py) so the page opens instantly; any other window
@@ -21,7 +21,7 @@ from seafreeze.coexistence import Coexistence
 
 from core.ui import asset
 
-FLUID = "water3"
+FLUID = "water_Brown2026"
 ICES = tuple(_pd.ICES)
 
 DEFAULT_WINDOW = {
@@ -43,7 +43,7 @@ RUNTIME_S = {
 
 # bump when the diagram data change without a SeaFreeze version change, so
 # stale precomputed files are recomputed rather than loaded
-DATA_VERSION = 4
+DATA_VERSION = 5
 
 MAP_PROPS = tuple(_pd.MAP_PROPS)
 ICE_ONLY_PROPS = tuple(_pd.ICE_ONLY_PROPS)

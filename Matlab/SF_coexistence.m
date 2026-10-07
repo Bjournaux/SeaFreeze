@@ -2,18 +2,18 @@ function out = SF_coexistence(kind, T, varargin)
 % SF_coexistence  Saturation and sublimation curves from a Helmholtz fluid.
 % Baptiste Journaux - 2026
 %
-% A Helmholtz fluid (water3) spans liquid and vapour, so SeaFreeze can solve
+% A Helmholtz fluid (water_Brown2026) spans liquid and vapour, so SeaFreeze can solve
 %   saturation:   G_liquid(P,T) = G_vapour(P,T)
 %   sublimation:  G_ice(P,T)    = G_vapour(P,T)
 % per temperature by Newton iteration in ln P:
 %   d(G_A - G_B)/d ln P = P (1/rho_A - 1/rho_B).
-% Ice Gibbs splines and water3 share the IAPWS-95 reference state (U = S = 0
+% Ice Gibbs splines and water_Brown2026 share the IAPWS-95 reference state (U = S = 0
 % for liquid at the triple point), so G is directly comparable (J/kg).
 %
 % Usage:
-%   out = SF_coexistence('saturation',  T)                 % T < Tc, water3
-%   out = SF_coexistence('sublimation', T)                 % ice Ih + water3 vapour
-%   out = SF_coexistence('sublimation', T, 'ice', 'Ih', 'fluid', 'water3')
+%   out = SF_coexistence('saturation',  T)                 % T < Tc, water_Brown2026
+%   out = SF_coexistence('sublimation', T)                 % ice Ih + water_Brown2026 vapour
+%   out = SF_coexistence('sublimation', T, 'ice', 'Ih', 'fluid', 'water_Brown2026')
 %   out = SF_coexistence('sublimation', T, 'dilute_extension', false)
 %
 % Output struct (column vectors, one entry per T):
@@ -23,7 +23,7 @@ function out = SF_coexistence(kind, T, varargin)
 %   out.rho_B  (kg/m^3)    vapour
 %
 % 'dilute_extension' (sublimation only, default true): below the fluid's
-%   lowest temperature (230 K for water3) treat the vapour as the surface's
+%   lowest temperature (230 K for water_Brown2026) treat the vapour as the surface's
 %   ideal-gas part alone (Z = 1).  At those sublimation pressures (< 10 Pa)
 %   the neglected terms change p_sub by ~1e-5 relative (validated against
 %   the NIST measurements of Bielska et al. 2013, 175-253 K).  It is an
@@ -39,10 +39,10 @@ function out = SF_coexistence(kind, T, varargin)
 
 p = inputParser;
 addParameter(p, 'ice', 'Ih', @(s) ischar(s) || isstring(s));
-addParameter(p, 'fluid', 'water3', @(s) ischar(s) || isstring(s));
+addParameter(p, 'fluid', 'water_Brown2026', @(s) ischar(s) || isstring(s));
 addParameter(p, 'dilute_extension', true, @(x) islogical(x) || isnumeric(x));
 parse(p, varargin{:});
-ice = char(p.Results.ice); fluid = char(p.Results.fluid);
+ice = char(p.Results.ice); fluid = sf_material_name(char(p.Results.fluid));   % renamed materials
 dilute = logical(p.Results.dilute_extension);
 
 defs = sf_material_defs();

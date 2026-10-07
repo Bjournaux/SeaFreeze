@@ -1,4 +1,4 @@
-"""Full H2O phase diagram (water3 + ices Ih-VI) in P-T or rho-T, coloured by
+"""Full H2O phase diagram (water_Brown2026 + ices Ih-VI) in P-T or rho-T, coloured by
 stable phase or by any property of the stable phase (2-D map, map +
 isocontours, or 3-D surface), with the boundaries, saturation curve,
 critical point and triple points overlaid."""
@@ -149,7 +149,7 @@ def render():
     xs = ("P " + " – ".join(f"{v:.3g}" for v in window["P"]) + " MPa") if coords == "PT" else \
          ("ρ " + " – ".join(f"{v:.3g}" for v in window["rho"]) + " kg/m³")
     src = "precomputed default" if default else "computed live"
-    st.caption(f"Stable phase by Gibbs-energy minimisation — fluid **water3** (Helmholtz, beta), "
+    st.caption(f"Stable phase by Gibbs-energy minimisation — fluid **water_Brown2026** (Helmholtz, beta), "
                f"ices **Ih, II, III, V, VI**. {xs}, T {window['T'][0]:.0f} – {window['T'][1]:.0f} K, "
                f"{res} resolution ({src})."
                + (" Grey: two-phase regions." if coords == "rhoT" else ""))

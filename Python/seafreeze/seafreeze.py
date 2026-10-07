@@ -24,10 +24,10 @@ _SPLINE_MAP = {
     'V':               ('ice_V',               'ice_V.mat'),
     'VI':              ('ice_VI',              'ice_VI.mat'),
     'VII_X_French':    ('ice_VII_X_French',    'ice_VII_X_French.mat'),
-    'water1':          ('water_Bollengier',     'water_Bollengier.mat'),
-    'water2':          ('water_Brown',          'water_Brown.mat'),
-    'water_IAPWS95':   ('water_IAPWS95',        'water_IAPWS95.mat'),
-    'water3':          ('water_psi2026',        'water_psi2026.mat'),  # Helmholtz psi surface
+    'water_Bollengier2019': ('water_Bollengier',  'water_Bollengier.mat'),
+    'water_Brown2018':      ('water_Brown',       'water_Brown.mat'),
+    'water_IAPWS95':        ('water_IAPWS95',     'water_IAPWS95.mat'),
+    'water_Brown2026':      ('water_psi2026',     'water_psi2026.mat'),  # Helmholtz psi surface
     'NaClaq':          None,  # stitched LP+HP — handled separately
     'NaClaq_LP':       ('NaCl_aq_LP_2026',     'NaCl_aq_LP_2026.mat'),
     'NaClaq_HP':       ('NaCl_aq_HP_2026',     'NaCl_aq_HP_2026.mat'),
@@ -72,8 +72,59 @@ _LBFTD_ALL_NACL  = _LBFTD_ALL_WATER + (
 # mol of water per kg of water = 1 kg / (18.01528e-3 kg/mol) ≈ 55.508 mol/kg
 _nw = 1.0 / mH2O_kgmol      # mol water / kg water ≈ 55.508
 
+# ---------------------------------------------------------------------------
+# Renamed materials (1.2).  The old names keep working through SeaFreeze 1.x
+# with a once-per-session SeaFreezeDeprecationWarning, and are removed in 2.0.
+# ---------------------------------------------------------------------------
+MATERIAL_ALIASES = {
+    'water1': 'water_Bollengier2019',
+    'water2': 'water_Brown2018',
+    'water3': 'water_Brown2026',
+}
+
+
+class SeaFreezeDeprecationWarning(FutureWarning):
+    """A deprecated SeaFreeze name was used (shown by default, unlike DeprecationWarning)."""
+
+
+_warned_aliases = set()
+
+
+def canonical_material(name, stacklevel=3):
+    """The current name of a material: renamed ones are mapped (with a warning
+    the first time each old name is used in a session), others pass through.
+
+    :param name:       material name, e.g. 'water1' or 'water_Bollengier2019'
+    :param stacklevel: passed to warnings.warn (3: the caller of the public
+                       function that called this one)
+    """
+    new = MATERIAL_ALIASES.get(name) if isinstance(name, str) else None
+    if new is None:
+        return name
+    if name not in _warned_aliases:
+        _warned_aliases.add(name)
+        warnings.warn(f"material name '{name}' is deprecated and will be removed in SeaFreeze 2.0; "
+                      f"use '{new}' (warning shown once per session).",
+                      SeaFreezeDeprecationWarning, stacklevel=stacklevel)
+    return new
+
+
+class _PhaseTable(dict):
+    """The phases dict; also answers to the deprecated material names."""
+    def __missing__(self, key):
+        if isinstance(key, str) and key in MATERIAL_ALIASES:
+            return self[canonical_material(key)]
+        raise KeyError(key)
+
+    def __contains__(self, key):
+        return dict.__contains__(self, key) or (isinstance(key, str) and key in MATERIAL_ALIASES)
+
+    def get(self, key, default=None):
+        return self[key] if key in self else default
+
+
 PhaseDesc = namedtuple('PhaseDesc', 'shear_mod_parms phase_num MW nu cutoff')
-phases = {
+phases = _PhaseTable({
     # Ice phases — Journaux et al. 2020 / Feistel & Wagner 2006
     "Ih":           PhaseDesc([3.1, -0.00462, 0, -0.00657, 1000, 273.15], 1, mH2O_kgmol, None, None),
     "II":           PhaseDesc([4.1,  0.0175,  0, -0.014,   1100, 273],    2, mH2O_kgmol, None, None),
@@ -82,25 +133,25 @@ phases = {
     "VI":           PhaseDesc([2.57, 0.0175,  0, -0.014,   1100, 273],    6, mH2O_kgmol, None, None),
     "VII_X_French": PhaseDesc([10,   0.0033,  0.000048, -0.014, 1300, 273], 7, mH2O_kgmol, None, None),
     # Pure water — liquid phases
-    "water1":        PhaseDesc(None, 0,      mH2O_kgmol, None, None),  # Bollengier et al. 2019 (≤500 K, ≤2300 MPa)
-    "water2":        PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # Brown 2018 (up to 100 GPa)
-    "water_IAPWS95": PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # IAPWS95; Wagner & Pruss 2002
-    "water3":        PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # Helmholtz psi-spline F(rho,T); lbf-thermo 2026
+    "water_Bollengier2019": PhaseDesc(None, 0,      mH2O_kgmol, None, None),  # Bollengier et al. 2019 (≤500 K, ≤2300 MPa)
+    "water_Brown2018":      PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # Brown 2018 (up to 100 GPa)
+    "water_IAPWS95":        PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # IAPWS95; Wagner & Pruss 2002
+    "water_Brown2026":      PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # Helmholtz psi-spline F(rho,T); lbf-thermo 2026
     # Aqueous NaCl
     "NaClaq":          PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # stitched LP+HP 2026 (recommended)
     "NaClaq_LP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 low-P  spline only
     "NaClaq_HP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 high-P spline only
     "NaClaq_5GPa_2024":PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # Brown 2024 legacy spline
-}
+})
 max_phase_num = int(np.nanmax([p.phase_num for p in phases.values()]))
 
 # Liquids stored as Helmholtz energy F(rho,T) — evaluated by lbftd.evalHelmholtz
-helmholtz_phases = frozenset({'water3'})
+helmholtz_phases = frozenset({'water_Brown2026'})
 # Pure-water liquids usable as the liquid in whichphase / phase_lines
-pure_water_liquids = ('water1', 'water2', 'water_IAPWS95', 'water3')
+pure_water_liquids = ('water_Bollengier2019', 'water_Brown2018', 'water_IAPWS95', 'water_Brown2026')
 
 # Build phase_num → material code map; exclude NaN phase_nums and keep only
-# the first entry for phase_num 0 (water1 is canonical; NaClaq variants share 0).
+# the first entry for phase_num 0 (water_Bollengier2019 is canonical; NaClaq variants share 0).
 phasenum2phaseDict = {}
 for k, v in phases.items():
     if not np.isnan(v.phase_num) and v.phase_num not in phasenum2phaseDict:
@@ -124,6 +175,7 @@ def _load_spline(splines_dir, material):
     :param material:    material code (key of _SPLINE_MAP)
     :return:            spline dict as returned by mlbspline.load.loadSpline
     """
+    material = canonical_material(material)
     entry = _SPLINE_MAP.get(material)
     if entry is None:
         if material == 'NaClaq':
@@ -195,7 +247,7 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
     (P, T).  rho and T echo the input; NaN where no pressure in the spline's
     range gives the requested density.
 
-    Helmholtz materials ('water3')
+    Helmholtz materials ('water_Brown2026')
     ------------------------------
     The EOS is a Helmholtz energy F(rho,T); (P,T) input is inverted to a
     mechanically stable density.  At (P,T) the fluid root is chosen by
@@ -203,9 +255,9 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
     saturation pressure, liquid above), 'liquid' or 'vapor' (metastable
     branches allowed).
 
-    NOTE:  The authors recommend 'water1' for 200–355 K up to 2300 MPa.
+    NOTE:  The authors recommend 'water_Bollengier2019' for 200–355 K up to 2300 MPa.
     The ice Gibbs parametrizations are optimized for phase-equilibrium
-    calculations against 'water1'.  'water2' and 'water_IAPWS95' are
+    calculations against 'water_Bollengier2019'.  'water_Brown2018' and 'water_IAPWS95' are
     provided for HP extension and comparison only.
 
     :param PTm:     P (MPa) / T (K) conditions, optional m (mol/kg) for NaClaq.
@@ -218,6 +270,7 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False, rhoT=False, branc
     :param branch:  Helmholtz materials only: 'stable' | 'liquid' | 'vapor'.
     :return:        Object with computed properties as named attributes.
     """
+    phase = canonical_material(phase)
     lbftd_log = logging.getLogger('lbftd')
     if not verbose:
         lbftd_log.setLevel(logging.CRITICAL)
@@ -363,19 +416,20 @@ def _gibbs_rhoT(PTm, phase, path, tdvSpec):
     return types.SimpleNamespace(**out)
 
 
-def whichphase(PTm, solute='water1', path=defpath):
+def whichphase(PTm, solute='water_Bollengier2019', path=defpath):
     """Determines the most likely phase of water at each pressure/temperature.
 
     :param PTm:     P (MPa) / T (K) conditions (and optional m for NaClaq).
                     Scatter: 1-D numpy array of (P,T) or (P,T,m) tuples.
                     Grid: numpy array([P_vec, T_vec]) or ([P, T, m_vec]).
-    :param solute:  The liquid phase: a pure-water liquid ('water1' default,
-                    'water2', 'water_IAPWS95', 'water3') or an aqueous NaCl
+    :param solute:  The liquid phase: a pure-water liquid ('water_Bollengier2019' default,
+                    'water_Brown2018', 'water_IAPWS95', 'water_Brown2026') or an aqueous NaCl
                     material ('NaClaq', 'NaClaq_LP', ...).
     :param path:    Path to the ``splines/`` directory.
     :return:        numpy.ndarray with the stable phase index at each point
                     (0 = liquid).
     """
+    solute = canonical_material(solute)
     if solute not in phases:
         raise ValueError(f"Unknown liquid {solute!r}. Supported: "
                          + ', '.join(pure_water_liquids) + ', NaClaq, NaClaq_LP, NaClaq_HP, NaClaq_5GPa_2024.')
@@ -420,13 +474,14 @@ def whichphase(PTm, solute='water1', path=defpath):
     return out
 
 
-def phasenum2phase(phaseInt, liqComp='water1'):
+def phasenum2phase(phaseInt, liqComp='water_Bollengier2019'):
     """Convert an integer phase index to a material string.
 
     :param phaseInt: Integer representing the desired ice phase or liquid.
     :param liqComp: String to return for the liquid phase (phase_num = 0).
     :return: Material string compatible with getProp/whichphase.
     """
+    liqComp = canonical_material(liqComp)
     if phaseInt == 0:
         return liqComp
     elif np.isnan(phaseInt):

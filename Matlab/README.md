@@ -2,14 +2,15 @@
 
 V1.2 beta (Matlab version, `1.2.0-beta`)
 
-The SeaFreeze package computes thermodynamic and elastic properties of water, ice polymorphs (Ih, II, III, V, VI, VII and X) and aqueous NaCl solutions in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their oceans in mind. It is based on Gibbs Local Basis Function (LBF) parametrizations (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in Brown (2018), Journaux et al. (2020), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). Since 1.2 it also includes `water3`, fluid water from a Helmholtz energy surface covering vapour, liquid and supercritical states (230 K – 150 000 K, dilute vapour to 16 000 kg/m³), with liquid–vapour and ice–vapour equilibria and full phase diagrams in (P,T) and (ρ,T).
+The SeaFreeze package computes thermodynamic and elastic properties of water, ice polymorphs (Ih, II, III, V, VI, VII and X) and aqueous NaCl solutions in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their oceans in mind. It is based on Gibbs Local Basis Function (LBF) parametrizations (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in Brown (2018), Journaux et al. (2020), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). Since 1.2 it also includes `water_Brown2026`, fluid water from a Helmholtz energy surface covering vapour, liquid and supercritical states (230 K – 150 000 K, dilute vapour to 16 000 kg/m³), with liquid–vapour and ice–vapour equilibria and full phase diagrams in (P,T) and (ρ,T).
 
 ## What's new in 1.2 beta
-- **`water3`** — Helmholtz-energy fluid water (vapour, liquid, supercritical) from the psi-spline surface *stage5_23c*; stable / liquid / vapour branch selection at (P,T). See [`water3`](#water3-helmholtz-energy-fluid-water-new-in-12-beta).
+- **Clearer water names** — `water1`, `water2`, `water3` are now `water_Bollengier2019`, `water_Brown2018`, `water_Brown2026`; the old names still work through 1.x with a once-per-session warning (see *Renamed materials*).
+- **`water_Brown2026`** — Helmholtz-energy fluid water (vapour, liquid, supercritical) from the psi-spline surface *stage5_23c*; stable / liquid / vapour branch selection at (P,T). See [`water_Brown2026`](#water_brown2026-helmholtz-energy-fluid-water-new-in-12-beta).
 - **Density input for every material** — `SF_getprop(rhoT, material, props, 'input', 'rhoT')`: (ρ,T) or (ρ,T,m) points; Gibbs splines are inverted with `SF_rho2P`.
 - **Vapour equilibria** — `SF_coexistence('saturation', T)` and `SF_coexistence('sublimation', T)`, with a dilute-vapour extension below 230 K (on by default, warns once per session).
 - **Full phase diagrams** — `SF_WPD_PT`, `SF_WPD_rhoT` (+ `sf_phase_map`, `sf_triple_points`, `sf_melt_T_dq2026`): vapour, liquid, supercritical fluid, critical point and ices, with two-phase regions and triple-point tie lines in (ρ,T).
-- **`water3` in the phase-boundary tools** — `SF_WhichPhase(PT, 'liquid', 'water3')`, `SF_PhaseLines(ice, 'water3')`, `SF_WPD('liquid', 'water3')`.
+- **`water_Brown2026` in the phase-boundary tools** — `SF_WhichPhase(PT, 'liquid', 'water_Brown2026')`, `SF_PhaseLines(ice, 'water_Brown2026')`, `SF_WPD('liquid', 'water_Brown2026')`.
 - **GNU Octave** — the same sources run under MATLAB and Octave (see [Running under Octave](#running-under-octave)).
 - Faster Helmholtz evaluation (gridded root bracketing, Hermite starts) and an in-memory spline cache.
 
@@ -112,20 +113,29 @@ out = SF_getprop(PT, material, props)    % only the requested properties
 | `Ih` | Ice Ih (Feistel and Wagner, 2006) |
 | `II`, `III`, `V`, `VI` | Ices II–VI (Journaux et al. 2020) |
 | `VII_X_French` | Ice VII / ice X (French and Redmer 2015) |
-| `water1` | Liquid water — Bollengier et al. 2019 (≤500 K, ≤2300 MPa) |
-| `water2` | Liquid water — Brown 2018 (up to 100 GPa) |
+| `water_Bollengier2019` | Liquid water — Bollengier et al. 2019 (≤500 K, ≤2300 MPa) |
+| `water_Brown2018` | Liquid water — Brown 2018 (up to 100 GPa) |
 | `water_IAPWS95` | IAPWS95 water (Wagner and Pruss, 2002) |
-| `water3` | Fluid water (vapour, liquid, supercritical) from a Helmholtz energy surface F(ρ,T), 230 K – 150 000 K — **new in 1.2**, see [`water3`](#water3-helmholtz-energy-fluid-water-new-in-12-beta) |
+| `water_Brown2026` | Fluid water (vapour, liquid, supercritical) from a Helmholtz energy surface F(ρ,T), 230 K – 150 000 K — **new in 1.2**, see [`water_Brown2026`](#water_brown2026-helmholtz-energy-fluid-water-new-in-12-beta) |
 | `NaClaq` | Aqueous NaCl — stitched LP+HP 2026, recommended (0–10000 MPa, 229–2001 K, 0–7 mol/kg) |
 | `NaClaq_LP` | NaCl(aq) low-P only (0–1000 MPa, 230–501 K) |
 | `NaClaq_HP` | NaCl(aq) high-P only (500–10000 MPa, 229–2001 K) |
 | `NaClaq_5GPa_2024` | NaCl(aq) Brown 2024 legacy (0–5000 MPa, 229–501 K) |
 
+**Renamed materials (1.2).** The numbered water names are replaced by author–year names. The old names keep working throughout SeaFreeze 1.x: they are mapped to the new name with a `SeaFreeze:deprecatedMaterial` warning, shown once per session for each old name, and give identical results. They will be removed in SeaFreeze 2.0. Functions that return material names (e.g. `phasenum2phase`, phase-diagram labels) return the new names. Silence the warning with `warning('off','SeaFreeze:deprecatedMaterial')`.
+
+| Old name | New name | Equation of state |
+|---|---|---|
+| `water1` | `water_Bollengier2019` | liquid water, Bollengier et al. 2019 (≤ 500 K, ≤ 2300 MPa) |
+| `water2` | `water_Brown2018` | liquid water, Brown 2018 (to 100 GPa) |
+| `water3` | `water_Brown2026` | fluid water (vapour, liquid, supercritical), Helmholtz surface, Brown & Journaux 2026 |
+| `water_IAPWS95` | `water_IAPWS95` (unchanged) | IAPWS-95, Wagner & Pruss 2002 |
+
 **`props`** *(optional)* — a string or cell array of property names. Omit or pass `[]` to compute all supported properties.
 
 **Name-value options** *(new in 1.2)*
 - `'input', 'rhoT'` — the first coordinate is density (kg/m³) instead of pressure; P (MPa) is returned. Works for every material (Gibbs splines are inverted with `SF_rho2P`).
-- `'branch', 'stable' | 'liquid' | 'vapor'` — Helmholtz materials (`water3`) only: which fluid root to return at (P,T).
+- `'branch', 'stable' | 'liquid' | 'vapor'` — Helmholtz materials (`water_Brown2026`) only: which fluid root to return at (P,T).
 
 ### Outputs
 `out` is a struct with the requested fields (SI units).
@@ -200,7 +210,7 @@ out = SF_getprop(PT, 'V');
 Three points for liquid water:
 ```matlab
 PT = [200 300; 223 300; 225 300];
-out = SF_getprop(PT, 'water1');
+out = SF_getprop(PT, 'water_Bollengier2019');
 ```
 
 ### Selective properties (new in 1.1.0)
@@ -270,7 +280,7 @@ Determine which supported phase is stable at a given (P,T). `PT` has the same fo
 SF_WhichPhase({300,300})   % -> 0 (liquid water)
 ```
 
-By default the liquid is pure water (`water1`). Pass `'solute','NaCl'` to use aqueous NaCl as the liquid; `PT` then needs the molality axis as `{P,T,m}` or `[P T m]`. The comparison is made on the chemical potential of water (μw_solution vs `G_ice·M_H2O`), so it captures freezing-point depression by salt:
+By default the liquid is pure water (`water_Bollengier2019`). Pass `'solute','NaCl'` to use aqueous NaCl as the liquid; `PT` then needs the molality axis as `{P,T,m}` or `[P T m]`. The comparison is made on the chemical potential of water (μw_solution vs `G_ice·M_H2O`), so it captures freezing-point depression by salt:
 ```matlab
 % Stability map for a 2 mol/kg NaCl solution from 0-1000 MPa, 240-300 K
 out = SF_WhichPhase({0:10:1000, 240:1:300, 2}, 'solute','NaCl');
@@ -281,20 +291,20 @@ Compute the equilibrium curve between two phases by zero-contouring the Gibbs-en
 
 The default sampling grid is the **intersection** of both phases' spline knot domains (auto-derived via `SF_phase_range`); pass `'P'` and/or `'T'` to override.
 
-**Supported pairs (28):** the 11 pure-phase pairs of the original water phase diagram, 5 ice ↔ NaClaq melting pairs, **II ↔ water1** (entirely metastable), **VII_X_French ↔ water1 / water2 / water_IAPWS95** (high-pressure melting curve, stable above the VI–VII–water triple point at ~2216 MPa, 354 K), and the four low-P ice phases (Ih/III/V/VI) paired with **water2** and **water_IAPWS95** for cross-EOS comparison. Note: ice melt curves drift from the canonical water1-based ones at low P when paired with water2 or water_IAPWS95, since water1 is the SeaFreeze liquid optimised for that range.
+**Supported pairs (28):** the 11 pure-phase pairs of the original water phase diagram, 5 ice ↔ NaClaq melting pairs, **II ↔ water_Bollengier2019** (entirely metastable), **VII_X_French ↔ water_Bollengier2019 / water_Brown2018 / water_IAPWS95** (high-pressure melting curve, stable above the VI–VII–water triple point at ~2216 MPa, 354 K), and the four low-P ice phases (Ih/III/V/VI) paired with **water_Brown2018** and **water_IAPWS95** for cross-EOS comparison. Note: ice melt curves drift from the canonical water_Bollengier2019-based ones at low P when paired with water_Brown2018 or water_IAPWS95, since water_Bollengier2019 is the SeaFreeze liquid optimised for that range.
 
 ```matlab
 % Pure-water Ih melting curve, full curve including metastable extensions
-out = SF_PhaseLines('Ih', 'water1');
+out = SF_PhaseLines('Ih', 'water_Bollengier2019');
 %   out.P, out.T : (Nx1) curve coordinates
 %   out.stable   : (Nx1) logical, true on the thermodynamically stable portion
 %   out.triple_points : (Mx2) [T_K, P_MPa]
 
 % Stable portion only (no metastable extensions)
-out = SF_PhaseLines('Ih', 'water1', 'segment', 'stable');
+out = SF_PhaseLines('Ih', 'water_Bollengier2019', 'segment', 'stable');
 
 % Render the curve and triple points
-out = SF_PhaseLines('VI', 'water1', 'plot', true);
+out = SF_PhaseLines('VI', 'water_Bollengier2019', 'plot', true);
 
 % NaClaq melting curve at fixed molality (mol/kg)
 out = SF_PhaseLines('Ih', 'NaClaq', 'm', 1.0);
@@ -312,14 +322,14 @@ out = SF_PhaseLines('Ih', 'NaClaq', 'm', [1.0, 2, 4, 5], 'plot', true);
 
 ```matlab
 % Override the default sampling grid
-out = SF_PhaseLines('III', 'water1', 'P', 200:0.5:350, 'T', 240:0.1:260);
+out = SF_PhaseLines('III', 'water_Bollengier2019', 'P', 200:0.5:350, 'T', 240:0.1:260);
 
 % Compose multiple curves on the same figure: pass the figure handle
 % returned by a previous call as the 'plot' argument. Subsequent calls
 % overlay new curves without resetting axis labels, title or grid.
-o1 = SF_PhaseLines('Ih','water1','plot',true);                  % new figure
-SF_PhaseLines('III','water1','plot',o1.fig);                    % overlay
-SF_PhaseLines('VI','water1','plot',o1.fig);                     % overlay
+o1 = SF_PhaseLines('Ih','water_Bollengier2019','plot',true);                  % new figure
+SF_PhaseLines('III','water_Bollengier2019','plot',o1.fig);                    % overlay
+SF_PhaseLines('VI','water_Bollengier2019','plot',o1.fig);                     % overlay
 SF_PhaseLines('Ih','NaClaq','m',[1 2 3],'plot',o1.fig);         % overlay multi-m
 legend(gca(o1.fig), 'show', 'Location','best');                 % show legend
 ```
@@ -374,7 +384,7 @@ P = SF_rho2P(rho_target, T, material, 'tol', 0.001)   % convergence tol (default
 
 ```matlab
 % Compressed liquid water (≈ 300 MPa)
-P = SF_rho2P(1100, 300, 'water1')
+P = SF_rho2P(1100, 300, 'water_Bollengier2019')
 
 % Ice Ih (≈ 104 MPa)
 P = SF_rho2P(930, 255, 'Ih')
@@ -386,9 +396,9 @@ P = SF_rho2P([1310 1350 1390], [255 260 265], 'VI')
 P = SF_rho2P(1050, 300, 'NaClaq', 1.0, 'tol', 1e-4)
 ```
 
-## `water3`: Helmholtz-energy fluid water (new in 1.2 beta)
+## `water_Brown2026`: Helmholtz-energy fluid water (new in 1.2 beta)
 
-`water3` is fluid water — vapour, liquid and supercritical fluid — from a Helmholtz energy surface F(ρ,T): the
+`water_Brown2026` is fluid water — vapour, liquid and supercritical fluid — from a Helmholtz energy surface F(ρ,T): the
 psi-spline surface *stage5_23c* (J. M. Brown & B. Journaux, lbf-thermo 2026; the Hugoniot-favoured variant of the stage 23 release). Unlike the other SeaFreeze phases it is
 not a Gibbs spline G(P,T): the residual Helmholtz energy is a tensor B-spline in (ln ρ, ln T) plus analytic ideal-gas,
 reacting-mixture, critical (KW2000) and low-temperature two-structure terms, evaluated by `internal/fnFval.m` and
@@ -400,7 +410,7 @@ below the saturation pressure, liquid above); `'branch','liquid'` or `'branch','
 
 ### Range of validity
 
-| | water3 range |
+| | water_Brown2026 range |
 |---|---|
 | Temperature | 230 K – 150 000 K (surface knots). Below 230 K only the dilute vapour is available, through the ideal-gas extension used by the sublimation curve and the phase diagrams |
 | Density | up to 16 000 kg/m³; below 10⁻⁴ kg/m³ the surface is continued by a virial form and a low-density chemistry table |
@@ -418,45 +428,45 @@ below the saturation pressure, liquid above); `'branch','liquid'` or `'branch','
 | Vapour pressure vs IAPWS-95 (273.16–646.5 K) | within 0.02 % (0.01 % below 620 K); p_σ(373.124 K) = 0.101323 MPa |
 | Saturated-vapour density vs NIST WebBook | within ~0.1 % to 620 K |
 | Vapour / supercritical isotherms 300–1000 K vs NIST WebBook | within 0.1 % |
-| Ice Ih sublimation (water3 vapour + ice Ih) vs IAPWS R14-08 | within ±0.008 % over 230–273.16 K |
+| Ice Ih sublimation (water_Brown2026 vapour + ice Ih) vs IAPWS R14-08 | within ±0.008 % over 230–273.16 K |
 | Ice Ih sublimation vs NIST measurements (Bielska et al. 2013, 175–253 K) | every point within 3σ (dilute-vapour extension below 230 K) |
-| Ice–liquid curves vs `water1` | within 0.015 K (Ih, III) and 0.06 K (V) up to 632 MPa; 0.35 K along ice VI to 2.3 GPa; Ih melting at 0.101325 MPa = 273.159 K |
+| Ice–liquid curves vs `water_Bollengier2019` | within 0.015 K (Ih, III) and 0.06 K (V) up to 632 MPa; 0.35 K along ice VI to 2.3 GPa; Ih melting at 0.101325 MPa = 273.159 K |
 | Triple points | within 0.06 K of the literature values; Ih–liquid–vapour at 273.1664 K, 611.9 Pa |
-| Stable liquid vs `water1` (240–500 K, ≤ 2.3 GPa) | ρ rms 0.05 % (max 0.13 %), Cp rms 0.8 % |
+| Stable liquid vs `water_Bollengier2019` (240–500 K, ≤ 2.3 GPa) | ρ rms 0.05 % (max 0.13 %), Cp rms 0.8 % |
 
-![water3 vs water1: ice-liquid equilibrium](../assets/water3/water3_phase_diagram.png)
-![water3, water1 and IAPWS-95 along isobars](../assets/water3/water3_properties.png)
+![water_Brown2026 vs water_Bollengier2019: ice-liquid equilibrium](../assets/water_Brown2026/water3_phase_diagram.png)
+![water_Brown2026, water_Bollengier2019 and IAPWS-95 along isobars](../assets/water_Brown2026/water3_properties.png)
 
-### Evaluating `water3`
+### Evaluating `water_Brown2026`
 
 ```matlab
 % (P,T) scatter: stable branch — liquid at ambient, vapour at 1 kPa / 300 K
-out = SF_getprop([0.101325 298.15; 1e-3 300], 'water3');
+out = SF_getprop([0.101325 298.15; 1e-3 300], 'water_Brown2026');
 out.rho                                   % [997.048; 0.00722]
 
 % grid input, as for every other phase (rows: P, columns: T)
-out = SF_getprop({[0.1 50 500], [280 300 320]}, 'water3', {'rho','alpha'});
+out = SF_getprop({[0.1 50 500], [280 300 320]}, 'water_Brown2026', {'rho','alpha'});
 
 % the metastable branch: superheated liquid at 1 kPa / 300 K
-out = SF_getprop([1e-3 300], 'water3', {'rho','G'}, 'branch', 'liquid');
+out = SF_getprop([1e-3 300], 'water_Brown2026', {'rho','G'}, 'branch', 'liquid');
 ```
 
 ### Density–temperature input (all materials)
 
-`'input','rhoT'` makes the first coordinate density (kg/m³) instead of pressure; P (MPa) is returned. `water3` is
-evaluated directly; the Gibbs splines (water1/2, IAPWS95, ices, NaClaq with molality) first solve P(ρ,T) with
+`'input','rhoT'` makes the first coordinate density (kg/m³) instead of pressure; P (MPa) is returned. `water_Brown2026` is
+evaluated directly; the Gibbs splines (water_Bollengier2019/2, IAPWS95, ices, NaClaq with molality) first solve P(ρ,T) with
 `SF_rho2P` (1e-6 MPa) and then evaluate at (P,T). `rho` and `T` echo the input; NaN where no pressure in the spline
 range gives the requested density.
 
 ```matlab
-out = SF_getprop([1000 300; 1100 300], 'water3', {'P','Cp'}, 'input', 'rhoT');
+out = SF_getprop([1000 300; 1100 300], 'water_Brown2026', {'P','Cp'}, 'input', 'rhoT');
 out.P                                     % [7.833; 299.53] MPa
-out = SF_getprop([1000 300; 1100 300], 'water1', {'P','Cp'}, 'input', 'rhoT');
+out = SF_getprop([1000 300; 1100 300], 'water_Bollengier2019', {'P','Cp'}, 'input', 'rhoT');
 out = SF_getprop([1330 260], 'VI', {'P','Vp','Vs'}, 'input', 'rhoT');
 out = SF_getprop([1050 300 1.0], 'NaClaq', {'P','muw'}, 'input', 'rhoT');
 
 % isochores on a grid: rows are densities, columns temperatures
-out = SF_getprop({linspace(950, 1250, 7), [280 350]}, 'water1', 'P', 'input', 'rhoT');
+out = SF_getprop({linspace(950, 1250, 7), [280 350]}, 'water_Bollengier2019', 'P', 'input', 'rhoT');
 ```
 
 ### Vapour equilibria: saturation and sublimation — `SF_coexistence`
@@ -474,18 +484,18 @@ s = SF_coexistence('sublimation', 250);      s.P * 1e6    % 76.015 Pa  (IAPWS R1
 s = SF_coexistence('sublimation', 200, 'dilute_extension', false);  % NaN below 230 K without the extension
 ```
 
-Below 230 K (the lowest temperature of water3) the vapour is the surface's ideal-gas part alone (Z = 1): at those
+Below 230 K (the lowest temperature of water_Brown2026) the vapour is the surface's ideal-gas part alone (Z = 1): at those
 sublimation pressures (< 10 Pa) the neglected virial terms change p_sub by ~1e-5 relative. This **dilute-vapour
 extension is on by default**; a `SeaFreeze:diluteExtension` warning is issued the first time it is used in a session,
 and `'dilute_extension', false` returns NaN below 230 K instead.
 
-![Sublimation of ice Ih: water3 vs IAPWS R14-08 and NIST measurements](../assets/water3/water3_sublimation.png)
-![Vapour densities: water3 vs NIST WebBook and measurements](../assets/water3/water3_vapor_density.png)
+![Sublimation of ice Ih: water_Brown2026 vs IAPWS R14-08 and NIST measurements](../assets/water_Brown2026/water3_sublimation.png)
+![Vapour densities: water_Brown2026 vs NIST WebBook and measurements](../assets/water_Brown2026/water3_vapor_density.png)
 
 ### Full phase diagrams in (P,T) and (ρ,T) — `SF_WPD_PT`, `SF_WPD_rhoT`
 
 `SF_WPD_PT` and `SF_WPD_rhoT` draw the whole H₂O phase diagram — vapour, liquid, supercritical fluid, the critical
-point and the ices — by Gibbs-energy minimisation over `water3` and the ices (default Ih, II, III, V, VI; ice VII/X is
+point and the ices — by Gibbs-energy minimisation over `water_Brown2026` and the ices (default Ih, II, III, V, VI; ice VII/X is
 left out until an updated model is available, pass `'ices', ...` to change). Boundaries are the G_i = G_j contours
 between neighbouring stable phases; triple points are refined by Newton on G_a = G_b = G_c. In (ρ,T) the density gaps
 between coexisting phases are the two-phase regions (grey), separated by the three-phase tie lines through the triple
@@ -499,7 +509,7 @@ SF_WPD_rhoT('rho', [850 1700], 'T', [150 500], 'P', [1e-10 1e4], 'xscale', 'line
 
 % the underlying data
 [fig, pm] = SF_WPD_PT();                             % pm = sf_phase_map(...): names, stable, rho_stable
-tp = sf_triple_points(pm, 'water3');                 % struct array: labels, P, T, rho
+tp = sf_triple_points(pm, 'water_Brown2026');                 % struct array: labels, P, T, rho
 ```
 
 Validity masks (on by default, see `internal/sf_phase_map.m`): an ice competes only where its spline is physical
@@ -507,11 +517,11 @@ Validity masks (on by default, see `internal/sf_phase_map.m`): an ice competes o
 (`sf_melt_T_dq2026`) above the triple-point pressure. Cells where no phase is available (the ice VII/X field) are grey
 and marked *not modelled*.
 
-![Full phase diagram in (P,T), Matlab](../assets/water3/water3_wpd_PT_matlab.png)
-![Full phase diagram in (rho,T), Matlab](../assets/water3/water3_wpd_rhoT_matlab.png)
-![(rho,T) zoom on the ices with the two-phase regions and triple-point tie lines, Matlab](../assets/water3/water3_wpd_rhoT_dense_matlab.png)
+![Full phase diagram in (P,T), Matlab](../assets/water_Brown2026/water3_wpd_PT_matlab.png)
+![Full phase diagram in (rho,T), Matlab](../assets/water_Brown2026/water3_wpd_rhoT_matlab.png)
+![(rho,T) zoom on the ices with the two-phase regions and triple-point tie lines, Matlab](../assets/water_Brown2026/water3_wpd_rhoT_dense_matlab.png)
 
-These functions evaluate `water3` at 10⁵–10⁶ states and warn at start (`SeaFreeze:longRuntime`; silence with
+These functions evaluate `water_Brown2026` at 10⁵–10⁶ states and warn at start (`SeaFreeze:longRuntime`; silence with
 `warning('off','SeaFreeze:longRuntime')`). Typical run times:
 
 | Default call | Python | Matlab |
@@ -522,12 +532,12 @@ These functions evaluate `water3` at 10⁵–10⁶ states and warn at start (`Se
 
 Measured on an Apple-silicon Mac (Matlab R2025b Intel build under Rosetta); times scale with the grid size (`nP`, `nT`) and depend on the machine. The Matlab functions issue a `SeaFreeze:longRuntime` warning at start.
 
-### `water3` as the liquid in the phase-boundary tools
+### `water_Brown2026` as the liquid in the phase-boundary tools
 
 ```matlab
-SF_WhichPhase({[0.1 300 800], [260 270 276 300]}, 'liquid', 'water3')   % 0 = liquid, 1 = Ih, ...
-r = SF_PhaseLines('Ih', 'water3');                                       % Ih, II, III, V, VI pairs with water3
-SF_WPD('liquid', 'water3')                                               % melting curves from water3
+SF_WhichPhase({[0.1 300 800], [260 270 276 300]}, 'liquid', 'water_Brown2026')   % 0 = liquid, 1 = Ih, ...
+r = SF_PhaseLines('Ih', 'water_Brown2026');                                       % Ih, II, III, V, VI pairs with water_Brown2026
+SF_WPD('liquid', 'water_Brown2026')                                               % melting curves from water_Brown2026
 ```
 
 ### Tutorial
@@ -535,8 +545,8 @@ SF_WPD('liquid', 'water3')                                               % melti
 [`examples/water3_tutorial.m`](examples/water3_tutorial.m) runs every example above (MATLAB or Octave) and saves the
 two figures below (set `outdir` before running to choose where).
 
-![water3 tutorial, Matlab](../assets/water3/water3_tutorial_matlab.png)
-![water3 tutorial: phase diagrams, Matlab](../assets/water3/water3_tutorial_diagrams_matlab.png)
+![water_Brown2026 tutorial, Matlab](../assets/water_Brown2026/water3_tutorial_matlab.png)
+![water_Brown2026 tutorial: phase diagrams, Matlab](../assets/water_Brown2026/water3_tutorial_diagrams_matlab.png)
 
 ## Tests
 
@@ -545,7 +555,7 @@ The MATLAB package ships with a function-style and classdef-style test suite plu
 ## Important remarks
 
 ### Water representation
-Ice Gibbs parametrizations are optimized for use with `water1` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will yield incorrect melting curves. `water2` and `water_IAPWS95` are provided for high-pressure extension and comparison only. Use `water1` for the 200–355 K, ≤2300 MPa range. `water3` (Helmholtz surface, 1.2 beta) shares the same reference state and reproduces the `water1` melting curves within 0.06 K up to 632 MPa; it is the phase to use for vapour, liquid–vapour and supercritical states (see its [range of validity](#range-of-validity)).
+Ice Gibbs parametrizations are optimized for use with `water_Bollengier2019` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will yield incorrect melting curves. `water_Brown2018` and `water_IAPWS95` are provided for high-pressure extension and comparison only. Use `water_Bollengier2019` for the 200–355 K, ≤2300 MPa range. `water_Brown2026` (Helmholtz surface, 1.2 beta) shares the same reference state and reproduces the `water_Bollengier2019` melting curves within 0.06 K up to 632 MPa; it is the phase to use for vapour, liquid–vapour and supercritical states (see its [range of validity](#range-of-validity)).
 
 ### Range of validity
 Stability prediction is considered valid down to 130 K (ice VI – ice XV transition). The Ih–II transition may be valid down to 73.4 K (Ih – XI). The VII/X representation extends to 1 TPa (1e6 MPa) and 2000 K.
@@ -557,7 +567,7 @@ Stability prediction is considered valid down to 130 K (ice VI – ice XV transi
 - [Journaux et al. (2020) JGR: Planets 125, e2019JE006176](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019JE006176)
 - [Wagner and Pruss (2002) J. Phys. Chem. Ref. Data 31, 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
 - [French and Redmer (2015) Phys. Rev. B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
-- water3: psi-spline Helmholtz surface stage5_23c, J. M. Brown & B. Journaux (lbf-thermo, 2026), in prep.
+- water_Brown2026: psi-spline Helmholtz surface stage5_23c, J. M. Brown & B. Journaux (lbf-thermo, 2026), in prep.
 - [Wagner, Riethmann, Feistel & Harvey (2011) J. Phys. Chem. Ref. Data 40, 043103](https://doi.org/10.1063/1.3657937) (IAPWS R14-08 sublimation and melting pressures)
 - [Bielska et al. (2013) Geophys. Res. Lett. 40, 6303–6307](https://doi.org/10.1002/2013GL058474) (NIST ice vapour-pressure measurements)
 

@@ -135,8 +135,8 @@ def get_rho_range(material):
 
 def _canonical(material):
     """Map GUI material names to the names used in _PAIRS."""
-    if material in ("water1", "water2", "water_IAPWS95"):
-        return "water1"
+    if material in ("water_Bollengier2019", "water_Brown2018", "water_IAPWS95"):
+        return "water_Bollengier2019"
     if material.startswith("NaClaq"):
         return "NaClaq"
     return material
@@ -154,7 +154,7 @@ def get_stability_boundaries(material):
             continue
         if matA == "NaClaq" or matB == "NaClaq":
             continue
-        if matA == "water1" or matB == "water1":
+        if matA == "water_Bollengier2019" or matB == "water_Bollengier2019":
             pass
         try:
             res = _phase_lines(matA, matB, segment="stable")

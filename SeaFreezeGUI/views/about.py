@@ -24,7 +24,7 @@ def render():
     SeaFreeze is based on the evaluation of Gibbs Local Basis Function (LBF)
     parametrizations for each phase, constructed to reproduce thermodynamic measurements
     across a wide range of pressures and temperatures relevant to planetary interiors and
-    high-pressure geophysics. **Water3** (SeaFreeze 1.2 beta) is a Helmholtz-energy surface
+    high-pressure geophysics. **water_Brown2026** (SeaFreeze 1.2 beta; formerly `water3`) is a Helmholtz-energy surface
     F(ρ, T) for fluid water — vapour, liquid and supercritical — used for the full phase
     diagram with the vapour, the saturation curve and the critical point.
 
@@ -74,8 +74,8 @@ def render():
     The ice Ih–VII/X melting curve above the VI–VII–water triple point (~2216 MPa, 354 K)
     uses the Gibbs energy representation of French & Redmer (2015).
 
-    For phase equilibrium calculations, **water1** (Bollengier et al., 2019) is recommended
-    over water2 or IAPWS95, as the ice Gibbs parametrizations are optimized against it.
+    For phase equilibrium calculations, **water_Bollengier2019** (Bollengier et al., 2019) is recommended
+    over water_Brown2018 or IAPWS95, as the ice Gibbs parametrizations are optimized against it.
     """)
 
     # ── Contributors ─────────────────────────────────────────────────────────

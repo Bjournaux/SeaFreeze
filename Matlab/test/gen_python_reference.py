@@ -12,7 +12,7 @@ Requires: numpy, scipy, hdf5storage, and the project's Python/ directory
 resolvable (this script prepends it to sys.path automatically).
 
 Notes on expected agreement with the MATLAB implementation:
-  * For pure phases (Ih, II, III, V, VI, VII_X_French, water1, water_IAPWS95)
+  * For pure phases (Ih, II, III, V, VI, VII_X_French, water_Bollengier2019, water_IAPWS95)
     the math is identical; any small numerical differences come from the
     spline evaluators (scipy splev vs. MATLAB fnval) and from any
     Bform->LBF representation mismatch between the two .mat files.
@@ -39,7 +39,7 @@ from seafreeze import seafreeze as sf  # noqa: E402
 
 def direct_getProp(PTm, phase, tdv_names, rhoT=False):
     """Evaluate through the public sf.getProp, exactly as users call it
-    (stitched NaClaq, Helmholtz water3, (rho,T) input).  The earlier bypass of
+    (stitched NaClaq, Helmholtz water_Brown2026, (rho,T) input).  The earlier bypass of
     getProp worked around a numpy-2 shear bug fixed in 1.1.2 and relied on a
     PhaseDesc field that no longer exists.
     """
@@ -135,10 +135,10 @@ def main():
     # ---- Liquid water ----
     P = np.arange(0.1, 2000.1, 500.0)
     T = np.arange(260.0, 460.0, 50.0)
-    add_case(cases, 'water1_grid', 'water1', grid(P, T), BASE, {'P': P, 'T': T})
+    add_case(cases, 'water1_grid', 'water_Bollengier2019', grid(P, T), BASE, {'P': P, 'T': T})
     Ps = np.array([100.0, 500.0, 1500.0])
     Ts = np.array([280.0, 320.0, 380.0])
-    add_case(cases, 'water1_scatter', 'water1', scatter(Ps, Ts), BASE,
+    add_case(cases, 'water1_scatter', 'water_Bollengier2019', scatter(Ps, Ts), BASE,
              {'P': Ps, 'T': Ts})
 
     P = np.array([1.0, 50.0, 200.0])
@@ -146,26 +146,26 @@ def main():
     add_case(cases, 'water_IAPWS95_grid', 'water_IAPWS95', grid(P, T), BASE,
              {'P': P, 'T': T})
 
-    # water2 — Brown 2018 EOS, valid up to 100 GPa.
+    # water_Brown2018 — Brown 2018 EOS, valid up to 100 GPa.
     P = np.array([100.0, 1000.0, 5000.0])
     T = np.array([300.0, 500.0, 800.0])
-    add_case(cases, 'water2_grid', 'water2', grid(P, T), BASE, {'P': P, 'T': T})
+    add_case(cases, 'water2_grid', 'water_Brown2018', grid(P, T), BASE, {'P': P, 'T': T})
 
-    # ---- water3: Helmholtz fluid (vapour, liquid, supercritical) ----
+    # ---- water_Brown2026: Helmholtz fluid (vapour, liquid, supercritical) ----
     P = np.array([0.1, 10.0, 100.0, 1000.0])
     T = np.array([300.0, 400.0, 500.0, 700.0])
-    add_case(cases, 'water3_grid', 'water3', grid(P, T), BASE, {'P': P, 'T': T})
+    add_case(cases, 'water3_grid', 'water_Brown2026', grid(P, T), BASE, {'P': P, 'T': T})
     Ps = np.array([1e-3, 0.101325, 30.0, 500.0, 2000.0])        # vapour, liquid, supercritical, ...
     Ts = np.array([300.0, 298.15, 700.0, 350.0, 450.0])
-    add_case(cases, 'water3_scatter', 'water3', scatter(Ps, Ts), BASE, {'P': Ps, 'T': Ts})
+    add_case(cases, 'water3_scatter', 'water_Brown2026', scatter(Ps, Ts), BASE, {'P': Ps, 'T': Ts})
 
-    # ---- (rho,T) input: Helmholtz water3 (direct) and Gibbs water1 (via rho2P) ----
+    # ---- (rho,T) input: Helmholtz water_Brown2026 (direct) and Gibbs water_Bollengier2019 (via rho2P) ----
     R = np.array([1e-2, 997.0, 1100.0, 1250.0])
     Tr = np.array([400.0, 298.15, 300.0, 350.0])
-    add_case(cases, 'water3rhoT_scatter', 'water3', scatter(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
+    add_case(cases, 'water3rhoT_scatter', 'water_Brown2026', scatter(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
     R = np.array([1000.0, 1050.0, 1100.0])
     Tr = np.array([280.0, 300.0, 330.0])
-    add_case(cases, 'water1rhoT_grid', 'water1', grid(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
+    add_case(cases, 'water1rhoT_grid', 'water_Bollengier2019', grid(R, Tr), BASE, {'P': R, 'T': Tr}, rhoT=True)
 
     # ---- Aqueous NaCl (3D) ----
     P = np.arange(0.1, 500.1, 100.0)

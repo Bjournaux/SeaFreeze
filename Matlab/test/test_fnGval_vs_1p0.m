@@ -1,6 +1,6 @@
 function test_fnGval_vs_1p0()
 % Regression: compare new fnGval against frozen fnGval_1p0 baseline for
-% every property they share, across ices / water1 / NaClaq, in both grid
+% every property they share, across ices / water_Bollengier2019 / NaClaq, in both grid
 % and scatter modes.
 %
 % Properties unique to the new fnGval (gamma_Gruneisen, Js, F, Vw, xs, xw,
@@ -44,7 +44,7 @@ cases_pure = {
     sf_load_spline('III'),   'iceIII', {200:20:340, 230:5:265}, [220 245; 280 250; 340 260]
     sf_load_spline('V'),     'iceV',   {350:20:600, 240:5:275}, [400 250; 500 260; 600 270]
     sf_load_spline('VI'),    'iceVI',  {700:50:1500, 240:5:300}, [800 255; 1000 260; 1200 280]
-    sf_load_spline('water1'),'water1', {0.1:50:500, 250:5:350}, [100 280; 200 300; 400 320]
+    sf_load_spline('water_Bollengier2019'),'water_Bollengier2019', {0.1:50:500, 250:5:350}, [100 280; 200 300; 400 320]
 };
 
 % Properties the OLD fnGval supports — these are what we compare.

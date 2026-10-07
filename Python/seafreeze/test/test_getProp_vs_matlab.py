@@ -194,7 +194,7 @@ class TestGetPropVsMatlab(ut.TestCase):
     def test_NaClaq_grid(self):             self._run_case('NaClaq_grid')
     def test_NaClaq_stitch_scatter(self):   self._run_case('NaClaq_stitch_scatter')
     def test_NaClaq_stitch_grid(self):      self._run_case('NaClaq_stitch_grid')
-    # 1.2: Helmholtz water3 and (rho,T) input
+    # 1.2: Helmholtz water_Brown2026 and (rho,T) input
     def test_water3_scatter(self):          self._run_case('water3_scatter')
     def test_water3_grid(self):             self._run_case('water3_grid')
     def test_water3_rhoT(self):             self._run_case('water3_rhoT')

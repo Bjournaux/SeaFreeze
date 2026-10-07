@@ -10,15 +10,15 @@ Built with [Streamlit](https://streamlit.io/) and [Plotly](https://plotly.com/py
 
 ### Property Calculator
 
-Compute thermodynamic properties for any SeaFreeze material (Ice Ih–VII/X, Water, NaCl(aq), and **water3**, the 1.2-beta Helmholtz fluid: vapour, liquid and supercritical) with adaptive visualization that adjusts to your input:
+Compute thermodynamic properties for any SeaFreeze material (Ice Ih–VII/X, Water, NaCl(aq), and **water_Brown2026**, the 1.2-beta Helmholtz fluid: vapour, liquid and supercritical) with adaptive visualization that adjusts to your input:
 
 - **Single point** — returns a table of all properties with values and units
 - **1-D sweep** — vary one coordinate (P, ρ, T, or m) to produce interactive line plots
 - **2-D grid** — vary two coordinates to produce heatmaps, heatmaps with isocontours, or 3-D surface plots
 
-Input in **(P, T)** or **(ρ, T)** for every pure phase (the pressure is then an output; native for water3, solved point by point for the Gibbs phases, so those grids are capped at 2500 points). For water3 at (P, T) choose the **branch**: stable (lower Gibbs energy), liquid or vapour. Every P, ρ and T range can be **log-spaced** and drawn on a log axis, and 1-D plots have a log y-axis option.
+Input in **(P, T)** or **(ρ, T)** for every pure phase (the pressure is then an output; native for water_Brown2026, solved point by point for the Gibbs phases, so those grids are capped at 2500 points). For water_Brown2026 at (P, T) choose the **branch**: stable (lower Gibbs energy), liquid or vapour. Every P, ρ and T range can be **log-spaced** and drawn on a log axis, and 1-D plots have a log y-axis option.
 
-All modes support CSV export. The 2-D mode includes selectable color scales, adjustable contour density, and optional stability field boundary overlays (for water3: the full phase diagram — boundaries, saturation curve, critical and triple points).
+All modes support CSV export. The 2-D mode includes selectable color scales, adjustable contour density, and optional stability field boundary overlays (for water_Brown2026: the full phase diagram — boundaries, saturation curve, critical and triple points).
 
 | Single point | 1-D sweep |
 |:---:|:---:|
@@ -28,7 +28,7 @@ All modes support CSV export. The 2-D mode includes selectable color scales, adj
 |:---:|:---:|:---:|
 | ![Heatmap](screenshots/Ice%20V%2C%20P%20and%20T%20range%20Heatmap.png) | ![Isocontours](screenshots/Ice%20V%2C%20P%20and%20T%20range%20Heatmap%2Bisocontour.png) | ![3D](screenshots/Ice%20V%2C%20P%20and%20T%20range%203D%20surface.png) |
 
-### Phase Diagram — full diagram (water3 + ices)
+### Phase Diagram — full diagram (water_Brown2026 + ices)
 
 The whole H₂O phase diagram — vapour, liquid, supercritical fluid, the critical point and ices Ih, II, III, V, VI — by Gibbs-energy minimisation (`seafreeze.phase_diagram_PT` / `phase_diagram_rhoT`), in **P–T** or **ρ–T**:
 
@@ -55,7 +55,7 @@ After changing the SeaFreeze library or the default window/resolution, regenerat
 
 Interactive water phase diagram with selectable phase boundaries:
 
-- Checkboxes for each ice polymorph (Ih, II, III, V, VI) and liquid water; liquid **water1** or **water3**
+- Checkboxes for each ice polymorph (Ih, II, III, V, VI) and liquid water; liquid **water_Bollengier2019** or **water_Brown2026**
 - Log or linear P and T axes
 - Toggle between stable, metastable, or all segments
 - Overlay NaCl(aq) melting curves at user-specified molalities

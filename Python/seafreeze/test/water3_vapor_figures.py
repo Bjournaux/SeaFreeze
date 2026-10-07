@@ -1,9 +1,9 @@
-"""Vapour-side validation figures for the Helmholtz fluid 'water3'.
+"""Vapour-side validation figures for the Helmholtz fluid 'water_Brown2026'.
 
     python3 -m seafreeze.test.water3_vapor_figures OUTDIR [NISTDIR] [IAPWS95_DATA_DIR]
 
 Writes to OUTDIR:
-  water3_sublimation.png     ice Ih sublimation pressure: water3 (+ dilute-vapour
+  water3_sublimation.png     ice Ih sublimation pressure: water_Brown2026 (+ dilute-vapour
                              extension below 230 K) vs IAPWS R14-08 and the NIST
                              measurements of Bielska et al. (2013); supercooled-
                              liquid vapour pressure for context
@@ -91,23 +91,23 @@ def sublimation_figure(outdir):
     fig, (ax, ax2) = plt.subplots(1, 2, figsize=(13, 5.2))
     ax.semilogy(Text, cx.psub_iapws(Text) * 1e6, ':', color=CREF, lw=1.6)
     ax.semilogy(Tfull, cx.psub_iapws(Tfull) * 1e6, ':', color=CREF, lw=1.6, label='IAPWS R14-08 (Wagner et al. 2011)')
-    ax.semilogy(Tfull, full.P * 1e6, '-', color=C3, lw=2.2, label='water3 vapour + ice Ih (SeaFreeze)')
-    ax.semilogy(Text, ext.P * 1e6, '--', color=C3, lw=1.6, label='water3 dilute-vapour extension (< 230 K)')
-    ax.semilogy(Tl, sat.P * 1e6, '-', color=INK2, lw=1.2, label='water3 liquid–vapour (supercooled < 273.16 K)')
+    ax.semilogy(Tfull, full.P * 1e6, '-', color=C3, lw=2.2, label='water_Brown2026 vapour + ice Ih (SeaFreeze)')
+    ax.semilogy(Text, ext.P * 1e6, '--', color=C3, lw=1.6, label='water_Brown2026 dilute-vapour extension (< 230 K)')
+    ax.semilogy(Tl, sat.P * 1e6, '-', color=INK2, lw=1.2, label='water_Brown2026 liquid–vapour (supercooled < 273.16 K)')
     ax.errorbar(Tb, pb, yerr=ub, fmt='o', ms=5, color=CDATA, mfc='white', mew=1.4,
                 label='NIST measurements (Bielska et al. 2013)')
     ax.plot(273.16, 611.657, 's', color=INK, ms=6)
     ax.annotate('triple point', (273.16, 611.657), xytext=(-70, 8), textcoords='offset points', color=INK2)
     ax.axvline(230, color=INK2, lw=0.8, ls='-.')
-    ax.text(231, 3e2, 'water3\nT$_{min}$ = 230 K', color=INK2, fontsize=9, va='top')
+    ax.text(231, 3e2, 'water_Brown2026\nT$_{min}$ = 230 K', color=INK2, fontsize=9, va='top')
     ax.set_xlabel('Temperature (K)'); ax.set_ylabel('Vapour pressure (Pa)')
     ax.set_title('Sublimation pressure of ice Ih', loc='left', color=INK)
     ax.legend(loc='lower right', fontsize=8.5)
     ax.set_xlim(170, 302)
 
     ax2.axhline(0, color=CREF, lw=1.2, ls=':')
-    ax2.plot(Tfull, 100 * (full.P / cx.psub_iapws(Tfull) - 1), '-', color=C3, lw=2.2, label='water3 (full surface)')
-    ax2.plot(Text, 100 * (ext.P / cx.psub_iapws(Text) - 1), '--', color=C3, lw=1.6, label='water3 dilute-vapour extension')
+    ax2.plot(Tfull, 100 * (full.P / cx.psub_iapws(Tfull) - 1), '-', color=C3, lw=2.2, label='water_Brown2026 (full surface)')
+    ax2.plot(Text, 100 * (ext.P / cx.psub_iapws(Text) - 1), '--', color=C3, lw=1.6, label='water_Brown2026 dilute-vapour extension')
     ax2.errorbar(Tb, 100 * (pb / pref_b - 1), yerr=100 * ub / pref_b, fmt='o', ms=5, color=CDATA,
                  mfc='white', mew=1.4, capsize=2, label='NIST Bielska et al. 2013 (±1σ)')
     ax2.axvline(230, color=INK2, lw=0.8, ls='-.')
@@ -119,7 +119,7 @@ def sublimation_figure(outdir):
     f = os.path.join(outdir, 'water3_sublimation.png')
     fig.savefig(f, dpi=150); plt.close(fig)
     dev = 100 * (full.P / cx.psub_iapws(Tfull) - 1)
-    print(f'sublimation 230-273.16 K: water3 vs R14-08 {dev.min():+.4f} .. {dev.max():+.4f} %')
+    print(f'sublimation 230-273.16 K: water_Brown2026 vs R14-08 {dev.min():+.4f} .. {dev.max():+.4f} %')
     return f
 
 
@@ -135,7 +135,7 @@ def vapor_density_figure(outdir, nistdir, datadir):
 
     fig, axs = plt.subplots(2, 2, figsize=(13, 9.5))
     ax, ax2, ax3, ax4 = axs.ravel()
-    ax.semilogy(Tf, satf.rho_B, '-', color=C3, lw=2.2, label='water3 (SeaFreeze)')
+    ax.semilogy(Tf, satf.rho_B, '-', color=C3, lw=2.2, label='water_Brown2026 (SeaFreeze)')
     ax.semilogy(Tn[::12], rvn[::12], 'o', ms=4, color=CREF, mfc='white', mew=1.2,
                 label='NIST WebBook (IAPWS-95)')
     ax2.plot(Tn, 100 * (sat.rho_B / rvn - 1), 'o', ms=3, color=CREF, mfc='white', mew=1.0,
@@ -154,7 +154,7 @@ def vapor_density_figure(outdir, nistdir, datadir):
     ax.set_title('Saturated vapour density', loc='left', color=INK)
     ax.legend(loc='lower right', fontsize=8.5)
     ax2.axhline(0, color=INK2, lw=0.8)
-    ax2.set_xlabel('Temperature (K)'); ax2.set_ylabel('100 · (water3 / reference − 1)  (%)')
+    ax2.set_xlabel('Temperature (K)'); ax2.set_ylabel('100 · (water_Brown2026 / reference − 1)  (%)')
     ax2.set_title('Saturated vapour: deviations', loc='left', color=INK)
     ax2.set_ylim(-0.3, 0.6)
     ax2.legend(loc='lower left', fontsize=8.5)
@@ -170,19 +170,19 @@ def vapor_density_figure(outdir, nistdir, datadir):
         o = np.argsort(P); P, rn = P[o], rn[o]
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            r3 = sf.getProp(_scatter(P, np.full(P.size, T)), 'water3', defpath, 'rho', branch='vapor').rho
+            r3 = sf.getProp(_scatter(P, np.full(P.size, T)), 'water_Brown2026', defpath, 'rho', branch='vapor').rho
         ax3.loglog(P, r3, '-', color=cshade, lw=2)
         ax3.loglog(P[::4], rn[::4], 'o', ms=3.5, color=CREF, mfc='white', mew=1.0)
         ax3.annotate(f'{T} K', (P[-1], r3[-1]), xytext=(4, 0), textcoords='offset points',
                      color=INK2, fontsize=9, va='center')
         ax4.semilogx(P, 100 * (r3 / rn - 1), '-', color=cshade, lw=2, label=f'{T} K')
-    ax3.plot([], [], '-', color=C3, lw=2, label='water3 (SeaFreeze)')
+    ax3.plot([], [], '-', color=C3, lw=2, label='water_Brown2026 (SeaFreeze)')
     ax3.plot([], [], 'o', ms=3.5, color=CREF, mfc='white', mew=1.0, label='NIST WebBook (IAPWS-95)')
     ax3.set_xlabel('Pressure (MPa)'); ax3.set_ylabel('Density (kg/m³)')
     ax3.set_title('Vapour / supercritical isotherms (to saturation)', loc='left', color=INK)
     ax3.legend(loc='upper left', fontsize=8.5)
     ax4.axhline(0, color=INK2, lw=0.8)
-    ax4.set_xlabel('Pressure (MPa)'); ax4.set_ylabel('100 · (ρ$_{water3}$ / ρ$_{NIST}$ − 1)  (%)')
+    ax4.set_xlabel('Pressure (MPa)'); ax4.set_ylabel('100 · (ρ$_{water_Brown2026}$ / ρ$_{NIST}$ − 1)  (%)')
     ax4.set_title('Isotherm density deviations from NIST WebBook', loc='left', color=INK)
     ax4.legend(loc='upper left', fontsize=8.5, ncol=2)
     fig.tight_layout()

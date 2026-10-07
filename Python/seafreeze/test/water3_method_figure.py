@@ -46,7 +46,7 @@ def _isotherm(sp, rho, T):
 
 
 def make(outdir):
-    sp = _load_spline(defpath, 'water3')
+    sp = _load_spline(defpath, 'water_Brown2026')
     fig, axs = plt.subplots(2, 2, figsize=(13.5, 10))
     (axA, axB), (axC, axD) = axs
 
@@ -59,8 +59,8 @@ def make(outdir):
     axA.plot(rho, Pm, '-', color=C3, lw=2, label='dP/dρ > 0 (mechanically stable)')
     axA.plot(rho, Pu, '-', color=INK2, lw=1.2, alpha=0.7, label='dP/dρ < 0 (spinodal region)')
     axA.axhline(Pt, color=CV, lw=1.2, ls='--')
-    rv = sf.getProp(_sc([Pt], [T]), 'water3', defpath, 'rho', branch='vapor').rho[0]
-    rl = sf.getProp(_sc([Pt], [T]), 'water3', defpath, 'rho', branch='liquid').rho[0]
+    rv = sf.getProp(_sc([Pt], [T]), 'water_Brown2026', defpath, 'rho', branch='vapor').rho[0]
+    rl = sf.getProp(_sc([Pt], [T]), 'water_Brown2026', defpath, 'rho', branch='liquid').rho[0]
     axA.plot([rv], [Pt], 'o', color=CV, ms=9, mfc='white', mew=2, label=f'vapour root  ρ = {rv:.3f}')
     axA.plot([rl], [Pt], 's', color=CL, ms=9, mfc='white', mew=2, label=f'liquid root  ρ = {rl:.1f}')
     axA.set_xscale('log'); axA.set_yscale('symlog', linthresh=1e-2)
@@ -75,8 +75,8 @@ def make(outdir):
     Pg = np.geomspace(0.02, 1.0, 120)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        gl = sf.getProp(_sc(Pg, np.full(Pg.size, T)), 'water3', defpath, 'G', branch='liquid').G
-        gv = sf.getProp(_sc(Pg, np.full(Pg.size, T)), 'water3', defpath, 'G', branch='vapor').G
+        gl = sf.getProp(_sc(Pg, np.full(Pg.size, T)), 'water_Brown2026', defpath, 'G', branch='liquid').G
+        gv = sf.getProp(_sc(Pg, np.full(Pg.size, T)), 'water_Brown2026', defpath, 'G', branch='vapor').G
     ps = sf.saturation([T]).P[0]
     axB.plot(Pg, gl / 1e3, '-', color=CL, lw=2, label='liquid root')
     axB.plot(Pg, gv / 1e3, '-', color=CV, lw=2, label='vapour root')
@@ -95,7 +95,7 @@ def make(outdir):
     rho2 = np.linspace(80, 620, 5000)
     P2, Kt2, _ = _isotherm(sp, rho2, T2)
     s2 = sf.saturation([T2])
-    axC.plot(rho2, P2, '-', color=C3, lw=1.8, label=f'water3 isotherm {T2} K')
+    axC.plot(rho2, P2, '-', color=C3, lw=1.8, label=f'water_Brown2026 isotherm {T2} K')
     axC.axhline(s2.P[0], color=INK2, lw=1, ls='-.', label=f'p$_σ$ = {s2.P[0]:.3f} MPa (Maxwell)')
     xs = np.geomspace(1e-12, 16000, 600)
     xc = xs[(xs > 80) & (xs < 620)]
@@ -118,15 +118,15 @@ def make(outdir):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         gi = sf.getProp(_sc(Pd, np.full(Pd.size, T3)), 'Ih', defpath, 'G').G
-        gvv = sf.getProp(_sc(Pd, np.full(Pd.size, T3)), 'water3', defpath, 'G', branch='vapor').G
-    axD.plot(Pd * 1e6, (gvv - gi) / 1e3, '-', color=C3, lw=2, label='G$_{vapour}$(water3) − G$_{ice Ih}$')
+        gvv = sf.getProp(_sc(Pd, np.full(Pd.size, T3)), 'water_Brown2026', defpath, 'G', branch='vapor').G
+    axD.plot(Pd * 1e6, (gvv - gi) / 1e3, '-', color=C3, lw=2, label='G$_{vapour}$(water_Brown2026) − G$_{ice Ih}$')
     axD.axhline(0, color=INK2, lw=0.8)
     # Newton iterates from a deliberately poor start (4x R14-08)
     lnP = np.log(4 * cx.psub_iapws(T3)); its = []
     for _ in range(6):
         P = np.exp(lnP)
         a = sf.getProp(_sc([P], [T3]), 'Ih', defpath, 'G', 'rho')
-        b = sf.getProp(_sc([P], [T3]), 'water3', defpath, 'G', 'rho', branch='vapor')
+        b = sf.getProp(_sc([P], [T3]), 'water_Brown2026', defpath, 'G', 'rho', branch='vapor')
         its.append((P, (b.G[0] - a.G[0])))
         lnP -= (a.G[0] - b.G[0]) / (P * 1e6 * (1 / a.rho[0] - 1 / b.rho[0]))
     for k, (P, dg) in enumerate(its):

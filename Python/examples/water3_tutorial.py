@@ -1,9 +1,9 @@
-"""SeaFreeze tutorial: the Helmholtz fluid 'water3', density input, and
+"""SeaFreeze tutorial: the Helmholtz fluid 'water_Brown2026', density input, and
 liquid-vapour-ice coexistence.
 
     python3 water3_tutorial.py [OUTDIR]
 
-Runs every example of the "water3" section of the Python README and saves
+Runs every example of the "water_Brown2026" section of the Python README and saves
 water3_tutorial_python.png in OUTDIR (default: this folder).
 """
 import os
@@ -27,53 +27,53 @@ def scatter(*cols):
 
 
 # ---------------------------------------------------------------------------
-# 1. water3 at (P, T): same call and outputs as every other SeaFreeze phase
+# 1. water_Brown2026 at (P, T): same call and outputs as every other SeaFreeze phase
 # ---------------------------------------------------------------------------
-out = sf.getProp(scatter([0.101325, 100, 1000], [298.15, 300, 350]), 'water3')
-print('1. water3 at 0.1/100/1000 MPa:')
+out = sf.getProp(scatter([0.101325, 100, 1000], [298.15, 300, 350]), 'water_Brown2026')
+print('1. water_Brown2026 at 0.1/100/1000 MPa:')
 print('   rho =', np.round(out.rho, 3), 'kg/m3;  Cp =', np.round(out.Cp, 1), 'J/kg/K;  vel =',
       np.round(out.vel, 1), 'm/s')
 
 # grid input: rows are pressures, columns temperatures
 grid = np.array([np.array([0.1, 50, 500]), np.array([280., 300, 320])], dtype=object)
-g3 = sf.getProp(grid, 'water3', sf.seafreeze.defpath, 'rho', 'alpha')
-g1 = sf.getProp(grid, 'water1', sf.seafreeze.defpath, 'rho', 'alpha')
-print('   grid rho water3 - water1 (kg/m3):\n', np.round(g3.rho - g1.rho, 3))
+g3 = sf.getProp(grid, 'water_Brown2026', sf.seafreeze.defpath, 'rho', 'alpha')
+g1 = sf.getProp(grid, 'water_Bollengier2019', sf.seafreeze.defpath, 'rho', 'alpha')
+print('   grid rho water_Brown2026 - water_Bollengier2019 (kg/m3):\n', np.round(g3.rho - g1.rho, 3))
 
 # ---------------------------------------------------------------------------
 # 2. One fluid, two branches: the stable phase is the lower Gibbs energy
 # ---------------------------------------------------------------------------
 T = np.linspace(280, 500, 221)
-stable = sf.getProp(scatter(np.full(T.size, 0.101325), T), 'water3', sf.seafreeze.defpath, 'rho', 'G')
-liquid = sf.getProp(scatter(np.full(T.size, 0.101325), T), 'water3', sf.seafreeze.defpath, 'rho', 'G',
+stable = sf.getProp(scatter(np.full(T.size, 0.101325), T), 'water_Brown2026', sf.seafreeze.defpath, 'rho', 'G')
+liquid = sf.getProp(scatter(np.full(T.size, 0.101325), T), 'water_Brown2026', sf.seafreeze.defpath, 'rho', 'G',
                     branch='liquid')           # superheated liquid above 373.124 K
 Tb = T[np.argmax(stable.rho < 100)]
 print(f'2. at 0.101325 MPa the stable branch switches to vapour at {Tb:.0f} K '
       f'(saturation temperature 373.124 K)')
 
 # ---------------------------------------------------------------------------
-# 3. Density-temperature input, for water3 AND the Gibbs splines
+# 3. Density-temperature input, for water_Brown2026 AND the Gibbs splines
 # ---------------------------------------------------------------------------
 rT = scatter([1000.0, 1100.0], [300.0, 300.0])
-w3 = sf.getProp(rT, 'water3', sf.seafreeze.defpath, 'P', 'Cp', rhoT=True)       # direct
-w1 = sf.getProp(rT, 'water1', sf.seafreeze.defpath, 'P', 'Cp', rhoT=True)       # via rho2P
-print('3. P at 1000 and 1100 kg/m3, 300 K:  water3', np.round(w3.P, 3), 'MPa;  water1',
+w3 = sf.getProp(rT, 'water_Brown2026', sf.seafreeze.defpath, 'P', 'Cp', rhoT=True)       # direct
+w1 = sf.getProp(rT, 'water_Bollengier2019', sf.seafreeze.defpath, 'P', 'Cp', rhoT=True)       # via rho2P
+print('3. P at 1000 and 1100 kg/m3, 300 K:  water_Brown2026', np.round(w3.P, 3), 'MPa;  water_Bollengier2019',
       np.round(w1.P, 3), 'MPa')
 ice = sf.getProp(scatter([1330.0], [260.0]), 'VI', sf.seafreeze.defpath, 'P', 'Vp', 'Vs', rhoT=True)
 brine = sf.getProp(scatter([1050.0], [300.0], [1.0]), 'NaClaq', sf.seafreeze.defpath, 'P', 'muw', rhoT=True)
 print(f'   ice VI at 1330 kg/m3, 260 K: P = {ice.P[0]:.1f} MPa, Vp = {ice.Vp[0]:.0f} m/s;  '
       f'NaCl(aq) 1 mol/kg at 1050 kg/m3, 300 K: P = {brine.P[0]:.2f} MPa')
-print('   rho2P (water3):', np.round(sf.rho2P([997.047, 1100], [298.15, 300], 'water3'), 4), 'MPa')
+print('   rho2P (water_Brown2026):', np.round(sf.rho2P([997.047, 1100], [298.15, 300], 'water_Brown2026'), 4), 'MPa')
 
 # ---------------------------------------------------------------------------
-# 4. Phase equilibria with water3 as the liquid
+# 4. Phase equilibria with water_Brown2026 as the liquid
 # ---------------------------------------------------------------------------
 pg = np.array([np.array([0.1, 300, 800]), np.array([260., 270, 276, 300])], dtype=object)
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
-    print('4. whichphase (0 = liquid, 1 = Ih, 6 = VI):\n', sf.whichphase(pg, 'water3'))
+    print('4. whichphase (0 = liquid, 1 = Ih, 6 = VI):\n', sf.whichphase(pg, 'water_Brown2026'))
 # down to the triple-point pressure (the default grid starts at 0.1 MPa)
-line = sf.phase_lines('Ih', 'water3', P=np.geomspace(6.2e-4, 209, 300), T=np.arange(250, 273.3, 0.02))
+line = sf.phase_lines('Ih', 'water_Brown2026', P=np.geomspace(6.2e-4, 209, 300), T=np.arange(250, 273.3, 0.02))
 
 # ---------------------------------------------------------------------------
 # 5. Saturation and sublimation curves
@@ -100,23 +100,23 @@ ax.legend(fontsize=8.5)
 ax = axs[0, 1]
 rho = np.linspace(950, 1250, 61)
 for Tq, ls in [(280.0, '-'), (350.0, '--')]:
-    p3 = sf.getProp(np.array([rho, np.array([Tq])], dtype=object), 'water3', sf.seafreeze.defpath,
+    p3 = sf.getProp(np.array([rho, np.array([Tq])], dtype=object), 'water_Brown2026', sf.seafreeze.defpath,
                     'P', rhoT=True).P[:, 0]
-    p1 = sf.getProp(np.array([rho, np.array([Tq])], dtype=object), 'water1', sf.seafreeze.defpath,
+    p1 = sf.getProp(np.array([rho, np.array([Tq])], dtype=object), 'water_Bollengier2019', sf.seafreeze.defpath,
                     'P', rhoT=True).P[:, 0]
-    ax.plot(rho, p3, ls, color=C3, lw=2, label=f'water3, {Tq:.0f} K')
-    ax.plot(rho, p1, ls, color=C1, lw=1.4, label=f'water1 (Gibbs, via rho2P), {Tq:.0f} K')
+    ax.plot(rho, p3, ls, color=C3, lw=2, label=f'water_Brown2026, {Tq:.0f} K')
+    ax.plot(rho, p1, ls, color=C1, lw=1.4, label=f'water_Bollengier2019 (Gibbs, via rho2P), {Tq:.0f} K')
 ax.set_xlabel('Density (kg/m³)'); ax.set_ylabel('Pressure (MPa)')
 ax.set_title('(ρ,T) input: isotherms P(ρ)', loc='left')
 ax.legend(fontsize=8)
 
 ax = axs[1, 0]
-ax.semilogy(sat.T, sat.P * 1e6, '-', color=C3, lw=2, label='liquid–vapour (water3)')
+ax.semilogy(sat.T, sat.P * 1e6, '-', color=C3, lw=2, label='liquid–vapour (water_Brown2026)')
 ax.semilogy(Tsub[Tsub >= 230], sub.P[Tsub >= 230] * 1e6, '-', color=CV, lw=2, label='ice Ih–vapour')
 ax.semilogy(Tsub[Tsub < 230], sub.P[Tsub < 230] * 1e6, '--', color=CV, lw=1.6,
             label='ice Ih–vapour, dilute-vapour extension')
 o = np.argsort(line.P)
-ax.semilogy(line.T[o], line.P[o] * 1e6, '-', color=C1, lw=2, label='ice Ih–liquid (water3)')
+ax.semilogy(line.T[o], line.P[o] * 1e6, '-', color=C1, lw=2, label='ice Ih–liquid (water_Brown2026)')
 ax.plot(273.16, 611.657, 'ks', ms=5)
 ax.set_xlabel('Temperature (K)'); ax.set_ylabel('Pressure (Pa)')
 ax.set_title('Triple point region: melting, boiling, sublimation', loc='left')
@@ -126,9 +126,9 @@ ax.legend(fontsize=8, loc='lower right')
 ax = axs[1, 1]
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
-    sf.wpd(ax=ax, liquid='water3', phase_labels=True)
+    sf.wpd(ax=ax, liquid='water_Brown2026', phase_labels=True)
 ax.set_title('')
-ax.set_title("sf.wpd(liquid='water3')", loc='left')
+ax.set_title("sf.wpd(liquid='water_Brown2026')", loc='left')
 ax.xaxis.label.set_size(10); ax.yaxis.label.set_size(10)
 fig.tight_layout()
 

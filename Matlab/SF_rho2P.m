@@ -14,7 +14,7 @@ function P_out = SF_rho2P(rho_target, T, material, varargin)
 %   rho_target  – target density (kg/m³), scalar or array
 %   T           – temperature (K), scalar or array (broadcast against rho_target)
 %   material    – any SF_getprop material string
-%                 ('water1', 'water2', 'water_IAPWS95',
+%                 ('water_Bollengier2019', 'water_Brown2018', 'water_IAPWS95',
 %                  'Ih','II','III','V','VI','VII_X_French',
 %                  'NaClaq', 'NaClaq_LP', 'NaClaq_HP', 'NaClaq_5GPa_2024')
 %   m           – (NaClaq only) molality in mol/kg, scalar or array matching
@@ -41,7 +41,7 @@ function P_out = SF_rho2P(rho_target, T, material, varargin)
 %
 % Examples:
 %   % Compressed liquid water
-%   P = SF_rho2P(1100, 300, 'water1')       % ≈ 300 MPa
+%   P = SF_rho2P(1100, 300, 'water_Bollengier2019')       % ≈ 300 MPa
 %
 %   % Ice VI scatter
 %   P = SF_rho2P([1310 1350 1390], [255 260 265], 'VI')
@@ -56,7 +56,7 @@ defs = sf_material_defs();
 if ~sf_ischarlike(material)
     error('SF_rho2P:badInput', '''material'' must be a string or char vector.');
 end
-material = char(material);
+material = sf_material_name(char(material));   % renamed materials
 if ~ismember(material, defs.known_materials)
     error('SF_rho2P:unknownMaterial', ...
           'Unknown material ''%s''. Valid: %s', ...
@@ -138,14 +138,14 @@ P_hi = rng.P(2);
 
 % P_newton_lo: domain floor for Newton clipping and bisection.
 % A tiny positive epsilon is used when P_lo == 0 to avoid the very few EOS
-% (e.g. water2) that diverge at P = 0 exactly.
+% (e.g. water_Brown2018) that diverge at P = 0 exactly.
 P_newton_lo = P_lo;
 if P_lo == 0
     P_newton_lo = 1e-3;   % 0.001 MPa — well within any supported domain
 end
 
 % P_search_lo: interior starting point for the initial Newton-step guess only.
-% For wide domains (water2: P_hi = 100 000 MPa) this keeps the seed away from
+% For wide domains (water_Brown2018: P_hi = 100 000 MPa) this keeps the seed away from
 % the divergent low-P tail; for narrow ones it equals P_newton_lo.
 P_search_lo = max(P_newton_lo, (P_hi - P_lo) * 0.001);
 

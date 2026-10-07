@@ -1,5 +1,5 @@
 function test_water3_internals()
-% Tests for the 1.2 internals behind water3 and the phase diagrams:
+% Tests for the 1.2 internals behind water_Brown2026 and the phase diagrams:
 %   psi_val grid mode, the sf_load_spline cache, the SeaFreeze:longRuntime and
 %   SeaFreeze:diluteExtension warnings, and SF_WPD with a Helmholtz liquid.
 % Runs under MATLAB and GNU Octave.
@@ -9,7 +9,7 @@ addpath(fullfile(fileparts(here), 'internal'));
 addpath(fullfile(fileparts(here), 'internal', 'compat'));
 addpath(fileparts(here));
 np = 0; nf = 0;
-sp = sf_load_spline('water3');
+sp = sf_load_spline('water_Brown2026');
 
 % =========================================================================
 % 1. psi_val 'grid' mode == scattered evaluation (all regimes)
@@ -41,8 +41,8 @@ end
 % 2. sf_load_spline cache: identical content, no second file read
 % =========================================================================
 clear sf_load_spline
-tic; a = sf_load_spline('water3'); t1 = toc;
-tic; b = sf_load_spline('water3'); t2 = toc;
+tic; a = sf_load_spline('water_Brown2026'); t1 = toc;
+tic; b = sf_load_spline('water_Brown2026'); t2 = toc;
 [np,nf] = check(sprintf('sf_load_spline cache: identical struct, repeat %.1f ms vs first %.1f ms', ...
     1e3 * t2, 1e3 * t1), isequal(a, b) && t2 < t1 / 5, np, nf);
 c = sf_load_spline('Ih');
@@ -56,22 +56,22 @@ LR = 'SeaFreeze:longRuntime';
     issues_warning(@() SF_WPD_PT('nP', 25, 'nT', 20), LR), np, nf);
 [np,nf] = check('SF_WPD_rhoT warns SeaFreeze:longRuntime', ...
     issues_warning(@() SF_WPD_rhoT('nP', 60, 'nT', 20, 'nrho', 40), LR), np, nf);
-[np,nf] = check('SF_WPD with water1 does not warn', ...
-    ~issues_warning(@() SF_WPD('liquid', 'water1', 'labels', false), LR), np, nf);
+[np,nf] = check('SF_WPD with water_Bollengier2019 does not warn', ...
+    ~issues_warning(@() SF_WPD('liquid', 'water_Bollengier2019', 'labels', false), LR), np, nf);
 
 % =========================================================================
 % 4. SF_WPD with the Helmholtz liquid (and its warning)
 % =========================================================================
-w = issues_warning(@() SF_WPD('liquid', 'water3', 'labels', false, 'meta', 'none'), LR);
+w = issues_warning(@() SF_WPD('liquid', 'water_Brown2026', 'labels', false, 'meta', 'none'), LR);
 st = warning('off', LR);
-f = SF_WPD('liquid', 'water3', 'labels', false, 'meta', 'none');
+f = SF_WPD('liquid', 'water_Brown2026', 'labels', false, 'meta', 'none');
 warning(st);
 nl = numel(findall(f, 'Type', 'line'));   % SF_WPD hides its lines from findobj
-[np,nf] = check(sprintf('SF_WPD(''liquid'',''water3'') draws the diagram (%d lines) and warns', nl), ...
+[np,nf] = check(sprintf('SF_WPD(''liquid'',''water_Brown2026'') draws the diagram (%d lines) and warns', nl), ...
     nl >= 10 && w, np, nf);
 close(f);
 try
-    SF_WPD('liquid', 'water2'); bad = false;
+    SF_WPD('liquid', 'water_Brown2018'); bad = false;
 catch
     bad = true;
 end
@@ -106,16 +106,17 @@ function warned = issues_warning(fn, id)
 % True if fn issues warning `id`.  The warning is escalated to an error for the
 % call: lastwarn cannot be used, because Octave records even disabled warnings
 % there (any later internal warning would overwrite the one being checked).
-st = warning;
+s0 = warning('query', id);   % restore only this id: Octave keeps a per-id
+                             % 'error' state through a whole-state restore
 warning('error', id);
 try
     out = fn(); %#ok<NASGU>
     warned = false;
 catch e
     warned = strcmp(e.identifier, id);
-    if ~warned, warning(st); rethrow(e); end
+    if ~warned, warning(s0.state, id); rethrow(e); end
 end
-warning(st);
+warning(s0.state, id);
 close all
 end
 

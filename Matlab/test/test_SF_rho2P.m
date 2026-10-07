@@ -17,13 +17,13 @@ np = 0; nf = 0;
 tol_P = 0.05;    % MPa — acceptable round-trip error
 
 % =========================================================================
-% 1. Round-trip: water1 scatter
+% 1. Round-trip: water_Bollengier2019 scatter
 % =========================================================================
 P_ref = [0.1; 100; 500; 1000; 2000];
 T_ref = [280; 300; 320; 340; 355];
-out = SF_getprop([P_ref T_ref], 'water1', {'rho','Kt'});
-P_rec = SF_rho2P(out.rho, T_ref, 'water1');
-[np,nf] = check('roundtrip: water1 scatter (5 pts)', ...
+out = SF_getprop([P_ref T_ref], 'water_Bollengier2019', {'rho','Kt'});
+P_rec = SF_rho2P(out.rho, T_ref, 'water_Bollengier2019');
+[np,nf] = check('roundtrip: water_Bollengier2019 scatter (5 pts)', ...
     isequal(size(P_rec), size(P_ref)) && all(isfinite(P_rec)) && max(abs(P_rec - P_ref)) < tol_P, np, nf);
 
 % =========================================================================
@@ -73,17 +73,17 @@ P_rec = SF_rho2P(out.rho, T_ref, 'NaClaq_5GPa_2024', m_ref);
 % =========================================================================
 P_row = [100 500 1000 1500 2000];
 T_row = [280 300 320  340  355];
-out = SF_getprop([P_row(:) T_row(:)], 'water1', 'rho');
+out = SF_getprop([P_row(:) T_row(:)], 'water_Bollengier2019', 'rho');
 rho_row = reshape(out.rho, 1, []);   % force row
-P_rec = SF_rho2P(rho_row, T_row, 'water1');
+P_rec = SF_rho2P(rho_row, T_row, 'water_Bollengier2019');
 [np,nf] = check('output shape: row vector preserved', ...
     isequal(size(P_rec), [1 5]), np, nf);
 
 % =========================================================================
 % 7. Output shape: scalar inputs -> scalar output
 % =========================================================================
-out = SF_getprop([200 300], 'water1', 'rho');
-P_sc = SF_rho2P(out.rho, 300, 'water1');
+out = SF_getprop([200 300], 'water_Bollengier2019', 'rho');
+P_sc = SF_rho2P(out.rho, 300, 'water_Bollengier2019');
 [np,nf] = check('output shape: scalar in -> scalar out', isscalar(P_sc), np, nf);
 
 % =========================================================================
@@ -91,23 +91,23 @@ P_sc = SF_rho2P(out.rho, 300, 'water1');
 % =========================================================================
 P_ref = [100; 300; 600; 900; 1200];
 T_fixed = 300;
-out = SF_getprop([P_ref repmat(T_fixed, 5, 1)], 'water1', 'rho');
-P_rec = SF_rho2P(out.rho, T_fixed, 'water1');
-[np,nf] = check('scalar T broadcast: water1 (5 pts)', ...
+out = SF_getprop([P_ref repmat(T_fixed, 5, 1)], 'water_Bollengier2019', 'rho');
+P_rec = SF_rho2P(out.rho, T_fixed, 'water_Bollengier2019');
+[np,nf] = check('scalar T broadcast: water_Bollengier2019 (5 pts)', ...
     all(isfinite(P_rec)) && max(abs(P_rec - P_ref)) < tol_P, np, nf);
 
 % =========================================================================
 % 9. NaN for rho_target below domain minimum (less dense than allowed)
 % =========================================================================
-rho_lo = SF_getprop([0.1 373], 'water1', 'rho');   % hot water at low P ~ 958 kg/m³
-P_test = SF_rho2P(rho_lo.rho - 200, 373, 'water1');  % target much less dense
+rho_lo = SF_getprop([0.1 373], 'water_Bollengier2019', 'rho');   % hot water at low P ~ 958 kg/m³
+P_test = SF_rho2P(rho_lo.rho - 200, 373, 'water_Bollengier2019');  % target much less dense
 [np,nf] = check('NaN for rho below domain min', isnan(P_test), np, nf);
 
 % =========================================================================
 % 10. NaN for rho_target above domain maximum (denser than allowed)
 % =========================================================================
-rho_hi = SF_getprop([2300 200], 'water1', 'rho');   % high-P cold water
-P_test = SF_rho2P(rho_hi.rho + 200, 200, 'water1');
+rho_hi = SF_getprop([2300 200], 'water_Bollengier2019', 'rho');   % high-P cold water
+P_test = SF_rho2P(rho_hi.rho + 200, 200, 'water_Bollengier2019');
 [np,nf] = check('NaN for rho above domain max', isnan(P_test), np, nf);
 
 % =========================================================================
@@ -115,10 +115,10 @@ P_test = SF_rho2P(rho_hi.rho + 200, 200, 'water1');
 % =========================================================================
 T_fix = 300;
 P_grid = [100; 500; 1000; 1500];
-out = SF_getprop([P_grid repmat(T_fix, 4, 1)], 'water1', 'rho');
+out = SF_getprop([P_grid repmat(T_fix, 4, 1)], 'water_Bollengier2019', 'rho');
 % rho increases with P; SF_rho2P must recover in the correct order
-P_rec = SF_rho2P(out.rho, T_fix, 'water1');
-[np,nf] = check('physics: higher rho -> higher P (water1)', ...
+P_rec = SF_rho2P(out.rho, T_fix, 'water_Bollengier2019');
+[np,nf] = check('physics: higher rho -> higher P (water_Bollengier2019)', ...
     all(diff(P_rec) > 0), np, nf);
 
 % =========================================================================
@@ -134,9 +134,9 @@ P_rec = SF_rho2P(out.rho, T_ref, 'VI', 'P0', 1000);
 % =========================================================================
 % 13. Custom tolerance keyword
 % =========================================================================
-out = SF_getprop([500 300], 'water1', 'rho');
-P_tight = SF_rho2P(out.rho, 300, 'water1', 'tol', 1e-4);
-[np,nf] = check('tight tol (1e-4 MPa): water1 single pt', ...
+out = SF_getprop([500 300], 'water_Bollengier2019', 'rho');
+P_tight = SF_rho2P(out.rho, 300, 'water_Bollengier2019', 'tol', 1e-4);
+[np,nf] = check('tight tol (1e-4 MPa): water_Bollengier2019 single pt', ...
     abs(P_tight - 500) < 0.001, np, nf);
 
 % =========================================================================
@@ -162,16 +162,16 @@ catch err
 end
 
 % =========================================================================
-% 16. Round-trip: water2 (high-T region where spline is monotone)
+% 16. Round-trip: water_Brown2018 (high-T region where spline is monotone)
 % =========================================================================
-% water2 (Brown 2018) targets extreme conditions; it is non-monotone in P at
+% water_Brown2018 (Brown 2018) targets extreme conditions; it is non-monotone in P at
 % low-moderate T (<500 K), so the inversion is only reliable at high T.
 % Use T=1000 K, P=[200,1000] MPa where density increases monotonically.
 P_ref = [200; 400; 600; 800; 1000];
 T_ref = repmat(1000, 5, 1);
-out = SF_getprop([P_ref T_ref], 'water2', 'rho');
-P_rec = SF_rho2P(out.rho, T_ref, 'water2');
-[np,nf] = check('roundtrip: water2 (T=1000 K, 5 pts)', ...
+out = SF_getprop([P_ref T_ref], 'water_Brown2018', 'rho');
+P_rec = SF_rho2P(out.rho, T_ref, 'water_Brown2018');
+[np,nf] = check('roundtrip: water_Brown2018 (T=1000 K, 5 pts)', ...
     isequal(size(P_rec), size(P_ref)) && all(isfinite(P_rec)) && max(abs(P_rec - P_ref)) < 1.0, np, nf);
 
 % =========================================================================

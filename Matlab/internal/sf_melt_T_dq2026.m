@@ -5,7 +5,7 @@ function Tm = sf_melt_T_dq2026(P)
 % R14-08 for ice Ih/III/V/VI to 2.17 GPa; ice VII from Datchi et al. (2000)
 % and superionic VII'' from Queyroux et al. (2020) to 45 GPa; above, linear
 % in ln P onto French & Hamel's superionic -> fluid line.  273.16 K below the
-% triple-point pressure.  Used as the water3 validity mask in sf_phase_map
+% triple-point pressure.  Used as the water_Brown2026 validity mask in sf_phase_map
 % (the surface is not water more than 40 K below this curve).
 sz = size(P); P = P(:); Tm = NaN(size(P));
 PT_si = [45 850 * ((45 - 14.6) / 3.44 + 1)^(1 / 4.33); 330.6 6000; 627.6 7000; 1034.2 8000; ...

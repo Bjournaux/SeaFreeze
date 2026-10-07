@@ -26,7 +26,7 @@ from mlbspline import load as mlb_load
 from lbftd import evalGibbs as eg
 from lbftd import evalHelmholtz as eh
 
-from .seafreeze import phases, defpath, _load_spline, helmholtz_phases, pure_water_liquids
+from .seafreeze import phases, defpath, _load_spline, helmholtz_phases, pure_water_liquids, canonical_material
 
 
 # Use the same MW_H2O as the Matlab SF_PhaseLines/SF_WhichPhase code so that
@@ -62,18 +62,19 @@ def phase_range(material: str, path: str = defpath) -> PhaseRange:
     ----------
     material : str
         One of the names in `seafreeze.phases` (Ih, II, III, V, VI,
-        VII_X_French, water1, water2, water_IAPWS95, NaClaq).
+        VII_X_French, water_Bollengier2019, water_Brown2018, water_IAPWS95, NaClaq).
     path : str
         Path to the splines/ directory (default: package splines folder).
 
     Returns
     -------
     PhaseRange(P, T, m, rho) namedtuple with each element a 2-tuple
-    (lo, hi). For 2D phases m is None.  For Helmholtz materials (water3)
+    (lo, hi). For 2D phases m is None.  For Helmholtz materials (water_Brown2026)
     rho is the density range and P is the extent of P(rho,T) over the
     spline box where dP/drho > 0 (not every (P,T) in that box is reachable;
     getProp returns NaN where it is not).
     """
+    material = canonical_material(material)
     if material not in phases:
         raise ValueError(
             f"Unknown material {material!r}. Valid: {', '.join(phases.keys())}.")
@@ -141,7 +142,7 @@ def _tps(*pts):
 
 # Each entry: (matA, matB, var, lo, hi, triple_points)
 _PAIRS = [
-    ('Ih',  'water1', 'T', _TP_IhLiqIII[0], _TP_atm[0],
+    ('Ih',  'water_Bollengier2019', 'T', _TP_IhLiqIII[0], _TP_atm[0],
         _tps(_TP_IhLiqIII, _TP_atm)),
     ('Ih',  'II',     'T', 100.0,            _TP_IhIIIII[0],
         _tps(_TP_IhIIIII)),
@@ -155,27 +156,27 @@ _PAIRS = [
         _tps(_TP_IIVVI)),
     ('III', 'V',      'T', _TP_IIIIIV[0],    _TP_IIIVLiq[0],
         _tps(_TP_IIIIIV, _TP_IIIVLiq)),
-    ('III', 'water1', 'T', _TP_IhLiqIII[0],  _TP_IIIVLiq[0],
+    ('III', 'water_Bollengier2019', 'T', _TP_IhLiqIII[0],  _TP_IIIVLiq[0],
         _tps(_TP_IhLiqIII, _TP_IIIVLiq)),
-    ('V',   'water1', 'T', _TP_IIIVLiq[0],   _TP_VVILiq[0],
+    ('V',   'water_Bollengier2019', 'T', _TP_IIIVLiq[0],   _TP_VVILiq[0],
         _tps(_TP_IIIVLiq, _TP_VVILiq)),
-    ('VI',  'water1', 'T', _TP_VVILiq[0],    1000.0,
+    ('VI',  'water_Bollengier2019', 'T', _TP_VVILiq[0],    1000.0,
         _tps(_TP_VVILiq)),
     ('V',   'VI',     'T', _TP_IIVVI[0],     _TP_VVILiq[0],
         _tps(_TP_IIVVI, _TP_VVILiq)),
-    # II <-> water1 is entirely metastable (lo > hi triggers all-meta branch).
-    ('II',  'water1', 'T', np.inf,           -np.inf,
+    # II <-> water_Bollengier2019 is entirely metastable (lo > hi triggers all-meta branch).
+    ('II',  'water_Bollengier2019', 'T', np.inf,           -np.inf,
         _tps(_TP_IhIIIII, _TP_IIIIIV)),
-    # Helmholtz liquid water3: same stable ranges as the water1 pairs
-    ('Ih',  'water3', 'T', _TP_IhLiqIII[0], _TP_atm[0],
+    # Helmholtz liquid water_Brown2026: same stable ranges as the water_Bollengier2019 pairs
+    ('Ih',  'water_Brown2026', 'T', _TP_IhLiqIII[0], _TP_atm[0],
         _tps(_TP_IhLiqIII, _TP_atm)),
-    ('III', 'water3', 'T', _TP_IhLiqIII[0],  _TP_IIIVLiq[0],
+    ('III', 'water_Brown2026', 'T', _TP_IhLiqIII[0],  _TP_IIIVLiq[0],
         _tps(_TP_IhLiqIII, _TP_IIIVLiq)),
-    ('V',   'water3', 'T', _TP_IIIVLiq[0],   _TP_VVILiq[0],
+    ('V',   'water_Brown2026', 'T', _TP_IIIVLiq[0],   _TP_VVILiq[0],
         _tps(_TP_IIIVLiq, _TP_VVILiq)),
-    ('VI',  'water3', 'T', _TP_VVILiq[0],    1000.0,
+    ('VI',  'water_Brown2026', 'T', _TP_VVILiq[0],    1000.0,
         _tps(_TP_VVILiq)),
-    ('II',  'water3', 'T', np.inf,           -np.inf,
+    ('II',  'water_Brown2026', 'T', np.inf,           -np.inf,
         _tps(_TP_IhIIIII, _TP_IIIIIV)),
     # NaClaq pairs - whole curve marked stable (m-dependent triple points
     # out of scope for this rewrite, matching Matlab v1.1.x).
@@ -237,6 +238,8 @@ def phase_lines(matA: str,
     -------
     PhaseLineResult, or a list of PhaseLineResult when `m` is a vector.
     """
+    matA = canonical_material(matA)
+    matB = canonical_material(matB)
     segment = segment.lower()
     if segment not in {'all', 'stable', 'meta'}:
         raise ValueError(
@@ -448,18 +451,18 @@ def _classify_stable(P_eq, T_eq, var, lo, hi):
 # Default pairs drawn by wpd() -- the 12 stable-phase pairs of the canonical
 # H2O phase diagram (no VII_X_French).
 _WPD_PAIRS = [
-    ('Ih',  'water1'),
+    ('Ih',  'water_Bollengier2019'),
     ('Ih',  'II'),
     ('Ih',  'III'),
     ('II',  'III'),
     ('II',  'V'),
     ('II',  'VI'),
-    ('II',  'water1'),
+    ('II',  'water_Bollengier2019'),
     ('III', 'V'),
-    ('III', 'water1'),
-    ('V',   'water1'),
+    ('III', 'water_Bollengier2019'),
+    ('V',   'water_Bollengier2019'),
     ('V',   'VI'),
-    ('VI',  'water1'),
+    ('VI',  'water_Bollengier2019'),
 ]
 
 
@@ -468,7 +471,7 @@ def wpd(ax=None,
         m: Optional[Union[float, np.ndarray]] = None,
         show_meta: bool = True,
         phase_labels: bool = False,
-        liquid: str = 'water1',
+        liquid: str = 'water_Bollengier2019',
         path: str = defpath):
     """Draw the H2O Water Phase Diagram.
 
@@ -488,8 +491,8 @@ def wpd(ax=None,
         If True, annotate each stability field with its phase name (Ih, II,
         III, V, VI, Liquid).
     liquid : str, optional
-        Pure-water liquid used for the melting curves: 'water1' (default)
-        or 'water3' (Helmholtz psi surface).
+        Pure-water liquid used for the melting curves: 'water_Bollengier2019' (default)
+        or 'water_Brown2026' (Helmholtz psi surface).
     path : str, optional
         Path to the splines/ directory (default: package splines folder).
 
@@ -497,6 +500,7 @@ def wpd(ax=None,
     -------
     matplotlib.figure.Figure
     """
+    liquid = canonical_material(liquid)
     import matplotlib.pyplot as plt
 
     if ax is None:
@@ -504,12 +508,12 @@ def wpd(ax=None,
     else:
         fig = ax.figure
 
-    if liquid not in ('water1', 'water3'):
-        raise ValueError(f"liquid must be 'water1' or 'water3' (got {liquid!r}).")
+    if liquid not in ('water_Bollengier2019', 'water_Brown2026'):
+        raise ValueError(f"liquid must be 'water_Bollengier2019' or 'water_Brown2026' (got {liquid!r}).")
 
     # Pure-water / ice pairs
     for matA, matB in _WPD_PAIRS:
-        matB = liquid if matB == 'water1' else matB
+        matB = liquid if matB == 'water_Bollengier2019' else matB
         try:
             r = phase_lines(matA, matB, segment='all', path=path)
         except (RuntimeError, ValueError):

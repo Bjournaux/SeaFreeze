@@ -125,18 +125,18 @@ class TestPhaseLinesVsMatlab(ut.TestCase):
                         f">{STABLE_FRAC_TOL}")
 
     # Pure-water pairs (one method per pair so failures are isolated)
-    def test_Ih_water1(self):    self._run_case('Ih_water1')
+    def test_Ih_water_Bollengier2019(self):    self._run_case('Ih_water_Bollengier2019')
     def test_Ih_II(self):        self._run_case('Ih_II')
     def test_Ih_III(self):       self._run_case('Ih_III')
     def test_II_III(self):       self._run_case('II_III')
     def test_II_V(self):         self._run_case('II_V')
     def test_II_VI(self):        self._run_case('II_VI')
-    def test_II_water1(self):    self._run_case('II_water1')
+    def test_II_water_Bollengier2019(self):    self._run_case('II_water_Bollengier2019')
     def test_III_V(self):        self._run_case('III_V')
-    def test_III_water1(self):   self._run_case('III_water1')
-    def test_V_water1(self):     self._run_case('V_water1')
+    def test_III_water_Bollengier2019(self):   self._run_case('III_water_Bollengier2019')
+    def test_V_water_Bollengier2019(self):     self._run_case('V_water_Bollengier2019')
     def test_V_VI(self):         self._run_case('V_VI')
-    def test_VI_water1(self):    self._run_case('VI_water1')
+    def test_VI_water_Bollengier2019(self):    self._run_case('VI_water_Bollengier2019')
 
     # NaClaq pairs
     def test_Ih_NaClaq_m0p5(self):  self._run_case('Ih_NaClaq_m0p5')

@@ -1,7 +1,7 @@
 """
 Two-phase coexistence at fixed temperature for fluids that cover the vapour.
 
-A Helmholtz fluid (water3) spans liquid and vapour, so SeaFreeze can compute
+A Helmholtz fluid (water_Brown2026) spans liquid and vapour, so SeaFreeze can compute
 
   * the saturation (vapour-pressure) curve  G_liquid(P,T) = G_vapour(P,T)
   * the sublimation curve of an ice         G_ice(P,T)    = G_vapour(P,T)
@@ -15,8 +15,8 @@ share the IAPWS-95 reference state: U = S = 0 for liquid at the triple point).
 
 Public API
 ----------
-saturation(T, fluid='water3', path=defpath)          -> Coexistence(P, T, rho_A, rho_B)
-sublimation(T, ice='Ih', fluid='water3', dilute_extension=True, path=defpath)
+saturation(T, fluid='water_Brown2026', path=defpath)          -> Coexistence(P, T, rho_A, rho_B)
+sublimation(T, ice='Ih', fluid='water_Brown2026', dilute_extension=True, path=defpath)
                                                      -> Coexistence(P, T, rho_A, rho_B)
 
 Baptiste Journaux - 2026
@@ -26,7 +26,7 @@ from collections import namedtuple
 
 import numpy as np
 
-from .seafreeze import getProp, defpath, helmholtz_phases, phases, _load_spline
+from .seafreeze import getProp, defpath, helmholtz_phases, phases, _load_spline, canonical_material
 from lbftd import evalHelmholtz as eh
 
 Coexistence = namedtuple('Coexistence', ['P', 'T', 'rho_A', 'rho_B'])
@@ -109,15 +109,16 @@ def _solve(fA, fB, T, P0, tol=1e-12, maxit=60):
     return P, rA, rB
 
 
-def saturation(T, fluid='water3', path=defpath):
+def saturation(T, fluid='water_Brown2026', path=defpath):
     """Liquid-vapour coexistence (vapour pressure) of a Helmholtz fluid.
 
     :param T:     temperature(s) in K, below the critical temperature
-    :param fluid: Helmholtz material (default 'water3')
+    :param fluid: Helmholtz material (default 'water_Brown2026')
     :return:      Coexistence(P [MPa], T [K], rho_A = liquid, rho_B = vapour);
                   NaN where the two branches do not both exist (T >= Tc or
                   outside the surface).
     """
+    fluid = canonical_material(fluid)
     if fluid not in helmholtz_phases:
         raise ValueError(f"saturation needs a Helmholtz fluid ({', '.join(sorted(helmholtz_phases))}).")
     T = np.atleast_1d(np.asarray(T, float))
@@ -145,13 +146,13 @@ def _warn_dilute(Tmin, fluid):
             "for NaN instead. (Shown once per session.)", UserWarning, stacklevel=3)
 
 
-def sublimation(T, ice='Ih', fluid='water3', dilute_extension=True, path=defpath):
+def sublimation(T, ice='Ih', fluid='water_Brown2026', dilute_extension=True, path=defpath):
     """Ice-vapour coexistence (sublimation pressure).
 
     :param T:     temperature(s) in K.  The vapour comes from the Helmholtz
-                  fluid, so T must lie in its range (water3: T >= 230 K).
+                  fluid, so T must lie in its range (water_Brown2026: T >= 230 K).
     :param ice:   ice phase (default 'Ih')
-    :param fluid: Helmholtz material providing the vapour (default 'water3')
+    :param fluid: Helmholtz material providing the vapour (default 'water_Brown2026')
     :param dilute_extension: (default True) below the fluid's lowest
                   temperature, treat the vapour as the surface's ideal-gas
                   part alone (Z = 1).  At sublimation pressures (< 10 Pa below
@@ -162,6 +163,8 @@ def sublimation(T, ice='Ih', fluid='water3', dilute_extension=True, path=defpath
                   session.  False returns NaN below the surface.
     :return:      Coexistence(P [MPa], T [K], rho_A = ice, rho_B = vapour)
     """
+    ice = canonical_material(ice)
+    fluid = canonical_material(fluid)
     if fluid not in helmholtz_phases:
         raise ValueError(f"sublimation needs a Helmholtz fluid ({', '.join(sorted(helmholtz_phases))}).")
     if ice not in phases or phases[ice].shear_mod_parms is None:

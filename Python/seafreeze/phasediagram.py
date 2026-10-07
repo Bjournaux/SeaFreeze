@@ -2,7 +2,7 @@
 Full water phase diagram — vapour, liquid, supercritical fluid, and the ices —
 by Gibbs-energy minimisation, in (P,T) and in (rho,T).
 
-The fluid is a Helmholtz material (water3), which spans vapour, liquid and
+The fluid is a Helmholtz material (water_Brown2026), which spans vapour, liquid and
 supercritical states; the ices are the SeaFreeze Gibbs splines (Ih, II, III,
 V, VI by default).  At every grid point the stable phase is the one with the
 lowest specific Gibbs energy (all phases share the IAPWS-95 reference state).
@@ -20,7 +20,7 @@ included) the diagram is left blank.
 
 Public API
 ----------
-phase_map(P, T, fluid='water3', ices=ICES, path=defpath) -> PhaseMap
+phase_map(P, T, fluid='water_Brown2026', ices=ICES, path=defpath) -> PhaseMap
 phase_diagram_PT(P=(1e-8, 1e5), T=(150, 1800), ...)     -> DiagramPT   (what wpd_PT draws, as data)
 phase_diagram_rhoT(rho=(1e-7, 4e3), T=(150, 1800), ...) -> DiagramRhoT (what wpd_rhoT draws, as data)
 property_map(diag, *props, path=defpath)                -> PropertyMap (property of the stable phase)
@@ -36,7 +36,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from .seafreeze import getProp, defpath, _load_spline, helmholtz_phases
+from .seafreeze import getProp, defpath, _load_spline, helmholtz_phases, canonical_material
 from .coexistence import Coexistence, saturation, sublimation
 from lbftd import evalHelmholtz as eh
 
@@ -164,12 +164,12 @@ def melt_T_dq2026(P):
 _CP_MAX = 2 * 9 * 8.314462618 / 0.018015268     # 2 x classical 9R/M, J/kg/K
 
 
-def phase_map(P, T, fluid='water3', ices=ICES, dilute_extension=True, sanity=True,
+def phase_map(P, T, fluid='water_Brown2026', ices=ICES, dilute_extension=True, sanity=True,
               melt_mask=True, path=defpath):
     """Stable phase of H2O on a (P, T) grid by Gibbs-energy minimisation.
 
     :param P, T:   1-D arrays (MPa, K)
-    :param fluid:  Helmholtz material for vapour/liquid/supercritical (water3)
+    :param fluid:  Helmholtz material for vapour/liquid/supercritical (water_Brown2026)
     :param ices:   ice phases to include (default Ih, II, III, V, VI)
     :param dilute_extension: below the fluid's lowest temperature (230 K),
                    use the fluid's ideal-gas part at P < 1e-4 MPa so the
@@ -179,6 +179,7 @@ def phase_map(P, T, fluid='water3', ices=ICES, dilute_extension=True, sanity=Tru
     :param melt_mask: ignore the fluid more than 40 K below melt_T_dq2026(P)
                    at P above the triple-point pressure (psiEOS validity mask)
     """
+    fluid = canonical_material(fluid)
     if fluid not in helmholtz_phases:
         raise ValueError(f'fluid must be a Helmholtz material ({", ".join(sorted(helmholtz_phases))}).')
     P = np.asarray(P, float).ravel(); T = np.asarray(T, float).ravel()
@@ -259,7 +260,7 @@ def _GSrho(name, P, T, fluid, path):
     return get('G'), get('S'), get('rho')
 
 
-def triple_points(pm, fluid='water3', path=defpath):
+def triple_points(pm, fluid='water_Brown2026', path=defpath):
     """Triple points of a phase map, refined by Newton on G_a = G_b = G_c.
 
     Candidates are the 2x2 grid blocks of pm.stable holding three distinct
@@ -270,6 +271,7 @@ def triple_points(pm, fluid='water3', path=defpath):
     :return: list of dicts {phases: (a, b, c), labels, P [MPa], T [K],
              rho: (rho_a, rho_b, rho_c) [kg/m^3]}
     """
+    fluid = canonical_material(fluid)
     S = pm.stable
     blocks = np.stack([S[:-1, :-1], S[1:, :-1], S[:-1, 1:], S[1:, 1:]], -1)
     cands = {}
@@ -359,7 +361,7 @@ def _in_window(tps, P, T):
     return [tp for tp in tps if (P is None or P[0] <= tp['P'] <= P[1]) and T[0] <= tp['T'] <= T[1]]
 
 
-def phase_diagram_PT(P=(1e-8, 1e5), T=(150.0, 1800.0), nP=500, nT=420, fluid='water3',
+def phase_diagram_PT(P=(1e-8, 1e5), T=(150.0, 1800.0), nP=500, nT=420, fluid='water_Brown2026',
                      ices=ICES, path=defpath):
     """Full H2O phase diagram in (P, T) as data: what wpd_PT draws.
 
@@ -371,6 +373,7 @@ def phase_diagram_PT(P=(1e-8, 1e5), T=(150.0, 1800.0), nP=500, nT=420, fluid='wa
     :param P, T:   (min, max) window, MPa and K; nP log-spaced, nT linear points
     :return:       DiagramPT
     """
+    fluid = canonical_material(fluid)
     Pg = np.geomspace(P[0], P[1], nP)
     Tg = np.linspace(T[0], T[1], nT)
     pm = phase_map(Pg, Tg, fluid, ices, path=path)
@@ -401,7 +404,7 @@ def _labels_PT(pm):
 
 
 def phase_diagram_rhoT(rho=(1e-7, 4e3), T=(150.0, 1800.0), P=(1e-10, 1e5), nP=1200, nT=420,
-                       nrho=800, xscale='log', fluid='water3', ices=ICES, path=defpath):
+                       nrho=800, xscale='log', fluid='water_Brown2026', ices=ICES, path=defpath):
     """Full H2O phase diagram in (rho, T) as data: what wpd_rhoT draws.
 
     The (P, T) phase map is re-drawn in density: along every isotherm the
@@ -415,6 +418,7 @@ def phase_diagram_rhoT(rho=(1e-7, 4e3), T=(150.0, 1800.0), P=(1e-10, 1e5), nP=12
     :param xscale: 'log' (density grid log-spaced, shows the vapour) or 'linear'
     :return:       DiagramRhoT
     """
+    fluid = canonical_material(fluid)
     Pg = np.geomspace(P[0], P[1], nP)
     Tg = np.linspace(T[0], T[1], nT)
     pm = phase_map(Pg, Tg, fluid, ices, path=path)
@@ -690,7 +694,7 @@ def _property_map_rhoT(d, props, path):
 
 
 # ---- the diagrams as matplotlib figures ------------------------------------------
-def wpd_PT(ax=None, P=(1e-8, 1e5), T=(150.0, 1800.0), nP=500, nT=420, fluid='water3',
+def wpd_PT(ax=None, P=(1e-8, 1e5), T=(150.0, 1800.0), nP=500, nT=420, fluid='water_Brown2026',
            ices=ICES, path=defpath, return_map=False):
     """Full H2O phase diagram in (P, T): vapour, liquid, supercritical fluid, ices.
 
@@ -700,6 +704,7 @@ def wpd_PT(ax=None, P=(1e-8, 1e5), T=(150.0, 1800.0), nP=500, nT=420, fluid='wat
 
     :return: matplotlib Figure (and the PhaseMap if return_map=True)
     """
+    fluid = canonical_material(fluid)
     import matplotlib.pyplot as plt
     from matplotlib.colors import ListedColormap
     d = phase_diagram_PT(P, T, nP, nT, fluid, ices, path)
@@ -771,7 +776,7 @@ def _fluid_kind(pm):
 
 
 def wpd_rhoT(ax=None, rho=(1e-7, 4e3), T=(150.0, 1800.0), P=(1e-10, 1e5), nP=1200, nT=420,
-             nrho=800, xscale='log', fluid='water3', ices=ICES, path=defpath, return_map=False):
+             nrho=800, xscale='log', fluid='water_Brown2026', ices=ICES, path=defpath, return_map=False):
     """Full H2O phase diagram in (rho, T).
 
     Draws phase_diagram_rhoT: the stability fields re-drawn in density, the
@@ -781,6 +786,7 @@ def wpd_rhoT(ax=None, rho=(1e-7, 4e3), T=(150.0, 1800.0), P=(1e-10, 1e5), nP=120
     :param xscale: 'log' (default, shows the vapour) or 'linear'
     :return: matplotlib Figure (and the PhaseMap if return_map=True)
     """
+    fluid = canonical_material(fluid)
     import matplotlib.pyplot as plt
     from matplotlib.colors import ListedColormap
     d = phase_diagram_rhoT(rho, T, P, nP, nT, nrho, xscale, fluid, ices, path)

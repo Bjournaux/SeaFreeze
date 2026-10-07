@@ -1,7 +1,7 @@
 """Property Calculator page — single points, 1-D sweeps and 2-D grids.
 
 Input in (P, T[, m]) for every material, or (rho, T) for the pure phases
-(native for the Helmholtz fluid water3; by pressure inversion for the Gibbs
+(native for the Helmholtz fluid water_Brown2026; by pressure inversion for the Gibbs
 phases).  Every P, rho and T range can be log-spaced and drawn on a log axis.
 """
 
@@ -96,7 +96,7 @@ def render():
         if supports_rhoT(material):
             rhoT = st.radio("Input", ["P, T", "ρ, T"], horizontal=True, key="pc_input",
                             help="(ρ, T): density and temperature in, pressure out. Native for "
-                                 "water3; for the Gibbs phases P is solved at each point "
+                                 "water_Brown2026; for the Gibbs phases P is solved at each point "
                                  "(slower).") == "ρ, T"
         if rhoT:
             rho_range = lim.get("rho") or get_rho_range(material)
@@ -345,7 +345,7 @@ def _show_2d(result, material, props, range_vars, const_vars, logs, avail, rhoT)
     if view_mode == "Heatmap + Isocontours":
         n_contours = st.slider("Number of contour lines", 5, 30, 15, key="n_contours")
 
-    # stability boundaries: Gibbs phases in (P, T); water3 in (P, T) or (rho, T)
+    # stability boundaries: Gibbs phases in (P, T); water_Brown2026 in (P, T) or (rho, T)
     axis_names = {var1_name, var2_name}
     helm = is_helmholtz(material)
     can_show = axis_names == {"P", "T"} or (helm and axis_names == {"rho", "T"})
@@ -425,7 +425,7 @@ def _axis_range(vals, axtype):
 
 
 def _boundaries_3d(fig, material, rhoT, phase_bounds, var1_name, var1_vals, var2_vals, data_2d):
-    """Boundary lines on the surface (Gibbs phases) or on its floor (water3)."""
+    """Boundary lines on the surface (Gibbs phases) or on its floor (water_Brown2026)."""
     if is_helmholtz(material):
         zf = float(np.nanmin(data_2d)) if np.isfinite(data_2d).any() else 0.0
         x0, x1 = min(var1_vals), max(var1_vals)

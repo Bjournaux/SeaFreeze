@@ -43,8 +43,8 @@ addParameter(p, 'T',       [],     @(x) isnumeric(x) && isvector(x));
 addParameter(p, 'segment', 'all',  @(s) ismember(lower(char(s)), {'all','stable','meta'}));
 addParameter(p, 'plot',    false,  @valid_plot_arg);
 parse(p, matA, matB, varargin{:});
-matA = char(matA);
-matB = char(matB);
+matA = sf_material_name(char(matA));   % renamed materials: new name + one-time warning
+matB = sf_material_name(char(matB));
 m_val   = p.Results.m(:)';   % row vector (scalar stays scalar)
 P_user  = p.Results.P;
 T_user  = p.Results.T;
@@ -251,7 +251,7 @@ function stable = classify_stable(P_eq, T_eq, range)
     if range.lo > range.hi
         % Inverted bounds (e.g. lo=Inf, hi=-Inf) = "all metastable", used
         % for pairs whose contour is entirely metastable in the canonical
-        % phase diagram (II ↔ water1). This branch must come before the
+        % phase diagram (II ↔ water_Bollengier2019). This branch must come before the
         % "all-non-finite" check below because Inf/-Inf are both non-finite.
         stable = false(size(P_eq));
         return;
@@ -379,49 +379,49 @@ function [pair, swapped] = lookup_pair(matA, matB)
     % triple points to mark on plots.
     PAIRS = {
        %  matA      matB        var lo_value           hi_value           triple_points
-        {'Ih',     'water1',    'T', TP_IhLiqIII(1),   TP_atm(1),         [TP_IhLiqIII; TP_atm]}
+        {'Ih',     'water_Bollengier2019',    'T', TP_IhLiqIII(1),   TP_atm(1),         [TP_IhLiqIII; TP_atm]}
         {'Ih',     'II',        'T', 100.0,            TP_IhIIIII(1),     [TP_IhIIIII]}
         {'Ih',     'III',       'T', TP_IhIIIII(1),    TP_IhLiqIII(1),    [TP_IhIIIII; TP_IhLiqIII]}
         {'II',     'III',       'T', TP_IhIIIII(1),    TP_IIIIIV(1),      [TP_IhIIIII; TP_IIIIIV]}
         {'II',     'V',         'T', TP_IIVVI(1),      TP_IIIIIV(1),      [TP_IIVVI; TP_IIIIIV]}
         {'II',     'VI',        'T',  50.0,            TP_IIVVI(1),       [TP_IIVVI]}
         {'III',    'V',         'T', TP_IIIIIV(1),     TP_IIIVLiq(1),     [TP_IIIIIV; TP_IIIVLiq]}
-        {'III',    'water1',    'T', TP_IhLiqIII(1),   TP_IIIVLiq(1),     [TP_IhLiqIII; TP_IIIVLiq]}
-        {'V',      'water1',    'T', TP_IIIVLiq(1),    TP_VVILiq(1),      [TP_IIIVLiq; TP_VVILiq]}
-        {'VI',     'water1',    'T', TP_VVILiq(1),     1000.0,            [TP_VVILiq]}
+        {'III',    'water_Bollengier2019',    'T', TP_IhLiqIII(1),   TP_IIIVLiq(1),     [TP_IhLiqIII; TP_IIIVLiq]}
+        {'V',      'water_Bollengier2019',    'T', TP_IIIVLiq(1),    TP_VVILiq(1),      [TP_IIIVLiq; TP_VVILiq]}
+        {'VI',     'water_Bollengier2019',    'T', TP_VVILiq(1),     1000.0,            [TP_VVILiq]}
         {'V',      'VI',        'T', TP_IIVVI(1),      TP_VVILiq(1),      [TP_IIVVI; TP_VVILiq]}
-        % II ↔ water1 — entirely metastable (II is surrounded by Ih/III/V/VI in
+        % II ↔ water_Bollengier2019 — entirely metastable (II is surrounded by Ih/III/V/VI in
         % the standard phase diagram and never directly equilibrates with the
         % liquid). lo > hi triggers the "all-meta" branch in classify_stable.
-        {'II',     'water1',    'T', Inf,              -Inf,              [TP_IhIIIII; TP_IIIIIV]}
+        {'II',     'water_Bollengier2019',    'T', Inf,              -Inf,              [TP_IhIIIII; TP_IIIIIV]}
         % VII_X_French ↔ liquid pairs. Stable above the VI–VII–water TP at
         % T = 354 K, P = 2216 MPa.
-        {'VII_X_French','water1',         'P', TP_VIVIILiq(2), Inf,        [TP_VIVIILiq]}
-        {'VII_X_French','water2',         'P', TP_VIVIILiq(2), Inf,        [TP_VIVIILiq]}
+        {'VII_X_French','water_Bollengier2019',         'P', TP_VIVIILiq(2), Inf,        [TP_VIVIILiq]}
+        {'VII_X_French','water_Brown2018',         'P', TP_VIVIILiq(2), Inf,        [TP_VIVIILiq]}
         {'VII_X_French','water_IAPWS95',  'P', TP_VIVIILiq(2), Inf,        [TP_VIVIILiq]}
-        % Cross-EOS: same physical stable ranges as the water1 versions.
+        % Cross-EOS: same physical stable ranges as the water_Bollengier2019 versions.
         % Useful for comparing alternative liquid parametrizations; results
-        % drift from water1 at low P because water2 / IAPWS95 are not
+        % drift from water_Bollengier2019 at low P because water_Brown2018 / IAPWS95 are not
         % optimised for the cold low-P regime.
-        {'Ih',     'water2',         'T', TP_IhLiqIII(1),   TP_atm(1),     [TP_IhLiqIII; TP_atm]}
+        {'Ih',     'water_Brown2018',         'T', TP_IhLiqIII(1),   TP_atm(1),     [TP_IhLiqIII; TP_atm]}
         {'Ih',     'water_IAPWS95',  'T', TP_IhLiqIII(1),   TP_atm(1),     [TP_IhLiqIII; TP_atm]}
-        {'III',    'water2',         'T', TP_IhLiqIII(1),   TP_IIIVLiq(1), [TP_IhLiqIII; TP_IIIVLiq]}
+        {'III',    'water_Brown2018',         'T', TP_IhLiqIII(1),   TP_IIIVLiq(1), [TP_IhLiqIII; TP_IIIVLiq]}
         {'III',    'water_IAPWS95',  'T', TP_IhLiqIII(1),   TP_IIIVLiq(1), [TP_IhLiqIII; TP_IIIVLiq]}
-        {'V',      'water2',         'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
+        {'V',      'water_Brown2018',         'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
         {'V',      'water_IAPWS95',  'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
-        {'VI',     'water2',         'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
+        {'VI',     'water_Brown2018',         'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
         {'VI',     'water_IAPWS95',  'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
-        % Helmholtz liquid water3 (psi surface): same stable ranges as water1
-        {'Ih',     'water3',         'T', TP_IhLiqIII(1),   TP_atm(1),     [TP_IhLiqIII; TP_atm]}
-        {'III',    'water3',         'T', TP_IhLiqIII(1),   TP_IIIVLiq(1), [TP_IhLiqIII; TP_IIIVLiq]}
-        {'V',      'water3',         'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
-        {'VI',     'water3',         'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
-        {'II',     'water3',         'T', Inf,              -Inf,          [TP_IhIIIII; TP_IIIIIV]}
-        {'VII_X_French','water3',    'P', TP_VIVIILiq(2),   Inf,           [TP_VIVIILiq]}
+        % Helmholtz liquid water_Brown2026 (psi surface): same stable ranges as water_Bollengier2019
+        {'Ih',     'water_Brown2026',         'T', TP_IhLiqIII(1),   TP_atm(1),     [TP_IhLiqIII; TP_atm]}
+        {'III',    'water_Brown2026',         'T', TP_IhLiqIII(1),   TP_IIIVLiq(1), [TP_IhLiqIII; TP_IIIVLiq]}
+        {'V',      'water_Brown2026',         'T', TP_IIIVLiq(1),    TP_VVILiq(1),  [TP_IIIVLiq; TP_VVILiq]}
+        {'VI',     'water_Brown2026',         'T', TP_VVILiq(1),     1000.0,        [TP_VVILiq]}
+        {'II',     'water_Brown2026',         'T', Inf,              -Inf,          [TP_IhIIIII; TP_IIIIIV]}
+        {'VII_X_French','water_Brown2026',    'P', TP_VIVIILiq(2),   Inf,           [TP_VIVIILiq]}
         % NaClaq pairs — full curve marked stable by default. Distinguishing
         % stable vs metastable for ice ↔ NaClaq requires triple points that
         % depend on molality (out of scope for this rewrite). Triple-point
-        % markers are inherited from the pure-ice ↔ water1 pair as a guide.
+        % markers are inherited from the pure-ice ↔ water_Bollengier2019 pair as a guide.
         {'Ih',     'NaClaq',    'T', -Inf,             Inf,               [TP_IhLiqIII; TP_atm]}
         {'III',    'NaClaq',    'T', -Inf,             Inf,               [TP_IhLiqIII; TP_IIIVLiq]}
         {'V',      'NaClaq',    'T', -Inf,             Inf,               [TP_IIIVLiq; TP_VVILiq]}

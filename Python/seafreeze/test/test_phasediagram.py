@@ -18,7 +18,7 @@ def pm():
 
 def test_phase_map_shapes_and_fields(pm):
     assert pm.stable.shape == (500, 240)
-    assert pm.names == ['water3', 'Ih', 'II', 'III', 'V', 'VI']
+    assert pm.names == ['water_Brown2026', 'Ih', 'II', 'III', 'V', 'VI']
     # every phase has a stability field
     for k in range(len(pm.names)):
         assert (pm.stable == k).any(), pm.names[k]
@@ -29,7 +29,7 @@ def test_phase_map_spot_checks():
     T = np.array([300.0, 260.0, 300.0, 230.0, 250.0])
     m = pd.phase_map(P, T)
     names = [m.names[m.stable[i, i]] for i in range(P.size)]
-    assert names == ['water3', 'Ih', 'water3', 'II', 'VI']
+    assert names == ['water_Brown2026', 'Ih', 'water_Brown2026', 'II', 'VI']
     assert m.rho_stable[0, 0] < 1e-3 and m.rho_stable[2, 2] > 990          # vapour, liquid
 
 

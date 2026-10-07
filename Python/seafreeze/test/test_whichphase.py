@@ -11,7 +11,7 @@ class TestWhichPhase(ut.TestCase):
     def test_scatter_singlePt(self):
         PT = np.empty((1,), object)
         PT[0] = (2000, 334)
-        self.assertEqual(6, sf.whichphase(PT, 'water1')[0])
+        self.assertEqual(6, sf.whichphase(PT, 'water_Bollengier2019')[0])
     def test_scatter_multiPt(self):
         PT = np.empty((3,), object)
         PT[0] = (100, 200)
@@ -29,13 +29,13 @@ class TestWhichPhase(ut.TestCase):
         P = np.arange(0, 1001, 200)
         T = np.arange(200, 351, 50)
         exp = np.array([[1, 1, 0, 0], [2, 1, 0, 0], [2, 5, 0, 0], [2, 5, 0, 0], [6, 6, 0, 0], [6, 6, 6, 0]], dtype=object)
-        act = sf.whichphase(np.array([P, T], dtype=object), 'water1')
+        act = sf.whichphase(np.array([P, T], dtype=object), 'water_Bollengier2019')
         np.testing.assert_array_equal(exp, act)
     def test_grid_all_extrapolations(self):
         P = np.arange(0, 1001, 200)
         T = np.arange(200, 351, 50)
         exp = np.array([[1, 1, 0, 0], [2, 1, 0, 0], [2, 5, 0, 0], [2, 5, 0, 0], [6, 6, 0, 0], [6, 6, 6, 0]], dtype=object)
-        act = sf.whichphase(np.array([P, T], dtype=object), 'water1')
+        act = sf.whichphase(np.array([P, T], dtype=object), 'water_Bollengier2019')
         np.testing.assert_array_equal(exp, act)
     def test_phases(self):
         PT = np.empty((7,), object)
@@ -46,7 +46,7 @@ class TestWhichPhase(ut.TestCase):
         PT[4] = (500, 250)   # ice V
         PT[5] = (800, 250)   # ice VI
         PT[6] = (2000, 334)  # high-P — ice VI stable at this condition
-        act = sf.whichphase(PT, 'water1')
+        act = sf.whichphase(PT, 'water_Bollengier2019')
         np.testing.assert_array_equal([0, 1, 2, 3, 5, 6, 6], act)
 
     def test_NaCl_grid(self):

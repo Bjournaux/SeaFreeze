@@ -1,6 +1,6 @@
 """lbftd.evalHelmholtz.ideal_gas_props: the psi surface's ideal-gas part alone.
 
-The dilute-vapour extension below the water3 surface (sublimation,
+The dilute-vapour extension below the water_Brown2026 surface (sublimation,
 phase_map); checked against the full surface where both exist, against
 thermodynamic identities and finite differences everywhere else.
 """
@@ -16,7 +16,7 @@ from lbftd import evalHelmholtz as eh
 
 @pytest.fixture(scope='module')
 def sp3():
-    return _load_spline(defpath, 'water3')
+    return _load_spline(defpath, 'water_Brown2026')
 
 
 @pytest.fixture(scope='module')
@@ -38,7 +38,7 @@ def _relerr(a, b):
 
 def test_same_fields_as_getProp_water3(sp3):
     o = eh.ideal_gas_props(sp3, 1e-7, 300.0)
-    w = sf.getProp(_scatter([0.1], [300.0]), 'water3')
+    w = sf.getProp(_scatter([0.1], [300.0]), 'water_Brown2026')
     assert set(vars(o)) == set(vars(w))
 
 
@@ -49,7 +49,7 @@ def test_matches_water3_in_the_dilute_limit(sp3):
     P = np.tile([1e-7, 1e-8, 1e-9], T.size // 3)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        w = sf.getProp(_scatter(P, T), 'water3')
+        w = sf.getProp(_scatter(P, T), 'water_Brown2026')
     o = eh.ideal_gas_props(sp3, P, T)
     for k in ('G', 'S', 'H', 'U', 'A', 'rho', 'Cp', 'Cv', 'vel', 'Kt', 'Ks', 'alpha',
               'Js', 'gamma_Gruneisen'):

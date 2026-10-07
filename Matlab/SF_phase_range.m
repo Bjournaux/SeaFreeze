@@ -19,7 +19,7 @@ function rng = SF_phase_range(material)
 %   rng = SF_phase_range('NaClaq_HP')      % 2026 high-P spline only
 %   rng = SF_phase_range('NaClaq_5GPa_2024') % Brown 2024 legacy
 %
-%   rng = SF_phase_range('water3')         % Helmholtz spline F(rho,T)
+%   rng = SF_phase_range('water_Brown2026')         % Helmholtz spline F(rho,T)
 %       rng.rho = [rho_lo rho_hi]  % kg/m^3, knot range
 %       rng.T   = [T_lo   T_hi]    % K, knot range
 %       rng.P   = [P_lo   P_hi]    % MPa, from sp.Prange if stored, else the
@@ -33,7 +33,7 @@ function rng = SF_phase_range(material)
 if ~sf_ischarlike(material)
     error('SeaFreeze:badInput', '''material'' must be a string or character vector.');
 end
-material = char(material);
+material = sf_material_name(char(material));   % renamed materials
 
 % Validate material name before attempting load
 defs = sf_material_defs();

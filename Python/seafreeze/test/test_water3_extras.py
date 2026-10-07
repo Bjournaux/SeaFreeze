@@ -22,8 +22,8 @@ def _scatter(*cols):
 # spline cache
 # --------------------------------------------------------------------------
 def test_spline_cache_returns_same_object():
-    a = sfm._load_spline(defpath, 'water3')
-    b = sfm._load_spline(defpath, 'water3')
+    a = sfm._load_spline(defpath, 'water_Brown2026')
+    b = sfm._load_spline(defpath, 'water_Brown2026')
     assert a is b                                    # no second file read
     c = sfm._load_spline(defpath, 'Ih')
     assert c is not a and sfm._load_spline(defpath, 'Ih') is c
@@ -47,8 +47,8 @@ def test_spline_cache_reloads_modified_file(tmp_path):
 
 def test_cached_spline_gives_identical_results():
     pts = _scatter([0.1, 100.0], [300.0, 350.0])
-    first = sf.getProp(pts, 'water3', defpath, 'rho', 'Cp')
-    second = sf.getProp(pts, 'water3', defpath, 'rho', 'Cp')
+    first = sf.getProp(pts, 'water_Brown2026', defpath, 'rho', 'Cp')
+    second = sf.getProp(pts, 'water_Brown2026', defpath, 'rho', 'Cp')
     np.testing.assert_array_equal(first.rho, second.rho)
     np.testing.assert_array_equal(first.Cp, second.Cp)
 
@@ -58,7 +58,7 @@ def test_cached_spline_gives_identical_results():
 # silently becomes 2-D); used to crash lbftd's Gibbs evaluator
 # --------------------------------------------------------------------------
 @pytest.mark.parametrize('phase, P, T', [
-    ('water1', [100.0, 500.0, 1000.0], [280.0, 300.0, 320.0]),
+    ('water_Bollengier2019', [100.0, 500.0, 1000.0], [280.0, 300.0, 320.0]),
     ('Ih', [0.1, 50.0, 100.0], [250.0, 260.0, 270.0]),
     ('VI', [800.0, 1000.0, 1200.0], [250.0, 260.0, 270.0]),
 ])
@@ -96,12 +96,12 @@ def test_wpd_with_water3_liquid():
     import matplotlib.pyplot as plt
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        fig = sf.wpd(liquid='water3')
+        fig = sf.wpd(liquid='water_Brown2026')
     ax = fig.axes[0]
-    melting = [l for l in ax.get_lines() if l.get_label().endswith('-water3')]
+    melting = [l for l in ax.get_lines() if l.get_label().endswith('-water_Brown2026')]
     assert len(melting) >= 4                         # Ih, III, V, VI melting curves
-    # water3 melting of ice Ih at the lowest plotted pressure is ~273 K
-    ih = [l for l in melting if l.get_label() == 'Ih-water3'][0]
+    # water_Brown2026 melting of ice Ih at the lowest plotted pressure is ~273 K
+    ih = [l for l in melting if l.get_label() == 'Ih-water_Brown2026'][0]
     x, y = ih.get_data()
     assert abs(np.asarray(y)[np.nanargmin(np.asarray(x))] - 273.15) < 0.2
     plt.close(fig)
@@ -109,7 +109,7 @@ def test_wpd_with_water3_liquid():
 
 def test_wpd_rejects_unsupported_liquid():
     with pytest.raises(ValueError):
-        sf.wpd(liquid='water2')
+        sf.wpd(liquid='water_Brown2018')
 
 
 # --------------------------------------------------------------------------

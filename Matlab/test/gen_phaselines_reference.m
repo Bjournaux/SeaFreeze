@@ -29,18 +29,18 @@ addpath(mat_root);
 
 % --- Pure-water pairs (all 12, no VII_X_French) -----------------------------
 PURE_PAIRS = {
-    {'Ih',  'water1'};
+    {'Ih',  'water_Bollengier2019'};
     {'Ih',  'II'};
     {'Ih',  'III'};
     {'II',  'III'};
     {'II',  'V'};
     {'II',  'VI'};
-    {'II',  'water1'};
+    {'II',  'water_Bollengier2019'};
     {'III', 'V'};
-    {'III', 'water1'};
-    {'V',   'water1'};
+    {'III', 'water_Bollengier2019'};
+    {'V',   'water_Bollengier2019'};
     {'V',   'VI'};
-    {'VI',  'water1'};
+    {'VI',  'water_Bollengier2019'};
 };
 
 % --- NaClaq cases (3 ices x 2 molalities) -----------------------------------

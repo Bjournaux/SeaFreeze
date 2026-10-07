@@ -10,7 +10,7 @@ from core.compute import compute_properties, get_phase_line, get_phase_line_full
 from core.ui import make_csv, short_label
 from views import full_diagram
 
-_MODES = ["Full diagram (water3 + ices)", "Ice melting lines"]
+_MODES = ["Full diagram (water_Brown2026 + ices)", "Ice melting lines"]
 
 
 def render():
@@ -31,7 +31,7 @@ _PHASE_COLORS = {
     "V":            "#d62728",
     "VI":           "#9467bd",
     "VII_X_French": "#8c564b",
-    "water1":       "#17becf",
+    "water_Bollengier2019":       "#17becf",
 }
 
 # Phase-transition line colors: stable = black, metastable = dark grey
@@ -46,11 +46,11 @@ _NACL_COLORS = [
 
 # All pure-water phase pairs (no NaCl)
 _PURE_PAIRS = [
-    ("Ih", "water1"), ("Ih", "II"), ("Ih", "III"),
+    ("Ih", "water_Bollengier2019"), ("Ih", "II"), ("Ih", "III"),
     ("II", "III"), ("II", "V"), ("II", "VI"),
-    ("III", "V"), ("III", "water1"),
-    ("V", "water1"), ("V", "VI"),
-    ("VI", "water1"),
+    ("III", "V"), ("III", "water_Bollengier2019"),
+    ("V", "water_Bollengier2019"), ("V", "VI"),
+    ("VI", "water_Bollengier2019"),
 ]
 
 # NaCl melting pairs
@@ -60,7 +60,7 @@ _NACL_PAIRS = [
 ]
 
 # All phases that can be toggled
-_ALL_PHASES = ["Ih", "II", "III", "V", "VI", "water1"]
+_ALL_PHASES = ["Ih", "II", "III", "V", "VI", "water_Bollengier2019"]
 
 # Representative (P_MPa, T_K) interior points + short text for region labels.
 _PHASE_LABEL = {
@@ -69,11 +69,11 @@ _PHASE_LABEL = {
     "III":    (285.0,  249.0, "III"),
     "V":      (490.0,  248.0, "V"),
     "VI":     (1500.0, 290.0, "VI"),
-    "water1": (250.0,  335.0, "Liquid"),
+    "water_Bollengier2019": (250.0,  335.0, "Liquid"),
 }
 
 
-_LIQUIDS = {"water1", "water3", "NaClaq"}
+_LIQUIDS = {"water_Bollengier2019", "water_Brown2026", "NaClaq"}
 
 
 def _add_boundary_traces(fig, P, T, stable, color, name, custom_row,
@@ -217,12 +217,12 @@ def _render_transition_jump(event):
 def _render_melting_lines():
     with st.sidebar:
         st.header("Liquid")
-        liquid = st.radio("Liquid", ["water1", "water3"], horizontal=True, key="pd_liquid",
+        liquid = st.radio("Liquid", ["water_Bollengier2019", "water_Brown2026"], horizontal=True, key="pd_liquid",
                           format_func=short_label, label_visibility="collapsed",
-                          help="Liquid used for the melting curves. water3 (Helmholtz, beta) "
-                               "reproduces the water1 melting curves within 0.06 K to 632 MPa.")
-        pure_pairs = [(a, liquid if b == "water1" else b) for a, b in _PURE_PAIRS]
-        all_phases = [liquid if p == "water1" else p for p in _ALL_PHASES]
+                          help="Liquid used for the melting curves. water_Brown2026 (Helmholtz, beta) "
+                               "reproduces the water_Bollengier2019 melting curves within 0.06 K to 632 MPa.")
+        pure_pairs = [(a, liquid if b == "water_Bollengier2019" else b) for a, b in _PURE_PAIRS]
+        all_phases = [liquid if p == "water_Bollengier2019" else p for p in _ALL_PHASES]
 
         st.divider()
         st.header("Phase boundaries")
@@ -400,7 +400,7 @@ def _render_melting_lines():
         # Phase region labels (only for checked phases inside the visible axes)
         if show_labels:
             for phase in checked_phases:
-                key = "water1" if phase == liquid else phase
+                key = "water_Bollengier2019" if phase == liquid else phase
                 if key not in _PHASE_LABEL:
                     continue
                 Px, Tx, txt = _PHASE_LABEL[key]

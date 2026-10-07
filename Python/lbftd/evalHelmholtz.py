@@ -62,7 +62,7 @@ from scipy.interpolate import NdBSpline
 # lbftd property names supported here (pure phases only)
 SUPPORTED = ('G', 'S', 'U', 'H', 'A', 'rho', 'Cp', 'Cv', 'Kt', 'Kp', 'Ks',
              'alpha', 'vel', 'P', 'T')
-# ideal_gas_props names: getProp's water3 output set
+# ideal_gas_props names: getProp's water_Brown2026 output set
 IDEAL_GAS_PROPS = SUPPORTED + ('Js', 'gamma_Gruneisen')
 _DERIV_NAMES = ('F', 'Fr', 'Frr', 'Frrr', 'FT', 'FTT', 'FrT')
 
@@ -576,7 +576,7 @@ def ideal_gas_props(sp, X, T, *props, rhoT=False):
 
     :param X:     P (MPa), or rho (kg/m^3) with rhoT=True; broadcasts with T
     :param T:     temperature (K)
-    :param props: property names, as getProp's water3 output (same units);
+    :param props: property names, as getProp's water_Brown2026 output (same units);
                   none = all
     :return:      SimpleNamespace of arrays with the broadcast shape of X, T
     """

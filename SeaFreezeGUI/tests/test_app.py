@@ -77,7 +77,7 @@ def test_page_renders(page):
 
 
 # ── Property Calculator ──────────────────────────────────────────────────────
-@pytest.mark.parametrize("material", ["Ih", "water1", "NaClaq"])
+@pytest.mark.parametrize("material", ["Ih", "water_Bollengier2019", "NaClaq"])
 def test_single_point(material):
     at = _open()
     at.selectbox(key="pc_material").set_value(material)
@@ -145,7 +145,7 @@ def test_2d_grid_with_boundaries(view_mode):
     if view_mode == "Heatmap + Isocontours":
         assert "contour" in types
     # Ice Ih borders liquid water, ice II and ice III
-    assert {"Ih–water1", "Ih–II", "Ih–III"} <= set(names)
+    assert {"Ih–water_Bollengier2019", "Ih–II", "Ih–III"} <= set(names)
 
 
 def test_three_ranges_warns():
@@ -163,8 +163,8 @@ def test_phase_diagram_default():
     at = _melting(_open("Phase Diagram"))
     [fig] = _figures(at)
     names = _trace_names(fig)
-    assert "Ice Ih – Water" in names
-    assert "Ice VI – Water" in names
+    assert "Ice Ih – Water (Bollengier 2019)" in names
+    assert "Ice VI – Water (Bollengier 2019)" in names
     assert fig["layout"]["xaxis"]["title"]["text"] == "Pressure (MPa)"
     texts = [a["text"] for a in fig["layout"].get("annotations", [])]
     assert "<b>Liquid</b>" in texts
@@ -205,13 +205,13 @@ def test_phase_diagram_too_few_phases():
 
 def test_melting_lines_water3_and_log_axes():
     at = _melting(_open("Phase Diagram"))
-    at.radio(key="pd_liquid").set_value("water3")
+    at.radio(key="pd_liquid").set_value("water_Brown2026")
     at.checkbox(key="pd_logP").check()
     at.checkbox(key="pd_logT").check()
     _run(at)
     [fig] = _figures(at)
     names = _trace_names(fig)
-    assert "Ice Ih – Water3" in names and "Ice VI – Water3" in names
+    assert "Ice Ih – Water (Brown 2026)" in names and "Ice VI – Water (Brown 2026)" in names
     assert fig["layout"]["xaxis"]["type"] == "log" and fig["layout"]["yaxis"]["type"] == "log"
 
 
@@ -260,15 +260,15 @@ def test_full_diagram_linear_axes():
     assert fig["layout"]["xaxis"]["type"] == "linear"
 
 
-# ── water3 and (rho, T) input in the calculator ─────────────────────────────
+# ── water_Brown2026 and (rho, T) input in the calculator ─────────────────────────────
 @pytest.mark.parametrize("branch, lo, hi", [("stable", 990, 1000), ("liquid", 990, 1000),
                                             ("vapor", 0, 0.1)])
 def test_water3_single_point_branches(branch, lo, hi):
     at = _open()
-    at.selectbox(key="pc_material").set_value("water3")
+    at.selectbox(key="pc_material").set_value("water_Brown2026")
     _run(at)
-    at.number_input(key="P_single_water3_PT").set_value(0.001)
-    at.number_input(key="T_single_water3_PT").set_value(300.0)
+    at.number_input(key="P_single_water_Brown2026_PT").set_value(0.001)
+    at.number_input(key="T_single_water_Brown2026_PT").set_value(300.0)
     at.radio(key="pc_branch").set_value(branch)
     _run(at)
     _compute(at)
@@ -281,13 +281,13 @@ def test_water3_single_point_branches(branch, lo, hi):
 
 def test_water3_rhoT_log_sweep():
     at = _open()
-    at.selectbox(key="pc_material").set_value("water3")
+    at.selectbox(key="pc_material").set_value("water_Brown2026")
     _run(at)
     at.radio(key="pc_input").set_value("ρ, T")
     _run(at)
     _set_range(at, "rho", 20)
     _run(at)
-    assert at.checkbox(key="rho_log_water3_rhoT").value     # log by default for water3
+    assert at.checkbox(key="rho_log_water_Brown2026_rhoT").value     # log by default for water_Brown2026
     _compute(at)
     figs = _figures(at)
     assert figs and all(f["layout"]["xaxis"]["type"] == "log" for f in figs)
@@ -298,7 +298,7 @@ def test_water3_rhoT_log_sweep():
 
 def test_water3_2d_with_phase_diagram_overlay():
     at = _open()
-    at.selectbox(key="pc_material").set_value("water3")
+    at.selectbox(key="pc_material").set_value("water_Brown2026")
     _run(at)
     _set_range(at, "P", 30)
     _set_range(at, "T", 20)

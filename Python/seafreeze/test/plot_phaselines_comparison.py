@@ -25,11 +25,11 @@ ref = loadmat(REF_PATH, squeeze_me=True, struct_as_record=False)
 
 # All case names in the reference
 PURE_PAIRS = [
-    'Ih_water1', 'Ih_II', 'Ih_III',
-    'II_III', 'II_V', 'II_VI', 'II_water1',
-    'III_V', 'III_water1',
-    'V_water1', 'V_VI',
-    'VI_water1',
+    'Ih_water_Bollengier2019', 'Ih_II', 'Ih_III',
+    'II_III', 'II_V', 'II_VI', 'II_water_Bollengier2019',
+    'III_V', 'III_water_Bollengier2019',
+    'V_water_Bollengier2019', 'V_VI',
+    'VI_water_Bollengier2019',
 ]
 NACL_PAIRS = [
     'Ih_NaClaq_m0p5', 'Ih_NaClaq_m2',

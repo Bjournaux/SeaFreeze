@@ -18,8 +18,8 @@ persistent D
 if ~isempty(D), defs = D; return; end
 
 D.solid_phases   = {'Ih','II','III','V','VI','VII_X_French'};
-D.liquid_phases  = {'water1','water2','water_IAPWS95','water3'};
-D.helmholtz_phases = {'water3'};   % Helmholtz F(rho,T) surfaces: fnFval, not fnGval
+D.liquid_phases  = {'water_Bollengier2019','water_Brown2018','water_IAPWS95','water_Brown2026'};
+D.helmholtz_phases = {'water_Brown2026'};   % Helmholtz F(rho,T) surfaces: fnFval, not fnGval
 D.nacl_materials = {'NaClaq','NaClaq_LP','NaClaq_HP','NaClaq_5GPa_2024'};
 D.known_materials = [D.solid_phases, D.liquid_phases, D.nacl_materials];
 

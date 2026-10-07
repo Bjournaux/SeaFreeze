@@ -13,7 +13,7 @@ Baptiste Journaux - 2026
 import warnings
 import numpy as np
 
-from .seafreeze import getProp, phases, defpath, helmholtz_phases
+from .seafreeze import getProp, phases, defpath, helmholtz_phases, canonical_material
 from .phaselines import phase_range
 
 
@@ -27,7 +27,7 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
     T : float or array-like
         Temperature in K.  Scalar is broadcast against rho_target.
     phase : str
-        Any SeaFreeze material code: 'water1', 'water2', 'water_IAPWS95',
+        Any SeaFreeze material code: 'water_Bollengier2019', 'water_Brown2018', 'water_IAPWS95',
         'Ih', 'II', 'III', 'V', 'VI', 'VII_X_French',
         'NaClaq', 'NaClaq_LP', 'NaClaq_HP', 'NaClaq_5GPa_2024'.
     m : float or array-like, optional
@@ -52,7 +52,7 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
 
     Notes
     -----
-    Helmholtz materials ('water3'): P = rho² ∂F/∂rho is evaluated directly.
+    Helmholtz materials ('water_Brown2026'): P = rho² ∂F/∂rho is evaluated directly.
 
     Gibbs materials — method: Newton-Raphson using the isothermal bulk modulus Kt (MPa)::
 
@@ -66,7 +66,7 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
     --------
     >>> import numpy as np
     >>> import seafreeze as sf
-    >>> sf.rho2P(1100.0, 300.0, 'water1')       # ≈ 300 MPa
+    >>> sf.rho2P(1100.0, 300.0, 'water_Bollengier2019')       # ≈ 300 MPa
     array(299.5...)
 
     >>> # Ice VI scatter
@@ -75,6 +75,7 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
     >>> # NaClaq at 1 mol/kg
     >>> sf.rho2P(1050.0, 300.0, 'NaClaq', m=1.0)
     """
+    phase = canonical_material(phase)
     # ---- Validate phase --------------------------------------------------------
     if phase not in phases:
         raise ValueError(
@@ -131,7 +132,7 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
 
     # P_init_lo: slightly interior point used to seed the initial guess via a
     # linearised step.  Larger than P_newton_lo for EOS that are non-physical
-    # near P = 0 (e.g. water2 diverges there).
+    # near P = 0 (e.g. water_Brown2018 diverges there).
     P_init_lo = max(P_newton_lo, (P_hi - P_lo) * 0.001 + P_newton_lo)
 
     # ---- Initial guess ---------------------------------------------------------

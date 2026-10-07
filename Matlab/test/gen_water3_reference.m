@@ -1,4 +1,4 @@
-% gen_water3_reference.m — reference data for the Helmholtz water3 tests.
+% gen_water3_reference.m — reference data for the Helmholtz water_Brown2026 tests.
 %
 % Writes, in test/fixtures/:
 %   psi_reference.mat           psiH2O_val.m (lbf-thermo) at scattered, gridded
@@ -8,7 +8,7 @@
 %                               and its B-spline engine engine/lbf/sp_val.m,
 %                               put ahead of SeaFreeze's own sp_val for this
 %                               step); skipped otherwise.  Set LBF_ROOT below.
-%   water3_getprop_reference.mat SF_getprop(...,'water3') in (P,T) grid and
+%   water3_getprop_reference.mat SF_getprop(...,'water_Brown2026') in (P,T) grid and
 %                               scatter mode — the MATLAB side of the Python
 %                               parity test (test_helmholtz.py).
 %
@@ -27,7 +27,7 @@ LBF_ENGINE  = fullfile(LBF_ROOT, 'engine', 'lbf');
 if exist(fullfile(LBF_PSI_DIR, 'psiH2O_val.m'), 'file') && exist(fullfile(LBF_ENGINE, 'sp_val.m'), 'file')
     addpath(LBF_PSI_DIR); addpath(LBF_ENGINE);          % lbf's sp_val first: an independent reference
     clear sp_val psiH2O_val
-    sp = sf_load_spline('water3');
+    sp = sf_load_spline('water_Brown2026');
     rng(1);
     n = 400;
     rho = [900 + 500*rand(n,1); 1e-3 + 10*rand(60,1); 300 + 500*rand(60,1); ...
@@ -47,16 +47,16 @@ else
     fprintf('lbf-thermo psiH2O_val.m / engine/lbf/sp_val.m not found: psi_reference.mat not regenerated\n');
 end
 
-% ---- 2. SF_getprop water3 (P,T) reference -----------------------------------
+% ---- 2. SF_getprop water_Brown2026 (P,T) reference -----------------------------------
 P = [0.1 1 10 50 100 200 500 1000 2000 5000];
 T = [240 260 273.16 300 350 400 500 700 1000];
-g = SF_getprop({P, T}, 'water3');
+g = SF_getprop({P, T}, 'water_Brown2026');
 [Pm, Tm] = ndgrid(P, T);
-s = SF_getprop([Pm(:) Tm(:)], 'water3');
+s = SF_getprop([Pm(:) Tm(:)], 'water_Brown2026');
 w3.P = P; w3.T = T; w3.grid = g; w3.scatter = s;
 w3.sat = SF_coexistence('saturation', [273.16 300 400 500 600 640]);
 w3.sub = SF_coexistence('sublimation', [180 200 230 250 273.16], 'dilute_extension', true);
-rT = SF_getprop({[1000 1050 1100 1200], [280 300 330 360]}, 'water1', {'P','G','Cp'}, 'input', 'rhoT');
+rT = SF_getprop({[1000 1050 1100 1200], [280 300 330 360]}, 'water_Bollengier2019', {'P','G','Cp'}, 'input', 'rhoT');
 w3.rhoT_water1 = struct('rho', [1000 1050 1100 1200], 'T', [280 300 330 360], 'P', rT.P, 'G', rT.G, 'Cp', rT.Cp);
 save(fullfile(outdir, 'water3_getprop_reference.mat'), 'w3', '-v7');
 fprintf('Wrote water3_getprop_reference.mat\n');

@@ -3,7 +3,7 @@ function [fig, pm] = SF_WPD_PT(varargin)
 % fluid, critical point and the ices, by Gibbs-energy minimisation.
 % Baptiste Journaux - 2026
 %
-% The fluid is the Helmholtz material water3 (vapour + liquid + supercritical),
+% The fluid is the Helmholtz material water_Brown2026 (vapour + liquid + supercritical),
 % the ices are the SeaFreeze Gibbs splines.  At every grid point the stable
 % phase is the one with the lowest specific Gibbs energy (sf_phase_map);
 % phase boundaries are the G_i = G_j contours between neighbouring stable
@@ -21,7 +21,7 @@ function [fig, pm] = SF_WPD_PT(varargin)
 %   'P'      [Pmin Pmax] MPa, log-spaced            (default [1e-8 1e5])
 %   'T'      [Tmin Tmax] K                          (default [150 1800])
 %   'nP','nT' grid size                             (default 400 x 320)
-%   'fluid'  Helmholtz fluid                        (default 'water3')
+%   'fluid'  Helmholtz fluid                        (default 'water_Brown2026')
 %   'ices'   ice phases                             (default Ih, II, III, V, VI;
 %            ice VII/X is left out until an updated model is available)
 %
@@ -37,10 +37,11 @@ addParameter(p, 'P', [1e-8 1e5]);
 addParameter(p, 'T', [150 1800]);
 addParameter(p, 'nP', 400);
 addParameter(p, 'nT', 320);
-addParameter(p, 'fluid', 'water3');
+addParameter(p, 'fluid', 'water_Brown2026');
 addParameter(p, 'ices', {'Ih','II','III','V','VI'});
 parse(p, varargin{:});
 o = p.Results;
+o.fluid = sf_material_name(char(o.fluid));   % renamed materials
 warning('SeaFreeze:longRuntime', ['SF_WPD_PT: computing the stable phase at %d (P,T) states ' ...
         '(Gibbs minimisation over the Helmholtz fluid and the ices). This typically takes ' ...
         '0.5-2 min depending on your machine; reduce ''nP''/''nT'' for a faster preview. ' ...

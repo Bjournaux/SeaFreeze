@@ -22,9 +22,9 @@ np = 0; nf = 0;
 % 1. Smoke tests
 % =========================================================================
 pure_pairs = {
-    {'Ih','water1'}, {'Ih','II'}, {'Ih','III'}, {'II','III'}, {'II','V'}, ...
-    {'II','VI'},     {'III','V'}, {'III','water1'}, {'V','water1'}, ...
-    {'VI','water1'}, {'V','VI'}};
+    {'Ih','water_Bollengier2019'}, {'Ih','II'}, {'Ih','III'}, {'II','III'}, {'II','V'}, ...
+    {'II','VI'},     {'III','V'}, {'III','water_Bollengier2019'}, {'V','water_Bollengier2019'}, ...
+    {'VI','water_Bollengier2019'}, {'V','VI'}};
 for k = 1:length(pure_pairs)
     p = pure_pairs{k};
     name = sprintf('smoke %s/%s', p{1}, p{2});
@@ -51,15 +51,15 @@ for k = 1:length(nacl_pairs)
     end
 end
 
-% New pairs added 2026-04-28: II↔water1, VII_X↔{water1,water2,IAPWS95},
-% and Ih/III/V/VI ↔ {water2, IAPWS95}.
+% New pairs added 2026-04-28: II↔water_Bollengier2019, VII_X↔{water_Bollengier2019,water_Brown2018,IAPWS95},
+% and Ih/III/V/VI ↔ {water_Brown2018, IAPWS95}.
 new_pairs = {
-    {'II','water1'}, ...
-    {'VII_X_French','water1'}, {'VII_X_French','water2'}, {'VII_X_French','water_IAPWS95'}, ...
-    {'Ih','water2'},  {'Ih','water_IAPWS95'}, ...
-    {'III','water2'}, {'III','water_IAPWS95'}, ...
-    {'V','water2'},   {'V','water_IAPWS95'}, ...
-    {'VI','water2'},  {'VI','water_IAPWS95'}};
+    {'II','water_Bollengier2019'}, ...
+    {'VII_X_French','water_Bollengier2019'}, {'VII_X_French','water_Brown2018'}, {'VII_X_French','water_IAPWS95'}, ...
+    {'Ih','water_Brown2018'},  {'Ih','water_IAPWS95'}, ...
+    {'III','water_Brown2018'}, {'III','water_IAPWS95'}, ...
+    {'V','water_Brown2018'},   {'V','water_IAPWS95'}, ...
+    {'VI','water_Brown2018'},  {'VI','water_IAPWS95'}};
 for k = 1:length(new_pairs)
     p = new_pairs{k};
     name = sprintf('smoke %s/%s', p{1}, p{2});
@@ -72,37 +72,37 @@ for k = 1:length(new_pairs)
     end
 end
 
-% II↔water1: entirely metastable in the canonical phase diagram.
+% II↔water_Bollengier2019: entirely metastable in the canonical phase diagram.
 try
-    o = SF_PhaseLines('II','water1');
-    [np, nf] = check('II/water1: all-metastable', all(~o.stable), np, nf);
+    o = SF_PhaseLines('II','water_Bollengier2019');
+    [np, nf] = check('II/water_Bollengier2019: all-metastable', all(~o.stable), np, nf);
 catch err
-    [np, nf] = check(['II/water1 all-meta threw: ' err.message], false, np, nf);
+    [np, nf] = check(['II/water_Bollengier2019 all-meta threw: ' err.message], false, np, nf);
 end
 
-% VII_X_French↔water2: stable portion exists, sits above the VI–VII–water
+% VII_X_French↔water_Brown2018: stable portion exists, sits above the VI–VII–water
 % triple point (P ≥ 2216 MPa), and spans a wide pressure range.
 % (Full monotonicity isn't checked because the contour at high T has
 % multiple branches in the spline-extrapolation regime.)
 try
-    o = SF_PhaseLines('VII_X_French','water2','segment','stable');
+    o = SF_PhaseLines('VII_X_French','water_Brown2018','segment','stable');
     cond = ~isempty(o.P) && all(o.P >= 2200) && (max(o.P) - min(o.P)) > 1000;
-    [np, nf] = check(sprintf('VII_X/water2: stable above 2216 MPa, wide P (n=%d, span=%.0f MPa)', ...
+    [np, nf] = check(sprintf('VII_X/water_Brown2018: stable above 2216 MPa, wide P (n=%d, span=%.0f MPa)', ...
                              length(o.P), max(o.P)-min(o.P)), cond, np, nf);
 catch err
-    [np, nf] = check(['VII_X/water2 stable threw: ' err.message], false, np, nf);
+    [np, nf] = check(['VII_X/water_Brown2018 stable threw: ' err.message], false, np, nf);
 end
 
-% Cross-EOS: Ih↔water1 and Ih↔water2 should give close T at the same P
+% Cross-EOS: Ih↔water_Bollengier2019 and Ih↔water_Brown2018 should give close T at the same P
 % (both share the Ih spline; only the liquid EOS differs). Check at 200 MPa.
 try
-    o1 = SF_PhaseLines('Ih','water1','segment','stable');
-    o2 = SF_PhaseLines('Ih','water2','segment','stable');
+    o1 = SF_PhaseLines('Ih','water_Bollengier2019','segment','stable');
+    o2 = SF_PhaseLines('Ih','water_Brown2018','segment','stable');
     Pquery = 100;
     T1 = interp1(sort(o1.P), o1.T(arrayfun(@(p) find(o1.P == p, 1), sort(o1.P))), Pquery, 'linear', NaN);
     T2 = interp1(sort(o2.P), o2.T(arrayfun(@(p) find(o2.P == p, 1), sort(o2.P))), Pquery, 'linear', NaN);
     cond = isfinite(T1) && isfinite(T2) && abs(T1 - T2) < 1.0;
-    [np, nf] = check(sprintf('Ih cross-EOS at %g MPa: water1 vs water2 within 1 K (got |dT|=%.2g)', ...
+    [np, nf] = check(sprintf('Ih cross-EOS at %g MPa: water_Bollengier2019 vs water_Brown2018 within 1 K (got |dT|=%.2g)', ...
                              Pquery, abs(T1-T2)), cond, np, nf);
 catch err
     [np, nf] = check(['cross-EOS check threw: ' err.message], false, np, nf);
@@ -118,7 +118,7 @@ for k = 1:length(pure_pairs)
     p = pure_pairs{k};
     name = sprintf('v1 regression %s/%s', p{1}, p{2});
     try
-        v1_out = SF_PhaseLines_v1(p{1}, p{2});
+        v1_out = SF_PhaseLines_v1(v1_name(p{1}), v1_name(p{2}));   % v1 knows the pre-1.2 names
         if isempty(v1_out)
             [np, nf] = check([name, ' (v1 empty, skipped)'], true, np, nf);
             continue;
@@ -209,8 +209,8 @@ end
 % =========================================================================
 % 5. Error paths
 % =========================================================================
-[np, nf] = check_throws('unsupported pair (water1/water2)', ...
-    @() SF_PhaseLines('water1','water2'), 'SeaFreeze:unsupportedPair', np, nf);
+[np, nf] = check_throws('unsupported pair (water_Bollengier2019/water_Brown2018)', ...
+    @() SF_PhaseLines('water_Bollengier2019','water_Brown2018'), 'SeaFreeze:unsupportedPair', np, nf);
 [np, nf] = check_throws('NaClaq without m', ...
     @() SF_PhaseLines('Ih','NaClaq'), 'SeaFreeze:badInput', np, nf);
 [np, nf] = check_throws('m out of range', ...
@@ -220,7 +220,7 @@ end
 % 6. Plot path
 % =========================================================================
 try
-    o = SF_PhaseLines('Ih','water1','plot',true);
+    o = SF_PhaseLines('Ih','water_Bollengier2019','plot',true);
     cond = isfield(o,'fig') && ishandle(o.fig);
     if cond, close(o.fig); end
     [np, nf] = check('plot path returns figure handle', cond, np, nf);
@@ -230,10 +230,10 @@ end
 
 % Overlay onto an existing figure: pass the previous fig handle as 'plot'
 try
-    o1 = SF_PhaseLines('Ih','water1','plot',true);
+    o1 = SF_PhaseLines('Ih','water_Bollengier2019','plot',true);
     ax = sf_gca(o1.fig);
     n_lines_before = numel(findobj(ax,'Type','Line'));
-    o2 = SF_PhaseLines('VI','water1','plot',o1.fig);
+    o2 = SF_PhaseLines('VI','water_Bollengier2019','plot',o1.fig);
     n_lines_after = numel(findobj(ax,'Type','Line'));
     cond = o2.fig == o1.fig && n_lines_after > n_lines_before;
     if ishandle(o1.fig), close(o1.fig); end
@@ -284,4 +284,13 @@ catch err
         nf = nf + 1;
     end
 end
+end
+
+
+function name = v1_name(name)
+% Material name as the frozen SF_PhaseLines_v1 knows it (before the 1.2 rename).
+old = {'water1', 'water2', 'water3'};
+new = {'water_Bollengier2019', 'water_Brown2018', 'water_Brown2026'};
+k = find(strcmp(new, name), 1);
+if ~isempty(k), name = old{k}; end
 end
