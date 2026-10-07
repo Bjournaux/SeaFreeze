@@ -244,6 +244,8 @@ def _lowT2s_phi(d, tau, p, R):
     be = p['b'] / (R * TC)
     ds = p['rhostar'] / RHOC
     la = p.get('lam') or 0.0
+    # log share of the lam term (lbf-thermo 2026-09-30, stage5_19eL on); 0 = pure 1/T form
+    fl = p.get('lam_log') or 0.0
     L = np.log(d / ds)
     if p.get('rho_m') is not None:
         Lm = np.log(p['rho_m'] / p['rhostar'])
@@ -254,11 +256,11 @@ def _lowT2s_phi(d, tau, p, R):
         Q = L
         Q1 = 1 + 0 * L
         Q2 = 0 * L
-    g = s_ * (th * tau - 1) + la * (1 / (th * tau) - 1) + be * tau * Q
+    g = s_ * (th * tau - 1) + la * ((1 - fl) * (1 / (th * tau) - 1) - fl * np.log(th * tau)) + be * tau * Q
     gd = be * tau * Q1 / d
     gdd = be * tau * (Q2 - Q1) / d ** 2
-    gt = s_ * th - la / (th * tau ** 2) + be * Q
-    gtt = 2 * la / (th * tau ** 3)
+    gt = s_ * th - la * ((1 - fl) / (th * tau ** 2) + fl / tau) + be * Q
+    gtt = la * ((1 - fl) * 2 / (th * tau ** 3) + fl / tau ** 2)
     gdt = be * Q1 / d
     Lw = np.log(d / (p['rho_top'] / RHOC))
     om_h = p.get('omega_h')

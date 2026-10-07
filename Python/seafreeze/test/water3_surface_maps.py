@@ -130,7 +130,7 @@ def make(outdir):
     ax0.text(3e-6, 280, 'vapour', color=INK, fontsize=9)
     ax0.text(2e1, 300, 'liquid', color='white', fontsize=9)
     ax0.text(3e3, 250, 'solid\n(hatched)', color=INK, fontsize=8.5)
-    fig.suptitle('water3 (psi surface stage5_18f) over its full range — stable branch; orange: saturation curve '
+    fig.suptitle('water3 (psi surface stage5_23c) over its full range — stable branch; orange: saturation curve '
                  'and critical point; black: sublimation + melting curve of the stable solid', x=0.01, ha='left',
                  color=INK, fontsize=11)
     fig.tight_layout()

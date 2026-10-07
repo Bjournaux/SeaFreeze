@@ -65,7 +65,7 @@ function out = SF_getprop(PT, material, props, varargin)
 %   water2                              Brown 2018 (up to 100 GPa)
 %   water_IAPWS95                       IAPWS95, Wagner & Pruss 2002
 %   water3                              psi-spline Helmholtz surface F(rho,T)
-%                                         (lbf-thermo, stage5_18f, 2026);
+%                                         (lbf-thermo, stage5_23c, 2026);
 %                                         P,T input is inverted to rho on the
 %                                         densest stable branch (see fnFval)
 %   NaClaq                              aqueous NaCl — stitched LP+HP 2026 (default, recommended)

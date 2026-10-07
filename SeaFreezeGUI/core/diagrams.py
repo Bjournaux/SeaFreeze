@@ -43,7 +43,7 @@ RUNTIME_S = {
 
 # bump when the diagram data change without a SeaFreeze version change, so
 # stale precomputed files are recomputed rather than loaded
-DATA_VERSION = 3
+DATA_VERSION = 4
 
 MAP_PROPS = tuple(_pd.MAP_PROPS)
 ICE_ONLY_PROPS = tuple(_pd.ICE_ONLY_PROPS)

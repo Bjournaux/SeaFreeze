@@ -94,7 +94,10 @@ def test_getProp_water3_vs_matlab():
         y = np.asarray(getattr(w3.grid, k), float)
         assert np.array_equal(np.isnan(x), np.isnan(y)), k
         ok = np.isfinite(y)
-        assert _relerr(x[ok], y[ok]) < (1e-4 if k == 'Kp' else 1e-8), k
+        # U, H, S, G, A pass through zero near the reference state (273.16 K):
+        # relative to max(|y|, 1e-6 max|y|) there
+        e = np.max(np.abs(x[ok] - y[ok]) / np.maximum(np.abs(y[ok]), 1e-6 * np.max(np.abs(y[ok]))))
+        assert e < (1e-4 if k == 'Kp' else 1e-8), k
 
 
 def test_getProp_water3_grid_scatter_and_identities():
@@ -236,12 +239,7 @@ def test_saturation_smooth_near_Tc():
     assert np.all(np.isfinite(s.P))
     assert np.all(np.diff(s.P) > 0)                      # monotonic vapour pressure
     assert np.all(np.diff(s.rho_B) > 0)
-    # stage5_18f: a small (dP/drho)_T loop straddles the liquid binodal at
-    # ~636.5-637.5 K (psiEOS LIMITS: sign changes of (dP/drho)_T at 600-642 K),
-    # so rho' steps by ~10 kg/m3 there.  Monotonic everywhere else.
-    ok = (T[:-1] < 636.5) | (T[:-1] > 637.75)
-    assert np.all(np.diff(s.rho_A)[ok] < 0)
-    assert np.max(np.abs(np.diff(s.rho_A)[~ok])) < 15
+    assert np.all(np.diff(s.rho_A) < 0)                  # saturated liquid: monotonic to Tc
 
 
 def test_sublimation_vs_R1408_and_NIST():
@@ -281,22 +279,10 @@ def test_dilute_extension_warns_once(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# P -> rho inversion rejects thermally unstable roots (spurious loop of the
-# stage5_18f surface inside the dome at 629-632 K)
+# P -> rho inversion: the stable branch only returns thermodynamically stable
+# roots (Cv > 0, dP/drho > 0), also where the surface has small (dP/drho)_T
+# loops inside the dome near Tc
 # ---------------------------------------------------------------------------
-def test_inversion_rejects_unstable_root_near_Tc():
-    import seafreeze as sf
-    pts = np.empty(3, dtype=object)
-    for i, P in enumerate((35.0, 38.0, 41.0)):
-        pts[i] = (P, 631.0)
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        st = sf.getProp(pts, 'water3', sf.seafreeze.defpath, 'rho', 'Cv', 'Kt')
-        lq = sf.getProp(pts, 'water3', sf.seafreeze.defpath, 'rho', branch='liquid')
-    np.testing.assert_allclose(st.rho, lq.rho, rtol=1e-12)          # the compressed liquid
-    assert np.all(st.rho > 630) and np.all(st.Cv > 0) and np.all(st.Kt > 0)
-
-
 def test_stable_branch_is_thermodynamically_stable_near_Tc():
     import seafreeze as sf
     g = np.empty(2, dtype=object)

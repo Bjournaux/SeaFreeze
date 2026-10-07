@@ -220,7 +220,7 @@ def _render_melting_lines():
         liquid = st.radio("Liquid", ["water1", "water3"], horizontal=True, key="pd_liquid",
                           format_func=short_label, label_visibility="collapsed",
                           help="Liquid used for the melting curves. water3 (Helmholtz, beta) "
-                               "reproduces the water1 melting curves within 0.05 K to 632 MPa.")
+                               "reproduces the water1 melting curves within 0.06 K to 632 MPa.")
         pure_pairs = [(a, liquid if b == "water1" else b) for a, b in _PURE_PAIRS]
         all_phases = [liquid if p == "water1" else p for p in _ALL_PHASES]
 

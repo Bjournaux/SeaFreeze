@@ -383,15 +383,18 @@ function q = lowT2s_phi(d, tau, p, R)
     end
     s_ = p.s; th = p.Tstar / TC; be = p.b / (R * TC); ds = p.rhostar / RHOC;
     la = 0; if isfield(p, 'lam') && ~isempty(p.lam), la = p.lam; end
+    % log share of the lam term (lbf-thermo 2026-09-30, stage5_19eL on); 0 = pure 1/T form
+    fl = 0; if isfield(p, 'lam_log') && ~isempty(p.lam_log), fl = p.lam_log; end
     L = log(d / ds);
     if isfield(p, 'rho_m') && ~isempty(p.rho_m)
         Lm = log(p.rho_m / p.rhostar); Q = L - L.^2 / (2 * Lm); Q1 = 1 - L / Lm; Q2 = -1 / Lm + 0 * L;
     else
         Q = L; Q1 = 1 + 0 * L; Q2 = 0 * L;
     end
-    g   = s_ * (th * tau - 1) + la * (1 ./ (th * tau) - 1) + be * tau .* Q;
+    g   = s_ * (th * tau - 1) + la * ((1 - fl) * (1 ./ (th * tau) - 1) - fl * log(th * tau)) + be * tau .* Q;
     gd  = be * tau .* Q1 ./ d;  gdd = be * tau .* (Q2 - Q1) ./ d.^2;
-    gt  = s_ * th - la ./ (th * tau.^2) + be * Q;  gtt = 2 * la ./ (th * tau.^3);  gdt = be * Q1 ./ d;
+    gt  = s_ * th - la * ((1 - fl) ./ (th * tau.^2) + fl ./ tau) + be * Q;
+    gtt = la * ((1 - fl) * 2 ./ (th * tau.^3) + fl ./ tau.^2);  gdt = be * Q1 ./ d;
     Lw = log(d / (p.rho_top / RHOC));
     if isfield(p, 'omega_h') && ~isempty(p.omega_h) && p.omega_h > 0
         h = p.omega_h; zz = -Lw / h;

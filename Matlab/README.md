@@ -5,7 +5,7 @@ V1.2 beta (Matlab version, `1.2.0-beta`)
 The SeaFreeze package computes thermodynamic and elastic properties of water, ice polymorphs (Ih, II, III, V, VI, VII and X) and aqueous NaCl solutions in the 0-100 GPa and 220-10000 K range, with the study of icy worlds and their oceans in mind. It is based on Gibbs Local Basis Function (LBF) parametrizations (https://github.com/jmichaelb/LocalBasisFunction) for each phase. The formalism is described in Brown (2018), Journaux et al. (2020), and in the liquid water Gibbs parametrization by Bollengier, Brown, and Shaw (2019). Since 1.2 it also includes `water3`, fluid water from a Helmholtz energy surface covering vapour, liquid and supercritical states (230 K – 150 000 K, dilute vapour to 16 000 kg/m³), with liquid–vapour and ice–vapour equilibria and full phase diagrams in (P,T) and (ρ,T).
 
 ## What's new in 1.2 beta
-- **`water3`** — Helmholtz-energy fluid water (vapour, liquid, supercritical) from the psi-spline surface *stage5_18f*; stable / liquid / vapour branch selection at (P,T). See [`water3`](#water3-helmholtz-energy-fluid-water-new-in-12-beta).
+- **`water3`** — Helmholtz-energy fluid water (vapour, liquid, supercritical) from the psi-spline surface *stage5_23c*; stable / liquid / vapour branch selection at (P,T). See [`water3`](#water3-helmholtz-energy-fluid-water-new-in-12-beta).
 - **Density input for every material** — `SF_getprop(rhoT, material, props, 'input', 'rhoT')`: (ρ,T) or (ρ,T,m) points; Gibbs splines are inverted with `SF_rho2P`.
 - **Vapour equilibria** — `SF_coexistence('saturation', T)` and `SF_coexistence('sublimation', T)`, with a dilute-vapour extension below 230 K (on by default, warns once per session).
 - **Full phase diagrams** — `SF_WPD_PT`, `SF_WPD_rhoT` (+ `sf_phase_map`, `sf_triple_points`, `sf_melt_T_dq2026`): vapour, liquid, supercritical fluid, critical point and ices, with two-phase regions and triple-point tie lines in (ρ,T).
@@ -389,7 +389,7 @@ P = SF_rho2P(1050, 300, 'NaClaq', 1.0, 'tol', 1e-4)
 ## `water3`: Helmholtz-energy fluid water (new in 1.2 beta)
 
 `water3` is fluid water — vapour, liquid and supercritical fluid — from a Helmholtz energy surface F(ρ,T): the
-psi-spline surface *stage5_18f* (J. M. Brown & B. Journaux, lbf-thermo 2026). Unlike the other SeaFreeze phases it is
+psi-spline surface *stage5_23c* (J. M. Brown & B. Journaux, lbf-thermo 2026; the Hugoniot-favoured variant of the stage 23 release). Unlike the other SeaFreeze phases it is
 not a Gibbs spline G(P,T): the residual Helmholtz energy is a tensor B-spline in (ln ρ, ln T) plus analytic ideal-gas,
 reacting-mixture, critical (KW2000) and low-temperature two-structure terms, evaluated by `internal/fnFval.m` and
 `internal/psi_val.m` (a toolbox-free port of lbf-thermo's `psiH2O_val`). It shares the IAPWS-95 reference state with
@@ -405,24 +405,24 @@ below the saturation pressure, liquid above); `'branch','liquid'` or `'branch','
 | Temperature | 230 K – 150 000 K (surface knots). Below 230 K only the dilute vapour is available, through the ideal-gas extension used by the sublimation curve and the phase diagrams |
 | Density | up to 16 000 kg/m³; below 10⁻⁴ kg/m³ the surface is continued by a virial form and a low-density chemistry table |
 | Pressure | from the dilute vapour to ~10 TPa (P = ρ²∂F/∂ρ over the box) |
-| Phases | vapour, liquid, supercritical fluid; at (P,T) the stable branch (lower Gibbs energy; roots with C_v ≤ 0 or (∂P/∂ρ)_T ≤ 0, e.g. on the spurious loop inside the dome at 629–632 K, are rejected) is returned unless `branch` = `'liquid'` / `'vapor'` |
+| Phases | vapour, liquid, supercritical fluid; at (P,T) the stable branch (lower Gibbs energy; as a safeguard, roots with C_v ≤ 0 or (∂P/∂ρ)_T ≤ 0 are never returned) is returned unless `branch` = `'liquid'` / `'vapor'` |
 | Not water | more than 40 K below the melting curve of the stable solid (the surface's own validity mask, psiEOS `dq2026` model); the phase diagrams apply this mask |
-| Use with care | cold ultra-dense corner (ρ > 4000 kg/m³, T < 1000 K: not constrained by data); interior of the two-phase dome (spinodals are data-free; small (∂P/∂ρ)_T loops near T_c make the saturated-liquid density step by ~10 kg/m³ near 637 K); supercooled liquid below 230 K and stretched liquid below −140 MPa are extrapolations |
+| Use with care | cold ultra-dense corner (ρ > 4000 kg/m³, T < 1000 K: not constrained by data); interior of the two-phase dome (spinodals are data-free; a few small (∂P/∂ρ)_T sign changes remain at 600–620 K, and a thin unstable sliver on the critical isochore up to 647.2 K); near T_c, c_v and c_p carry ≤ 0.2–0.5 % structure at 705–753 K / 470–535 kg/m³ and next to the saturated liquid at 19–21 MPa, 630–640 K; dense fluid: K_T follows the Walsh & Rice / Mitchell & Nellis principal Hugoniot, ~10 % above the PBE DFT sets at 2.2–2.5 g/cm³ (40–60 GPa); supercooled liquid below 230 K and stretched liquid below −140 MPa are extrapolations |
 
 ### Accuracy
 
 | Check | Result |
 |---|---|
-| Ambient liquid (0.101325 MPa, 298.15 K) | ρ = 997.047 kg/m³, Cp = 4181.5 J/kg/K, sound speed 1496.7 m/s |
-| Evaluator vs the reference implementation (psiH2O_val, lbf-thermo) | 1e-13 (Matlab), 1e-11 (Python) relative |
-| Vapour pressure vs IAPWS-95 (273.16–646.5 K) | within 0.02 % (0.005 % below 620 K); p_σ(373.124 K) = 0.101323 MPa |
+| Ambient liquid (0.101325 MPa, 298.15 K) | ρ = 997.048 kg/m³, Cp = 4181.4 J/kg/K, sound speed 1496.7 m/s |
+| Evaluator vs the reference implementation (psiH2O_val, lbf-thermo) | 2e-13 (Matlab), 2e-10 (Python) relative |
+| Vapour pressure vs IAPWS-95 (273.16–646.5 K) | within 0.02 % (0.01 % below 620 K); p_σ(373.124 K) = 0.101323 MPa |
 | Saturated-vapour density vs NIST WebBook | within ~0.1 % to 620 K |
 | Vapour / supercritical isotherms 300–1000 K vs NIST WebBook | within 0.1 % |
 | Ice Ih sublimation (water3 vapour + ice Ih) vs IAPWS R14-08 | within ±0.008 % over 230–273.16 K |
 | Ice Ih sublimation vs NIST measurements (Bielska et al. 2013, 175–253 K) | every point within 3σ (dilute-vapour extension below 230 K) |
-| Ice–liquid curves vs `water1` | within 0.05 K up to 632 MPa (Ih, III, V); 0.4 K along ice VI to 2.3 GPa; Ih melting at 0.101325 MPa = 273.158 K |
-| Triple points | within 0.07 K of the literature values; Ih–liquid–vapour at 273.1654 K, 611.9 Pa |
-| Stable liquid vs `water1` (240–500 K, ≤ 2.3 GPa) | ρ rms 0.05 % (max 0.12 %), Cp rms 0.8 % |
+| Ice–liquid curves vs `water1` | within 0.015 K (Ih, III) and 0.06 K (V) up to 632 MPa; 0.35 K along ice VI to 2.3 GPa; Ih melting at 0.101325 MPa = 273.159 K |
+| Triple points | within 0.06 K of the literature values; Ih–liquid–vapour at 273.1664 K, 611.9 Pa |
+| Stable liquid vs `water1` (240–500 K, ≤ 2.3 GPa) | ρ rms 0.05 % (max 0.13 %), Cp rms 0.8 % |
 
 ![water3 vs water1: ice-liquid equilibrium](../assets/water3/water3_phase_diagram.png)
 ![water3, water1 and IAPWS-95 along isobars](../assets/water3/water3_properties.png)
@@ -432,7 +432,7 @@ below the saturation pressure, liquid above); `'branch','liquid'` or `'branch','
 ```matlab
 % (P,T) scatter: stable branch — liquid at ambient, vapour at 1 kPa / 300 K
 out = SF_getprop([0.101325 298.15; 1e-3 300], 'water3');
-out.rho                                   % [997.047; 0.00722]
+out.rho                                   % [997.048; 0.00722]
 
 % grid input, as for every other phase (rows: P, columns: T)
 out = SF_getprop({[0.1 50 500], [280 300 320]}, 'water3', {'rho','alpha'});
@@ -545,7 +545,7 @@ The MATLAB package ships with a function-style and classdef-style test suite plu
 ## Important remarks
 
 ### Water representation
-Ice Gibbs parametrizations are optimized for use with `water1` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will yield incorrect melting curves. `water2` and `water_IAPWS95` are provided for high-pressure extension and comparison only. Use `water1` for the 200–355 K, ≤2300 MPa range. `water3` (Helmholtz surface, 1.2 beta) shares the same reference state and reproduces the `water1` melting curves within 0.05 K up to 632 MPa; it is the phase to use for vapour, liquid–vapour and supercritical states (see its [range of validity](#range-of-validity)).
+Ice Gibbs parametrizations are optimized for use with `water1` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will yield incorrect melting curves. `water2` and `water_IAPWS95` are provided for high-pressure extension and comparison only. Use `water1` for the 200–355 K, ≤2300 MPa range. `water3` (Helmholtz surface, 1.2 beta) shares the same reference state and reproduces the `water1` melting curves within 0.06 K up to 632 MPa; it is the phase to use for vapour, liquid–vapour and supercritical states (see its [range of validity](#range-of-validity)).
 
 ### Range of validity
 Stability prediction is considered valid down to 130 K (ice VI – ice XV transition). The Ih–II transition may be valid down to 73.4 K (Ih – XI). The VII/X representation extends to 1 TPa (1e6 MPa) and 2000 K.
@@ -557,7 +557,7 @@ Stability prediction is considered valid down to 130 K (ice VI – ice XV transi
 - [Journaux et al. (2020) JGR: Planets 125, e2019JE006176](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2019JE006176)
 - [Wagner and Pruss (2002) J. Phys. Chem. Ref. Data 31, 387-535](https://aip.scitation.org/doi/abs/10.1063/1.1461829)
 - [French and Redmer (2015) Phys. Rev. B 91, 014308](http://link.aps.org/doi/10.1103/PhysRevB.91.014308)
-- water3: psi-spline Helmholtz surface stage5_18f, J. M. Brown & B. Journaux (lbf-thermo, 2026), in prep.
+- water3: psi-spline Helmholtz surface stage5_23c, J. M. Brown & B. Journaux (lbf-thermo, 2026), in prep.
 - [Wagner, Riethmann, Feistel & Harvey (2011) J. Phys. Chem. Ref. Data 40, 043103](https://doi.org/10.1063/1.3657937) (IAPWS R14-08 sublimation and melting pressures)
 - [Bielska et al. (2013) Geophys. Res. Lett. 40, 6303–6307](https://doi.org/10.1002/2013GL058474) (NIST ice vapour-pressure measurements)
 
