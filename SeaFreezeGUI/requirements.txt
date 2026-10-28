@@ -1,4 +1,4 @@
-SeaFreeze>=1.1.1
+SeaFreeze>=1.1.2
 streamlit>=1.39
 plotly>=5.20
 pandas>=2.1

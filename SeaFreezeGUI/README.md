@@ -69,7 +69,7 @@ The app opens in your browser at `http://localhost:8501`.
 
 | Package | Version |
 |---------|---------|
-| SeaFreeze | >= 1.1.1 |
+| SeaFreeze | >= 1.1.2 |
 | Streamlit | >= 1.39 |
 | Plotly | >= 5.20 |
 | Pandas | >= 2.1 |

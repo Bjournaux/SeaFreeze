@@ -6,24 +6,6 @@ from seafreeze import getProp as _getProp, phase_range as _phase_range, phase_li
 from seafreeze.seafreeze import defpath as _defpath
 from seafreeze.phaselines import _PAIRS
 
-# ── Monkey-patch for SeaFreeze <= 1.1.1 shear modulus bug ────────────────────
-# The PyPI version's _get_shear_mod_GPa receives T as a dtype=object array
-# from meshgrid, so np.sqrt(T) fails with "loop of ufunc does not support
-# argument 0 of type float which has no callable sqrt method".
-# Fix: ensure T is cast to float before any ufunc operations.
-import seafreeze.seafreeze as _sf_mod
-
-_orig_shear = getattr(_sf_mod, "_get_shear_mod_GPa", None)
-
-if _orig_shear is not None:
-    def _patched_shear_mod_GPa(material, T, rho_kgm3):
-        T = np.asarray(T, dtype=float)
-        rho_kgm3 = np.asarray(rho_kgm3, dtype=float)
-        return _orig_shear(material, T, rho_kgm3)
-
-    _sf_mod._get_shear_mod_GPa = _patched_shear_mod_GPa
-
-
 def _extract_results(out):
     """Pull all numpy array attributes from a SimpleNamespace into a dict."""
     result = {}
@@ -81,13 +63,11 @@ def compute_properties(P, T, m, material, props, mode):
             PTm = np.empty(2, dtype=object)
             PTm[0], PTm[1] = P_arr, T_arr
 
-    # Always call getProp with NO selective props — let it compute all,
-    # then filter the result.  This avoids a bug in getProp's selective
-    # shear/Vp/Vs path where scalar vs array types mix badly on grids.
-    out = _getProp(PTm, material, _defpath)
+    # Request only the selected properties so getProp skips the spline
+    # derivatives it does not need; an empty tuple means compute everything.
+    out = _getProp(PTm, material, _defpath, *tuple(props))
     result = _extract_results(out)
 
-    # If specific props were requested, filter
     if props:
         result = {k: v for k, v in result.items() if k in props}
 

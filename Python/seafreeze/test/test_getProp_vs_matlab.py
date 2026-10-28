@@ -156,6 +156,8 @@ def _compare_case(case_name, case):
 class TestGetPropVsMatlab(ut.TestCase):
     @classmethod
     def setUpClass(cls):
+        if not os.path.exists(REF_PATH) and os.environ.get('SEAFREEZE_REQUIRE_MATLAB_REF'):
+            raise AssertionError(f'Matlab reference required but missing: {REF_PATH}')
         if not os.path.exists(REF_PATH):
             raise ut.SkipTest(
                 f"Reference file not found:\n  {REF_PATH}\n"

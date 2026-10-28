@@ -104,6 +104,8 @@ class TestPhaseLinesVsMatlab(ut.TestCase):
     @classmethod
     def setUpClass(cls):
         # Fail-fast skip if reference is missing
+        if not os.path.exists(REF_PATH) and os.environ.get('SEAFREEZE_REQUIRE_MATLAB_REF'):
+            raise AssertionError(f'Matlab reference required but missing: {REF_PATH}')
         if not os.path.exists(REF_PATH):
             raise ut.SkipTest(
                 f"Reference file not found: {REF_PATH}\n"

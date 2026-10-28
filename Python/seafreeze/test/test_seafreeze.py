@@ -179,7 +179,7 @@ class TestSeafreeze(ut.TestCase):
         m = np.arange(1, 9, 0.5)
         PTM = np.array([P, T, m], dtype=object)
         out2 = sf.getProp(PTM, 'NaClaq', sf.defpath, 'mus', 'Vex')
-        self.assertAlmostEqual(out2.G[5][5][5], out1.G[0], places=1)
+        self.assertAlmostEqual(out2.Vex[5][5][5], out1.Vex[0], places=1)
         self.assertAlmostEqual(out2.mus[5][5][5], out1.mus[0], places=1)
 
     def test_getProp_new_vars(self):
@@ -202,7 +202,7 @@ class TestSeafreeze(ut.TestCase):
         PTM[0] = (140.1, 500, 6.5)
         out2 = sf.getProp(PTM, 'NaClaq', sf.defpath, 'Cp', 'Va', 'Vex', 'aw', 'rho', 'mus')
         out1 = sf.getProp(PTm, 'NaClaq', sf.defpath, 'Cp', 'Va', 'Vex', 'aw', 'rho', 'mus')
-        self.assertAlmostEqual(out2.G[0], out1.G[14][-1][11], places=0)
+        self.assertAlmostEqual(out2.rho[0], out1.rho[14][-1][11], places=0)
         self.assertAlmostEqual(out2.mus[0], out1.mus[14][-1][11], places=0)
 
     def test_getProp_aw_grid(self):

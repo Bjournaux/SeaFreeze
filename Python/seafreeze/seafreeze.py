@@ -61,6 +61,7 @@ _P_INDEP_FIELDS = frozenset({'xs', 'xw'})
 _COORD_FIELDS = frozenset({'P', 'T', 'm'})
 # Complete set of lbftd props to request in all-props mode.
 # V, gam, Gex are lbftd-only and not part of the Matlab output — never requested.
+_LBFTD_INTERNAL = frozenset({'V', 'gam', 'Gex', 'PTM'})
 _LBFTD_ALL_WATER = ('G', 'S', 'U', 'H', 'A', 'rho', 'Cp', 'Cv',
                     'Kt', 'Kp', 'Ks', 'alpha', 'vel')
 _LBFTD_ALL_NACL  = _LBFTD_ALL_WATER + (
@@ -213,6 +214,12 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
             if want_set & {'shear', 'Vp', 'Vs'} and phasedesc.shear_mod_parms:
                 extra |= {'rho', 'Ks'}
             lbftd_wants = tuple(set(lbftd_wants) | extra)
+            if not lbftd_wants:
+                # Only coordinate/composition echoes requested.  An empty spec
+                # makes lbftd compute its full default set (which needs spline
+                # fields such as 'Go' that SeaFreeze splines lack), so anchor
+                # on G; it is stripped below because it was not requested.
+                lbftd_wants = ('G',)
 
         # ---- Evaluate — either stitched LP+HP or single spline -----------------
         if is_stitched:
@@ -221,8 +228,15 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
         else:
             sp = _load_spline(path, phase)
             raw = _get_tdvs(sp, PTm, isscatter, *lbftd_wants)
-            # Use instance __dict__ to avoid lbftd class-level attribute fallback.
+            # Use instance __dict__ to avoid lbftd class-level attribute fallback
+            # (PTM, derivative scratch fields) — but when every scatter point is
+            # outside the spline domain lbftd never assigns instance attributes
+            # and the requested props only exist as class-level NaN arrays, so
+            # fetch those explicitly.
             props = dict(vars(raw))
+            for name in lbftd_wants:
+                if name not in props:
+                    props[name] = np.asarray(getattr(raw, name), dtype=float)
 
         # ---- Shear / Vp / Vs (solid phases only) --------------------------------
         if phasedesc.shear_mod_parms and (want_all or want_set & {'shear', 'Vp', 'Vs'}):
@@ -239,11 +253,17 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
         # ---- Matlab-parity derived properties -----------------------------------
         _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path)
 
-        # ---- Strip prerequisite props that were only added internally -----------
-        if not want_all:
-            for p in ('alpha', 'Cp', 'Cv', 'Kt', 'muw'):
-                if p not in want_set:
-                    props.pop(p, None)
+        # ---- Strip anything the caller did not ask for --------------------------
+        # lbftd adds dependency quantities (e.g. 'A' pulls in G, S, U, rho; 'Va'
+        # pulls in V) and this function adds its own prerequisites (alpha, Cp,
+        # Cv, Kt, muw, rho, Ks).  The contract is: selective mode returns exactly
+        # the requested names; all-mode returns the documented set and never
+        # the lbftd-internal V, gam, Gex.
+        if want_all:
+            for p in _LBFTD_INTERNAL:
+                props.pop(p, None)
+        else:
+            props = {k: v for k, v in props.items() if k in want_set}
 
         return types.SimpleNamespace(**props)
     finally:
@@ -257,21 +277,28 @@ def whichphase(PTm, solute='water1', path=defpath):
     :param PTm:     P (MPa) / T (K) conditions (and optional m for NaClaq).
                     Scatter: 1-D numpy array of (P,T) or (P,T,m) tuples.
                     Grid: numpy array([P_vec, T_vec]) or ([P, T, m_vec]).
-    :param solute:  An optional dissolved solute in the liquid phase.
-                    The default is pure water (water1).
+    :param solute:  Liquid material to compare against the ices: a pure
+                    water EOS ('water1' default, 'water2', 'water_IAPWS95')
+                    or an NaClaq variant (requires m in PTm).
     :param path:    Path to the ``splines/`` directory.
     :return:        numpy.ndarray with the stable phase index at each point.
     """
+    # Validate the liquid: any non-solid material (pure water EOS or NaClaq
+    # variant).  Ice phases and unknown names are rejected with a clear error.
+    liquids = [k for k, v in phases.items() if v.shear_mod_parms is None]
+    if solute not in liquids:
+        raise ValueError(f"solute must be a liquid material, one of: "
+                         f"{', '.join(liquids)} (got {solute!r}).")
+    is_nacl_solute = solute.startswith('NaClaq')
     is_stitched_solute = (solute == 'NaClaq')
     isscatter = _is_scatter(PTm)
-    # NaClaq uses stitched LP+HP evaluation and cannot be loaded as a single spline.
-    # Load only solid-ice splines (phase_num > 0); liquid is handled below.
-    if is_stitched_solute:
-        phase_sp = {v.phase_num: _load_spline(path, pcomp) for pcomp, v in phases.items() if
-                    v.phase_num > 0}
-    else:
-        phase_sp = {v.phase_num: _load_spline(path, pcomp) for pcomp, v in phases.items() if
-                    v.phase_num > 0 or pcomp == solute}
+    # Solid ice phases (phase_num > 0; NaN phase_nums compare False).
+    phase_sp = {v.phase_num: _load_spline(path, pcomp) for pcomp, v in phases.items()
+                if v.phase_num > 0}
+    # The liquid is always slot 0.  'NaClaq' uses stitched LP+HP evaluation and
+    # cannot be loaded as a single spline — handled via getProp below.
+    if not is_stitched_solute:
+        phase_sp[0] = _load_spline(path, solute)
     ptsh = (PTm.size,) if isscatter else (PTm[iP].size, PTm[iT].size)
     comp = np.full(ptsh + (max_phase_num + 1,), np.nan)
     for p in phase_sp.keys():
@@ -280,15 +307,15 @@ def whichphase(PTm, solute='water1', path=defpath):
             sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (p,)
             sp = phase_sp[p]
             if p == 0:
-                if 'water1' in solute:
-                    phase_sp[p]['MW'] = phases[solute].MW
-                    tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
+                if not is_nacl_solute:
+                    sp['MW'] = phases[solute].MW
+                    tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * sp['MW']
                 else:
-                    phase_sp[p]['nu'] = phases[phasenum2phase(p)].nu
+                    sp['nu'] = phases[solute].nu
                     tdvs = _get_tdvs(sp, PTm, isscatter, 'G', 'muw').muw
             else:
-                phase_sp[p]['MW'] = phases[phasenum2phase(p)].MW
-                tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * phase_sp[p]['MW']
+                sp['MW'] = phases[phasenum2phase(p)].MW
+                tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * sp['MW']
             comp[sl] = np.squeeze(tdvs)
     # Stitched NaClaq liquid: evaluate muw via getProp (handles LP+HP blending)
     if is_stitched_solute:
@@ -419,7 +446,47 @@ def _nacl_stitch(PTm, isscatter, path, *tdvSpec):
                 lp_only, lp_only_in, hp_only, hp_only_in,
                 blend_global, blend_in_lp, blend_in_hp, w_blend)
 
+    _apply_stitch_domain_mask(props, PTm, isscatter, sp_lp, sp_hp)
     return props
+
+
+def _stitch_domain_bounds(sp_lp, sp_hp):
+    """(P, T, m) bounds of the stitched NaClaq domain — same as phase_range('NaClaq')."""
+    P = (float(sp_lp['knots'][0][0]), float(sp_hp['knots'][0][-1]))
+    T = (max(float(sp_lp['knots'][1][0]),  float(sp_hp['knots'][1][0])),
+         min(float(sp_lp['knots'][1][-1]), float(sp_hp['knots'][1][-1])))
+    m = (max(float(sp_lp['knots'][2][0]),  float(sp_hp['knots'][2][0])),
+         min(float(sp_lp['knots'][2][-1]), float(sp_hp['knots'][2][-1])))
+    return P, T, m
+
+
+def _stitch_out_of_domain(PTm, isscatter, sp_lp, sp_hp):
+    """Boolean mask (scatter: (n,), grid: broadcastable to (nP,nT,nm)) of points
+    outside the stitched NaClaq parametrization."""
+    (Plo, Phi), (Tlo, Thi), (mlo, mhi) = _stitch_domain_bounds(sp_lp, sp_hp)
+    P = np.asarray(_get_P(PTm, isscatter), float)
+    T = np.asarray(_get_T(PTm, isscatter), float)
+    m = np.asarray(_get_m(PTm, isscatter), float)
+    if not isscatter:
+        P = P.reshape(-1, 1, 1); T = T.reshape(1, -1, 1); m = m.reshape(1, 1, -1)
+    return (P < Plo) | (P > Phi) | (T < Tlo) | (T > Thi) | (m < mlo) | (m > mhi)
+
+
+def _apply_stitch_domain_mask(props, PTm, isscatter, sp_lp, sp_hp, only=None):
+    """Set NaN outside the stitched domain, in place.  Skips composition-only
+    and coordinate fields, which are defined regardless of P/T."""
+    bad = _stitch_out_of_domain(PTm, isscatter, sp_lp, sp_hp)
+    if not np.any(bad):
+        return
+    names = only if only is not None else props.keys()
+    for fn in list(names):
+        if fn in _COORD_FIELDS or fn in _P_INDEP_FIELDS or fn == 'f' or fn not in props:
+            continue
+        arr = np.array(props[fn], dtype=float)  # copy
+        if arr.shape == () or (not isscatter and arr.ndim != 3):
+            continue
+        arr[np.broadcast_to(bad, arr.shape)] = np.nan
+        props[fn] = arr
 
 
 def _assemble_grid(arr_lp, arr_hp, nP,
@@ -552,6 +619,9 @@ def _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path
         if phase == 'NaClaq':
             # Stitched mode: use _nacl_stitch at shifted P for correct blend-zone Vw
             props['Vw'] = _compute_Vw_stitched(PTm, isscatter, path)
+            _apply_stitch_domain_mask(props, PTm, isscatter,
+                                      _load_spline(path, 'NaClaq_LP'),
+                                      _load_spline(path, 'NaClaq_HP'), only=('Vw',))
         else:
             props['Vw'] = _compute_Vw(sp, PTm, isscatter)
 

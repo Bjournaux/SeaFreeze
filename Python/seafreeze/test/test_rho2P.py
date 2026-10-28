@@ -209,3 +209,23 @@ class TestRho2P_Errors(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestRho2P_FaultInjection(unittest.TestCase):
+    """rho2P must degrade to NaN, not crash, when the EOS evaluation fails."""
+
+    def test_eos_exception_yields_nan(self):
+        import sys
+        mod = sys.modules['seafreeze.rho2P']
+        orig = mod.getProp
+        def boom(*a, **k):
+            raise RuntimeError('simulated EOS failure')
+        mod.getProp = boom
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                out = sf.rho2P([1100.0, 1200.0], 300.0, "water1")
+        finally:
+            mod.getProp = orig
+        self.assertEqual((2,), out.shape)
+        self.assertTrue(np.isnan(out).all())

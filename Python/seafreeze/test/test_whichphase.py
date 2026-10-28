@@ -67,3 +67,75 @@ class TestWhichPhase(ut.TestCase):
         PTm[0] = (900, 285, 3)
         out = sf.whichphase(PTm, 'NaClaq')
         self.assertEqual(0, out)
+
+
+class TestWhichPhaseSolutes(ut.TestCase):
+    """Solute validation and agreement between liquid EOS (added 2026-10)."""
+
+    def _pts(self):
+        PT = np.empty((4,), object)
+        PT[0] = (100.0, 280.0)   # liquid
+        PT[1] = (600.0, 250.0)   # ice V
+        PT[2] = (1.0, 200.0)     # ice Ih
+        PT[3] = (1500.0, 300.0)  # ice VI
+        return PT
+
+    def test_all_pure_water_eos_agree(self):
+        ref = sf.whichphase(self._pts(), 'water1')
+        for sol in ('water2', 'water_IAPWS95'):
+            np.testing.assert_array_equal(ref, sf.whichphase(self._pts(), sol), err_msg=sol)
+
+    def test_pure_water_eos_agree_on_grid(self):
+        P = np.arange(0, 1001, 200.0); T = np.arange(200, 351, 50.0)
+        G = np.array([P, T], dtype=object)
+        ref = sf.whichphase(G, 'water1')
+        np.testing.assert_array_equal(ref, sf.whichphase(G, 'water2'))
+
+    def test_every_nacl_variant_runs(self):
+        PTm = np.empty((2,), object)
+        PTm[0] = (100.0, 250.0, 3.0)   # ice Ih
+        PTm[1] = (900.0, 285.0, 3.0)   # liquid
+        for sol in ('NaClaq', 'NaClaq_LP', 'NaClaq_5GPa_2024'):
+            np.testing.assert_array_equal([1, 0], sf.whichphase(PTm, sol), err_msg=sol)
+
+    def test_ice_as_solute_rejected(self):
+        with self.assertRaises(ValueError):
+            sf.whichphase(self._pts(), 'Ih')
+
+    def test_unknown_solute_rejected(self):
+        with self.assertRaises(ValueError):
+            sf.whichphase(self._pts(), 'brine')
+
+    def test_agrees_with_phase_lines_at_Ih_melting(self):
+        """Just below the Ih–water1 melting curve the answer is Ih, just above it is liquid."""
+        from seafreeze import phase_lines
+        line = phase_lines('Ih', 'water1', segment='stable')
+        for P_target in (0.1, 100.0, 180.0):
+            i = int(np.argmin(np.abs(line.P - P_target)))
+            P_eq, T_eq = float(line.P[i]), float(line.T[i])
+            PT = np.empty((2,), object)
+            PT[0] = (P_eq, T_eq - 1.0)
+            PT[1] = (P_eq, T_eq + 1.0)
+            np.testing.assert_array_equal([1, 0], sf.whichphase(PT, 'water1'),
+                                          err_msg=f'at P={P_eq:.1f} MPa, T_eq={T_eq:.2f} K')
+
+    def test_salt_depresses_freezing(self):
+        """A point that is ice Ih in pure water is liquid in 3 mol/kg brine."""
+        PT = np.empty((1,), object); PT[0] = (0.1, 268.0)
+        self.assertEqual(1, sf.whichphase(PT, 'water1')[0])
+        PTm = np.empty((1,), object); PTm[0] = (0.1, 268.0, 3.0)
+        self.assertEqual(0, sf.whichphase(PTm, 'NaClaq')[0])
+
+
+class TestPhasenum2phase(ut.TestCase):
+    def test_round_trip_ices(self):
+        for name, desc in sf.phases.items():
+            if desc.shear_mod_parms and name != 'VII_X_French':
+                self.assertEqual(name, sf.phasenum2phase(desc.phase_num))
+
+    def test_zero_is_liquid(self):
+        self.assertEqual('water1', sf.phasenum2phase(0))
+        self.assertEqual('NaClaq', sf.phasenum2phase(0, 'NaClaq'))
+
+    def test_nan_defaults_to_liquid(self):
+        self.assertEqual('water1', sf.phasenum2phase(np.nan))
