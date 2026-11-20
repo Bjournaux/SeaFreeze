@@ -30,6 +30,7 @@ _SPLINE_MAP = {
     'NaClaq_LP':       ('NaCl_aq_LP_2026',     'NaCl_aq_LP_2026.mat'),
     'NaClaq_HP':       ('NaCl_aq_HP_2026',     'NaCl_aq_HP_2026.mat'),
     'NaClaq_5GPa_2024':('NaCl_aq_Brown2024',   'NaCl_aq_Brown2024.mat'),
+    'NH3aq':           ('NH3_aq_RK_2026',      'NH3_aq_RK_2026.mat'),
 }
 
 # ---------------------------------------------------------------------------
@@ -38,8 +39,9 @@ _SPLINE_MAP = {
 # Properties we compute here (not by lbftd) from existing lbftd outputs.
 # Base props: available for all phases.
 _DERIVED_BASE = frozenset({'Js', 'gamma_Gruneisen', 'P', 'T'})
-# NaClaq-only derived props.
-_DERIVED_NACL = frozenset({'m', 'xs', 'xw', 'f', 'Vw'})
+# Solution-only derived props (any aqueous binary registered in ``phases``).
+_DERIVED_SOLUTION = frozenset({'m', 'xs', 'xw', 'f', 'Vw'})
+_DERIVED_NACL = _DERIVED_SOLUTION      # backward-compatible alias
 # lbftd prerequisite props required for each SF-derived prop.
 _PREREQS = {
     'Js':              frozenset({'alpha', 'rho', 'Cp'}),
@@ -52,6 +54,7 @@ _PREREQS = {
 # ---------------------------------------------------------------------------
 mH2O_kgmol  = 18.01528e-3   # kg/mol  — water
 mNaCl_kgmol = 58.44e-3      # kg/mol  — NaCl
+mNH3_kgmol  = 17.03052e-3   # kg/mol  — NH3
 # NaClaq LP+HP stitching boundaries (MPa) — mirrors SF_NaCl_stitch.m
 _STITCH_P_LO = 499.9    # LP upper knot boundary / start of cosine taper
 _STITCH_P_HI = 1001.0   # HP lower knot boundary / end of cosine taper
@@ -64,14 +67,36 @@ _COORD_FIELDS = frozenset({'P', 'T', 'm'})
 _LBFTD_INTERNAL = frozenset({'V', 'gam', 'Gex', 'PTM'})
 _LBFTD_ALL_WATER = ('G', 'S', 'U', 'H', 'A', 'rho', 'Cp', 'Cv',
                     'Kt', 'Kp', 'Ks', 'alpha', 'vel')
-_LBFTD_ALL_NACL  = _LBFTD_ALL_WATER + (
+_LBFTD_ALL_SOLUTION = _LBFTD_ALL_WATER + (
                     'mus', 'muw', 'Vm', 'Cpm', 'phi', 'aw',
                     'Va', 'Vex', 'Cpa')
+_LBFTD_ALL_NACL = _LBFTD_ALL_SOLUTION  # backward-compatible alias
 
 # mol of water per kg of water = 1 kg / (18.01528e-3 kg/mol) ≈ 55.508 mol/kg
 _nw = 1.0 / mH2O_kgmol      # mol water / kg water ≈ 55.508
 
-PhaseDesc = namedtuple('PhaseDesc', 'shear_mod_parms phase_num MW nu cutoff')
+# ---------------------------------------------------------------------------
+# Material registry
+# ---------------------------------------------------------------------------
+# One PhaseDesc per material.  A material is an *aqueous solution* when
+# ``solute`` is set; every chemistry-aware function (getProp, whichphase,
+# phase_lines, wpd, rho2P) keys on that field and never on the material name,
+# so a new binary only needs a registry entry (see ``register_solution``).
+#
+#   shear_mod_parms  shear-modulus parameters (solids only, else None)
+#   phase_num        index returned by whichphase (0 = liquid, NaN = not used)
+#   MW               molar mass [kg/mol]: H2O for pure phases, the solute for solutions
+#   nu               ions per formula unit of solute (solutions only)
+#   cutoff           dilute molality cutoff used by lbftd for apparent properties
+#   solute           short solute name, e.g. 'NaCl' (None for pure H2O phases)
+#   stitch           StitchDesc when the material blends two splines along P, else None
+#   experimental     True when only part of the property set is calibrated
+PhaseDesc = namedtuple('PhaseDesc',
+                       'shear_mod_parms phase_num MW nu cutoff solute stitch experimental',
+                       defaults=(None, None, False))
+# lp/hp: material codes of the low-/high-pressure splines; P_lo/P_hi: cosine-taper limits [MPa]
+StitchDesc = namedtuple('StitchDesc', 'lp hp P_lo P_hi')
+_NACL_STITCH = StitchDesc('NaClaq_LP', 'NaClaq_HP', _STITCH_P_LO, _STITCH_P_HI)
 phases = {
     # Ice phases — Journaux et al. 2020 / Feistel & Wagner 2006
     "Ih":           PhaseDesc([3.1, -0.00462, 0, -0.00657, 1000, 273.15], 1, mH2O_kgmol, None, None),
@@ -85,11 +110,26 @@ phases = {
     "water2":        PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # Brown 2018 (up to 100 GPa)
     "water_IAPWS95": PhaseDesc(None, np.nan, mH2O_kgmol, None, None),  # IAPWS95; Wagner & Pruss 2002
     # Aqueous NaCl
-    "NaClaq":          PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # stitched LP+HP 2026 (recommended)
-    "NaClaq_LP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 low-P  spline only
-    "NaClaq_HP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # 2026 high-P spline only
-    "NaClaq_5GPa_2024":PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002),  # Brown 2024 legacy spline
+    "NaClaq":          PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002, 'NaCl', _NACL_STITCH),  # stitched LP+HP 2026 (recommended)
+    "NaClaq_LP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002, 'NaCl'),  # 2026 low-P  spline only
+    "NaClaq_HP":       PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002, 'NaCl'),  # 2026 high-P spline only
+    "NaClaq_5GPa_2024":PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002, 'NaCl'),  # Brown 2024 legacy spline
+    # Aqueous NH3 — EXPERIMENTAL: Redlich-Kister model fitted to ice liquidus data only
+    # (x_NH3 <= 0.24, 9-971 MPa, 210-270 K).  See SourceData/NH3aq and _CALIBRATED below.
+    "NH3aq":           PhaseDesc(None, 0, mNH3_kgmol, 1, 1e-6, 'NH3', None, True),
 }
+
+# Experimental materials: the properties that ARE calibrated.  getProp warns
+# (ExperimentalMaterialWarning) when anything else is requested from them.
+# Coordinate and composition echoes are always fine.
+_ECHO_PROPS = frozenset({'P', 'T', 'm', 'xs', 'xw', 'f'})
+_CALIBRATED = {
+    'NH3aq': frozenset({'muw', 'aw', 'phi'}),
+}
+
+
+class ExperimentalMaterialWarning(UserWarning):
+    """A property was requested that is not calibrated for an experimental material."""
 max_phase_num = int(np.nanmax([p.phase_num for p in phases.values()]))
 
 # Build phase_num → material code map; exclude NaN phase_nums and keep only
@@ -98,6 +138,110 @@ phasenum2phaseDict = {}
 for k, v in phases.items():
     if not np.isnan(v.phase_num) and v.phase_num not in phasenum2phaseDict:
         phasenum2phaseDict[int(v.phase_num)] = k
+
+
+# ---------------------------------------------------------------------------
+# Registry queries
+# ---------------------------------------------------------------------------
+def is_solution(material):
+    """True when *material* is a registered aqueous solution (needs molality)."""
+    pd = phases.get(material)
+    return pd is not None and pd.solute is not None
+
+
+def is_stitched(material):
+    """True when *material* is evaluated by blending two splines along P."""
+    pd = phases.get(material)
+    return pd is not None and pd.stitch is not None
+
+
+def solution_phases(solute=None):
+    """Registered solution materials, optionally for one solute (case-insensitive)."""
+    return [k for k, v in phases.items() if v.solute is not None
+            and (solute is None or v.solute.lower() == str(solute).lower())]
+
+
+def solute_phase(name):
+    """Resolve a solute name ('NaCl') or a solution material ('NaClaq') to the
+    material used by default for that solute: the first one registered.
+
+    :raises ValueError: if *name* is neither a registered solute nor a solution material.
+    """
+    for k in phases:
+        if is_solution(k) and k.lower() == str(name).lower():
+            return k
+    found = solution_phases(name)
+    if not found:
+        raise ValueError(
+            f"Unknown solute {name!r}. Registered solutes: "
+            + ', '.join(sorted({v.solute for v in phases.values() if v.solute})) + '.')
+    return found[0]
+
+
+def register_solution(material, solute, MW, nu, cutoff, spline=None, stitch=None,
+                      experimental=False, calibrated=()):
+    """Register an aqueous binary so that every chemistry function accepts it.
+
+    :param material:     material code, e.g. 'NH3aq'
+    :param solute:       short solute name, e.g. 'NH3'
+    :param MW:           solute molar mass [kg/mol]
+    :param nu:           ions per formula unit (1 for a non-electrolyte)
+    :param cutoff:       dilute molality cutoff for apparent properties [mol/kg]
+    :param spline:       (subfolder, filename) under the splines directory; the file
+                         stores the Gibbs spline G(P, T, m) as variable ``sp``.
+                         None for a stitched material.
+    :param stitch:       StitchDesc(lp, hp, P_lo, P_hi) for a material blended from
+                         two already-registered splines; None otherwise.
+    :param experimental: True when only part of the property set is calibrated.
+    :param calibrated:   for an experimental material, the property names that are
+                         calibrated (e.g. ('muw', 'aw', 'phi')); getProp warns when any
+                         other property is requested.
+    """
+    if material in phases:
+        raise ValueError(f"Material {material!r} is already registered.")
+    if (spline is None) == (stitch is None):
+        raise ValueError("Give exactly one of spline= or stitch=.")
+    if stitch is not None:
+        stitch = StitchDesc(*stitch)
+        for sub in (stitch.lp, stitch.hp):
+            if not is_solution(sub) or is_stitched(sub):
+                raise ValueError(f"Stitch component {sub!r} must be a registered single-spline solution.")
+    phases[material] = PhaseDesc(None, 0, float(MW), int(nu), float(cutoff),
+                                 str(solute), stitch, bool(experimental))
+    _SPLINE_MAP[material] = None if spline is None else tuple(spline)
+    if experimental:
+        _CALIBRATED[material] = frozenset(calibrated)
+
+
+def unregister_solution(material):
+    """Remove a material added with ``register_solution`` (mainly for tests)."""
+    if not is_solution(material):
+        raise ValueError(f"{material!r} is not a registered solution.")
+    del phases[material]
+    _SPLINE_MAP.pop(material, None)
+    _CALIBRATED.pop(material, None)
+
+
+def uncalibrated_properties(material, requested=()):
+    """Properties among *requested* (all of them if empty) that are not calibrated
+    for *material*.  Empty for non-experimental materials."""
+    pd = phases.get(material)
+    if pd is None or not pd.experimental:
+        return []
+    ok = _CALIBRATED.get(material, frozenset()) | _ECHO_PROPS
+    if not requested:
+        return ['all properties except ' + ', '.join(sorted(_CALIBRATED.get(material, ())))]
+    return sorted(set(requested) - ok)
+
+
+def _warn_experimental(material, requested, stacklevel=3):
+    bad = uncalibrated_properties(material, requested)
+    if bad:
+        warnings.warn(
+            f"'{material}' is experimental: only "
+            f"{', '.join(sorted(_CALIBRATED.get(material, ()))) or 'no property'} "
+            f"(and phase equilibria) are calibrated. Not calibrated and unreliable here: "
+            f"{', '.join(bad)}.", ExperimentalMaterialWarning, stacklevel=stacklevel)
 
 
 # ---------------------------------------------------------------------------
@@ -115,17 +259,18 @@ def _load_spline(splines_dir, material):
     """
     entry = _SPLINE_MAP.get(material)
     if entry is None:
-        if material == 'NaClaq':
+        if is_stitched(material):
+            st = phases[material].stitch
             raise ValueError(
-                "'NaClaq' uses LP+HP stitching and cannot be loaded as a single "
-                "spline.  Use getProp(PTm, 'NaClaq') which handles stitching "
-                "automatically, or load 'NaClaq_LP' / 'NaClaq_HP' individually.")
+                f"'{material}' uses LP+HP stitching and cannot be loaded as a single "
+                f"spline.  Use getProp(PTm, '{material}') which handles stitching "
+                f"automatically, or load '{st.lp}' / '{st.hp}' individually.")
         else:
             raise ValueError(f"Unknown material '{material}'. Supported: "
                              + ', '.join(k for k, v in _SPLINE_MAP.items() if v is not None))
     subfolder, filename = entry
     sp = load.loadSpline(op.join(splines_dir, subfolder, filename), 'sp')
-    # Ensure NaClaq splines have metadata lbftd expects
+    # Ensure solution splines have the metadata lbftd expects
     pd = phases.get(material)
     if pd is not None and pd.cutoff is not None:
         if 'cutoff' not in sp or sp['cutoff'] is None:
@@ -149,7 +294,7 @@ def seafreeze(PTm, phase, path=defpath, *tdvSpec):
 
 def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
     """Calculates thermodynamic quantities for H2O water or ice polymorphs
-    Ih, II, III, V, VI, VII/X and aqueous NaCl.
+    Ih, II, III, V, VI, VII/X and aqueous solutions (NaCl; NH3, experimental).
 
     Output properties match the Matlab ``SF_getprop`` reference:
 
@@ -168,6 +313,12 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
     -------------------
     mus, muw, Va, Cpa, Vm, Cpm, phi, Vex, aw,
     m (mol/kg echo), xs, xw, f, Vw (cm³/mol)
+
+    Experimental materials (currently 'NH3aq') return the same property set as
+    NaClaq, but only part of it is calibrated; an ExperimentalMaterialWarning
+    names the requested properties that are not.  'NH3aq': only muw, aw, phi and
+    the ice melting curves are calibrated (x_NH3 <= 0.24, i.e. m <= 17.5 mol/kg,
+    9-971 MPa, 210-270 K).
 
     NOTE:  The authors recommend 'water1' for 200–355 K up to 2300 MPa.
     The ice Gibbs parametrizations are optimized for phase-equilibrium
@@ -195,16 +346,18 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
         isscatter = _is_scatter(PTm)
         want_set  = set(tdvSpec)
         want_all  = len(want_set) == 0
-        is_nacl   = phase.startswith('NaClaq')
-        is_stitched = (phase == 'NaClaq')
+        is_soln   = is_solution(phase)
+        stitched  = is_stitched(phase)
+        if phasedesc.experimental:
+            _warn_experimental(phase, tdvSpec)
 
         # ---- Determine which derived props are relevant for this phase ----------
-        derived_known = _DERIVED_BASE | (_DERIVED_NACL if is_nacl else set())
+        derived_known = _DERIVED_BASE | (_DERIVED_SOLUTION if is_soln else set())
 
         # ---- Build the set of props to request from lbftd ----------------------
         # V, gam, Gex are lbftd-internal and never exposed (matching Matlab).
         if want_all:
-            lbftd_wants = _LBFTD_ALL_NACL if is_nacl else _LBFTD_ALL_WATER
+            lbftd_wants = _LBFTD_ALL_SOLUTION if is_soln else _LBFTD_ALL_WATER
         else:
             lbftd_wants = tuple(want_set - derived_known - {'shear', 'Vp', 'Vs'})
             extra = set()
@@ -222,9 +375,9 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
                 lbftd_wants = ('G',)
 
         # ---- Evaluate — either stitched LP+HP or single spline -----------------
-        if is_stitched:
+        if stitched:
             sp = None  # no single spline for stitched mode
-            props = _nacl_stitch(PTm, isscatter, path, *lbftd_wants)
+            props = _stitch_eval(phase, PTm, isscatter, path, *lbftd_wants)
         else:
             sp = _load_spline(path, phase)
             raw = _get_tdvs(sp, PTm, isscatter, *lbftd_wants)
@@ -278,24 +431,27 @@ def whichphase(PTm, solute='water1', path=defpath):
                     Scatter: 1-D numpy array of (P,T) or (P,T,m) tuples.
                     Grid: numpy array([P_vec, T_vec]) or ([P, T, m_vec]).
     :param solute:  Liquid material to compare against the ices: a pure
-                    water EOS ('water1' default, 'water2', 'water_IAPWS95')
-                    or an NaClaq variant (requires m in PTm).
+                    water EOS ('water1' default, 'water2', 'water_IAPWS95'),
+                    a solution material ('NaClaq', 'NH3aq', ...) or a solute
+                    name ('NaCl', 'NH3'); solutions require m in PTm.
     :param path:    Path to the ``splines/`` directory.
     :return:        numpy.ndarray with the stable phase index at each point.
     """
     # Validate the liquid: any non-solid material (pure water EOS or NaClaq
     # variant).  Ice phases and unknown names are rejected with a clear error.
     liquids = [k for k, v in phases.items() if v.shear_mod_parms is None]
+    if solute not in phases and solution_phases(solute):
+        solute = solute_phase(solute)          # solute name ('NaCl', 'NH3') -> its default material
     if solute not in liquids:
         raise ValueError(f"solute must be a liquid material, one of: "
                          f"{', '.join(liquids)} (got {solute!r}).")
-    is_nacl_solute = solute.startswith('NaClaq')
-    is_stitched_solute = (solute == 'NaClaq')
+    is_soln_solute = is_solution(solute)
+    is_stitched_solute = is_stitched(solute)
     isscatter = _is_scatter(PTm)
     # Solid ice phases (phase_num > 0; NaN phase_nums compare False).
     phase_sp = {v.phase_num: _load_spline(path, pcomp) for pcomp, v in phases.items()
                 if v.phase_num > 0}
-    # The liquid is always slot 0.  'NaClaq' uses stitched LP+HP evaluation and
+    # The liquid is always slot 0.  A stitched solution uses LP+HP evaluation and
     # cannot be loaded as a single spline — handled via getProp below.
     if not is_stitched_solute:
         phase_sp[0] = _load_spline(path, solute)
@@ -307,7 +463,7 @@ def whichphase(PTm, solute='water1', path=defpath):
             sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (p,)
             sp = phase_sp[p]
             if p == 0:
-                if not is_nacl_solute:
+                if not is_soln_solute:
                     sp['MW'] = phases[solute].MW
                     tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * sp['MW']
                 else:
@@ -317,12 +473,12 @@ def whichphase(PTm, solute='water1', path=defpath):
                 sp['MW'] = phases[phasenum2phase(p)].MW
                 tdvs = _get_tdvs(sp, _get_PT(PTm, isscatter), isscatter, 'G').G * sp['MW']
             comp[sl] = np.squeeze(tdvs)
-    # Stitched NaClaq liquid: evaluate muw via getProp (handles LP+HP blending)
+    # Stitched liquid: evaluate muw via getProp (handles LP+HP blending)
     if is_stitched_solute:
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             sl = tuple(repeat(slice(None), 1 if isscatter else 2)) + (0,)
-            comp[sl] = np.squeeze(getProp(PTm, 'NaClaq', path, 'muw').muw)
+            comp[sl] = np.squeeze(getProp(PTm, solute, path, 'muw').muw)
     all_nan_sl = np.all(np.isnan(comp), -1)
     out = np.full(ptsh, np.nan)
     out[~all_nan_sl] = np.nanargmin(comp[~all_nan_sl], -1)
@@ -349,19 +505,35 @@ def phasenum2phase(phaseInt, liqComp='water1'):
 # NaClaq LP+HP stitching (mirrors Matlab SF_NaCl_stitch.m)
 # ---------------------------------------------------------------------------
 def _nacl_stitch(PTm, isscatter, path, *tdvSpec):
-    """Evaluate NaClaq properties by stitching LP and HP splines.
+    """Stitched evaluation of 'NaClaq' (kept for backward compatibility)."""
+    return _stitch_eval('NaClaq', PTm, isscatter, path, *tdvSpec)
 
-    In the overlap zone [499.9, 1001] MPa each property is blended with a
-    C-infinity cosine taper:  w(P) = 0.5*(1 + cos(pi*(P-P_LO)/(P_HI-P_LO)))
-    Outside: LP only (P <= P_LO) or HP only (P >= P_HI).
+
+def _stitch_weights(P_arr, st):
+    """Cosine-taper weight of the LP spline at each pressure (1 below P_lo, 0 above P_hi)."""
+    w_P = np.zeros(P_arr.size)
+    w_P[P_arr <= st.P_lo] = 1.0
+    in_taper = (P_arr > st.P_lo) & (P_arr < st.P_hi)
+    w_P[in_taper] = 0.5 * (1.0 + np.cos(
+        np.pi * (P_arr[in_taper] - st.P_lo) / (st.P_hi - st.P_lo)))
+    return w_P
+
+
+def _stitch_eval(phase, PTm, isscatter, path, *tdvSpec):
+    """Evaluate a stitched solution by blending its LP and HP splines.
+
+    In the overlap zone [P_lo, P_hi] (499.9-1001 MPa for NaClaq) each property is
+    blended with a C-infinity cosine taper:  w(P) = 0.5*(1 + cos(pi*(P-P_lo)/(P_hi-P_lo)))
+    Outside: LP only (P <= P_lo) or HP only (P >= P_hi).
 
     Returns a plain dict of property arrays (same format as getProp's internal
     ``props`` dict).
     """
-    sp_lp = _load_spline(path, 'NaClaq_LP')
-    sp_hp = _load_spline(path, 'NaClaq_HP')
+    st = phases[phase].stitch
+    sp_lp = _load_spline(path, st.lp)
+    sp_hp = _load_spline(path, st.hp)
     # Ensure cutoff is set (lbftd needs it for apparent-property evaluation)
-    cutoff = phases['NaClaq'].cutoff
+    cutoff = phases[phase].cutoff
     if 'cutoff' not in sp_lp or sp_lp['cutoff'] is None:
         sp_lp['cutoff'] = cutoff
     if 'cutoff' not in sp_hp or sp_hp['cutoff'] is None:
@@ -371,16 +543,11 @@ def _nacl_stitch(PTm, isscatter, path, *tdvSpec):
     nP = P_arr.size
 
     # --- Cosine taper weights ---
-    w_P = np.zeros(nP)
-    w_P[P_arr <= _STITCH_P_LO] = 1.0
-    # P >= P_HI already 0
-    in_taper = (P_arr > _STITCH_P_LO) & (P_arr < _STITCH_P_HI)
-    w_P[in_taper] = 0.5 * (1.0 + np.cos(
-        np.pi * (P_arr[in_taper] - _STITCH_P_LO) / (_STITCH_P_HI - _STITCH_P_LO)))
+    w_P = _stitch_weights(P_arr, st)
 
     # --- Logical masks: which P values each spline is evaluated at ---
-    need_lp = P_arr <= _STITCH_P_HI
-    need_hp = P_arr >= _STITCH_P_LO
+    need_lp = P_arr <= st.P_hi
+    need_hp = P_arr >= st.P_lo
 
     # --- Build sub-inputs ---
     if isscatter:
@@ -451,7 +618,7 @@ def _nacl_stitch(PTm, isscatter, path, *tdvSpec):
 
 
 def _stitch_domain_bounds(sp_lp, sp_hp):
-    """(P, T, m) bounds of the stitched NaClaq domain — same as phase_range('NaClaq')."""
+    """(P, T, m) bounds of a stitched domain — same as phase_range of the stitched material."""
     P = (float(sp_lp['knots'][0][0]), float(sp_hp['knots'][0][-1]))
     T = (max(float(sp_lp['knots'][1][0]),  float(sp_hp['knots'][1][0])),
          min(float(sp_lp['knots'][1][-1]), float(sp_hp['knots'][1][-1])))
@@ -462,7 +629,7 @@ def _stitch_domain_bounds(sp_lp, sp_hp):
 
 def _stitch_out_of_domain(PTm, isscatter, sp_lp, sp_hp):
     """Boolean mask (scatter: (n,), grid: broadcastable to (nP,nT,nm)) of points
-    outside the stitched NaClaq parametrization."""
+    outside the stitched parametrization."""
     (Plo, Phi), (Tlo, Thi), (mlo, mhi) = _stitch_domain_bounds(sp_lp, sp_hp)
     P = np.asarray(_get_P(PTm, isscatter), float)
     T = np.asarray(_get_T(PTm, isscatter), float)
@@ -596,9 +763,8 @@ def _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path
                                             np.asarray(props['Kt'], dtype=float) /
                                             np.where(denom_gr == 0, 1, denom_gr))
 
-    # --- NaClaq-only ---
-    is_nacl = phase.startswith('NaClaq')
-    if not is_nacl:
+    # --- Solutions only ---
+    if not is_solution(phase):
         return
 
     m_arr = _get_m(PTm, isscatter)
@@ -616,12 +782,13 @@ def _compute_derived(props, PTm, isscatter, sp, phase, phasedesc, want_set, path
     # Vw: partial molar volume of water [cm³/mol]
     # = ∂muw/∂P  (central-difference, δP = 0.1 MPa)
     if want('Vw'):
-        if phase == 'NaClaq':
-            # Stitched mode: use _nacl_stitch at shifted P for correct blend-zone Vw
-            props['Vw'] = _compute_Vw_stitched(PTm, isscatter, path)
+        if is_stitched(phase):
+            # Stitched mode: blend the Vw of each sub-spline for a correct blend-zone Vw
+            st = phasedesc.stitch
+            props['Vw'] = _compute_Vw_stitched(PTm, isscatter, path, st=st)
             _apply_stitch_domain_mask(props, PTm, isscatter,
-                                      _load_spline(path, 'NaClaq_LP'),
-                                      _load_spline(path, 'NaClaq_HP'), only=('Vw',))
+                                      _load_spline(path, st.lp),
+                                      _load_spline(path, st.hp), only=('Vw',))
         else:
             props['Vw'] = _compute_Vw(sp, PTm, isscatter)
 
@@ -643,8 +810,8 @@ def _compute_Vw(sp, PTm, isscatter, dP=0.1):
     return (muw_up - muw_dn) / (2.0 * dP)
 
 
-def _compute_Vw_stitched(PTm, isscatter, path, dP=0.1):
-    """Partial molar volume of water [cm³/mol] for stitched NaClaq.
+def _compute_Vw_stitched(PTm, isscatter, path, dP=0.1, st=_NACL_STITCH):
+    """Partial molar volume of water [cm³/mol] for a stitched solution.
 
     Mirrors Matlab SF_NaCl_stitch.m: compute Vw independently from each
     sub-spline via central-difference, then blend with the same cosine taper
@@ -652,21 +819,17 @@ def _compute_Vw_stitched(PTm, isscatter, path, dP=0.1):
     the blending-weight function that would appear if we finite-differenced
     the already-blended muw.
     """
-    sp_lp = _load_spline(path, 'NaClaq_LP')
-    sp_hp = _load_spline(path, 'NaClaq_HP')
+    sp_lp = _load_spline(path, st.lp)
+    sp_hp = _load_spline(path, st.hp)
 
     P_arr = np.asarray(_get_P(PTm, isscatter), dtype=float).ravel()
     nP = P_arr.size
 
     # Cosine taper weights at the actual P values
-    w_P = np.zeros(nP)
-    w_P[P_arr <= _STITCH_P_LO] = 1.0
-    in_taper = (P_arr > _STITCH_P_LO) & (P_arr < _STITCH_P_HI)
-    w_P[in_taper] = 0.5 * (1.0 + np.cos(
-        np.pi * (P_arr[in_taper] - _STITCH_P_LO) / (_STITCH_P_HI - _STITCH_P_LO)))
+    w_P = _stitch_weights(P_arr, st)
 
-    need_lp = P_arr <= _STITCH_P_HI
-    need_hp = P_arr >= _STITCH_P_LO
+    need_lp = P_arr <= st.P_hi
+    need_hp = P_arr >= st.P_lo
 
     # Sub-inputs (same split as _nacl_stitch)
     if isscatter:

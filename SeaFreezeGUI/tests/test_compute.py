@@ -37,7 +37,10 @@ def _m(material, grid=False):
 
 
 def test_gui_material_list_matches_package():
-    assert set(ALL_MATERIALS) == set(sf.phases)
+    """The GUI offers every package material except experimental ones (e.g. 'NH3aq'),
+    which are added to the GUI deliberately, not automatically."""
+    stable = {m for m, pd in sf.phases.items() if not pd.experimental}
+    assert set(ALL_MATERIALS) == stable
 
 
 @pytest.mark.parametrize('material', ALL_MATERIALS)

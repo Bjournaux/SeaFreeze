@@ -16,7 +16,7 @@ from seafreeze.test.gen_golden_reference import build_grid
 
 MATERIALS = sorted(sf.phases)
 SOLIDS = [m for m in MATERIALS if sf.phases[m].shear_mod_parms]
-NACL = [m for m in MATERIALS if m.startswith('NaClaq')]
+NACL = [m for m in MATERIALS if sf.is_solution(m)]      # every aqueous solution, not only NaCl
 RTOL = 1e-6
 
 
@@ -124,7 +124,8 @@ def test_solution_composition_identities(material):
     xs = np.ravel(np.asarray(o['xs'], float)); xw = np.ravel(np.asarray(o['xw'], float))
     np.testing.assert_allclose(xs + xw, 1.0, rtol=1e-12, err_msg=f'{material}: xs + xw != 1')
     nw = 1.0 / sf.seafreeze.mH2O_kgmol
-    np.testing.assert_allclose(xs, 2 * m / (2 * m + nw), rtol=1e-12, err_msg=f'{material}: xs')
+    nu = sf.phases[material].nu          # ions per formula unit: 2 for NaCl, 1 for NH3
+    np.testing.assert_allclose(xs, nu * m / (nu * m + nw), rtol=1e-12, err_msg=f'{material}: xs')
     f = np.ravel(np.asarray(o['f'], float))
     np.testing.assert_allclose(f, 1.0 + sf.phases[material].MW * m, rtol=1e-12, err_msg=f'{material}: f')
 
@@ -136,7 +137,8 @@ def test_water_activity_and_osmotic_coefficient(material):
     o, P, T = _grid(material)
     m = np.asarray(_PHYS_AXES[material]['m'], float)[None, None, :]
     nw = 1.0 / sf.seafreeze.mH2O_kgmol
-    _close(o['aw'], np.exp(-o['phi'] * 2 * m / nw), f'{material}: aw vs phi')
+    nu = sf.phases[material].nu
+    _close(o['aw'], np.exp(-o['phi'] * nu * m / nw), f'{material}: aw vs phi')
     aw = np.asarray(o['aw'], float)
     assert (aw[np.isfinite(aw)] < 1.0).all(), f'{material}: aw >= 1 with salt present'
 

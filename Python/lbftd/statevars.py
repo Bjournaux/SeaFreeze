@@ -189,11 +189,15 @@ def evalOsmoticCoeff(gPTM, tdv, MWv, nu):
     return (1 / MWv) * (_getCutoffMTdv(tdv, 'G')/ (1 / MWv) - tdv.muw)/_getDividableBy(gPTM[iM])/_getDividableBy(gPTM[iT])/R/nu
 
 
-def evalWaterActivity(gPTM, tdv, MWv):
+def evalWaterActivity(gPTM, tdv, MWv, nu):
     """
     :return: aw
+
+    ln(aw) = -nu * m * phi * MWv, with nu the number of ions per formula unit of
+    solute (2 for NaCl, 1 for a non-electrolyte) - same as Matlab fnGval.
     """
-    logVal = -2 * gPTM[iM].astype(float) * tdv.phi * MWv
+    # float(): nu can arrive as an unsigned integer from a .mat file, and -uint8(2) is 254
+    logVal = -float(nu) * gPTM[iM].astype(float) * tdv.phi * MWv
     return np.exp(logVal.astype(float))
 
 
@@ -389,7 +393,7 @@ def _getSupportedThermodynamicVariables():
                     reqCutoff=True),
         _getTDVSpec('phi', evalOsmoticCoeff, reqM=True, reqMWv=True, reqGrid=True, reqTDV=['G', 'muw'], reqNu=True,
                     reqCutoff=True),
-        _getTDVSpec('aw', evalWaterActivity, reqM=True, reqGrid=True, reqMWv=True, reqTDV=['phi']),
+        _getTDVSpec('aw', evalWaterActivity, reqM=True, reqGrid=True, reqMWv=True, reqNu=True, reqTDV=['phi']),
         _getTDVSpec('Va', evalApparentVolume, reqM=True, reqGrid=True, reqF=True, reqTDV=['V'], reqCutoff=True),
         _getTDVSpec('Vex', evalExcessVolume, reqM=True, reqTDV=['Va', 'Vm'], reqCutoff=True),
         _getTDVSpec('gam', evalActivityCoeff, reqM=True, reqMWu=True, reqGrid=True, reqTDV=['mus'], reqNu=True,

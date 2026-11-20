@@ -21,7 +21,7 @@ from seafreeze.test.gen_golden_reference import build_scatter, build_grid
 
 MATERIALS = sorted(sf.phases)
 SOLIDS = [m for m in MATERIALS if sf.phases[m].shear_mod_parms]
-NACL = [m for m in MATERIALS if m.startswith('NaClaq')]
+NACL = [m for m in MATERIALS if sf.is_solution(m)]      # every aqueous solution, not only NaCl
 COORD = {'P', 'T', 'm'}
 
 

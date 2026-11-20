@@ -50,6 +50,7 @@ The main function of SeaFreeze is `getProp`, which has the following parameters:
   - `'NaClaq_LP'` — 2026 low-P NaCl(aq) spline only, P=[0, 1001] MPa
   - `'NaClaq_HP'` — 2026 high-P NaCl(aq) spline only, P=[500, 10001] MPa
   - `'NaClaq_5GPa_2024'` — legacy Brown 2024 NaCl(aq) spline, P=[0, 5000] MPa
+  - `'NH3aq'` — **experimental** NH₃(aq), P=[0, 1000] MPa, T=[200, 310] K, m=[0, 18] mol/kg; only phase equilibria, `muw`, `aw` and `phi` are calibrated (see [Aqueous ammonia](#aqueous-ammonia-nh3aq-experimental))
 
 The output of `getProp` is a `SimpleNamespace` object whose attributes match those of the Matlab `SF_getprop` function exactly.
 
@@ -87,7 +88,7 @@ Pass `verbose=True` to print lbftd diagnostic warnings (e.g. extrapolation outsi
 | P-wave velocity | `Vp` | m/s |
 | S-wave velocity | `Vs` | m/s |
 
-**NaClaq additionally** (`NaClaq`, `NaClaq_LP`, `NaClaq_HP`, `NaClaq_5GPa_2024`):
+**Aqueous solutions additionally** (`NaClaq`, `NaClaq_LP`, `NaClaq_HP`, `NaClaq_5GPa_2024`, `NH3aq`):
 
 | Quantity | Symbol | Unit |
 | --- |:---:| :---:|
@@ -155,8 +156,8 @@ under the given pressure and temperature conditions.
 whichphase(PTm, solute='water1', path=defpath)
 ```
 
-- `PTm` — same format as `getProp` (`PT` for pure water, `PTm` for NaCl solutions)
-- `solute` — optional; set to `'NaCl'` to use NaClaq as the liquid phase, enabling freezing-point-depression phase maps; `PTm` then requires a molality axis `[P, T, m]`
+- `PTm` — same format as `getProp` (`PT` for pure water, `PTm` for solutions)
+- `solute` — optional; a solute name (`'NaCl'`, `'NH3'`) or a solution material (`'NaClaq'`, `'NH3aq'`, …) to use that solution as the liquid phase, enabling freezing-point-depression phase maps; `PTm` then requires a molality axis `[P, T, m]` (a grid takes a single molality)
 
 The output is a NumPy array of integers: 0 = liquid, 1 = ice Ih, 2 = II, 3 = III, 5 = V, 6 = VI; `numpy.nan` outside all parametrizations.
 - Scattered (P,T): each value corresponds to the same index in the input
@@ -217,7 +218,7 @@ SeaFreeze 1.1.0 adds a dedicated module for computing and plotting phase boundar
 | Parameter | Default | Description |
 |---|---|---|
 | `matA`, `matB` | — | Phase names (same as `getProp`; order does not matter) |
-| `m` | `None` | Molality (mol/kg) — required when one phase is `'NaClaq'`; accepts a scalar or list; `m=0` gives the pure-water limit via the NaClaq EoS |
+| `m` | `None` | Molality (mol/kg) — required when one phase is an aqueous solution (`'NaClaq'`, `'NH3aq'`, …); accepts a scalar or list; `m=0` gives the pure-water limit via the solution EoS |
 | `T` | auto | 1-D array of temperatures (K) to use as the evaluation grid |
 | `segment` | `'all'` | `'all'`, `'stable'`, or `'meta'` — which part of the curve to return |
 
@@ -228,8 +229,8 @@ The `PhaseLineResult` object has attributes `matA`, `matB`, `P` (MPa), `T` (K), 
 | Parameter | Default | Description |
 |---|---|---|
 | `ax` | `None` (new figure) | Matplotlib Axes to plot onto; creates a new figure if omitted |
-| `solute` | `'none'` | `'NaCl'` to overlay NaClaq melting curves |
-| `m` | `None` | Molality list for the NaCl overlay |
+| `solute` | `'none'` | A solute (`'NaCl'`, `'NH3'`) or solution material to overlay its melting curves |
+| `m` | `None` | Molality list for the overlay |
 | `show_meta` | `True` | Show metastable extensions as dashed gray lines |
 | `phase_labels` | `False` | Annotate phase fields (Ih, II, III, V, VI, Liquid) |
 
@@ -339,6 +340,63 @@ P_rec = rho2P(rho, 300., 'water1')         # should recover ≈ 500 MPa
 
 ---
 
+## Aqueous ammonia: `NH3aq` (experimental)
+
+`NH3aq` is an H₂O–NH₃ solution built from a Redlich–Kister excess Gibbs energy fitted to ice liquidus data (Choukroun & Grasset 2010; Leliwa-Kopystyński et al. 2002; 88 points, x(NH₃) ≤ 0.24, 9–971 MPa, 210–270 K, RMS 1.2 K). It is used exactly like `NaClaq`, with molality in mol of NH₃ per kg of water (10 wt% = 6.52 mol/kg, 20 wt% = 14.68 mol/kg).
+
+```python
+import numpy as np
+import seafreeze as sf
+
+m = 6.52                                              # 10 wt% NH3
+line = sf.phase_lines('Ih', 'NH3aq', m=m)             # ice Ih melting curve: line.P, line.T
+which = sf.whichphase(np.array([np.arange(0.1, 900, 50), np.arange(210, 290, 5),
+                                np.array([m])], dtype=object), 'NH3')   # stable phase map
+PTm = np.empty((1,), dtype=object); PTm[0] = (300.0, 250.0, m)
+out = sf.getProp(PTm, 'NH3aq', sf.seafreeze.defpath, 'muw', 'aw')       # calibrated properties
+fig = sf.wpd(solute='NH3', m=[2.0, m, 14.68])         # melting curves on the water phase diagram
+```
+
+**What is calibrated:** the chemical potential of water in the solution — hence `muw`, `aw`, `phi`, the ice melting curves and `whichphase`. Ice II, not ice III, bounds the liquidus below about 250 K.
+
+**What is not:** every other property. `getProp` still returns the full set (density, heat capacity, sound speed, `mus`, apparent and partial molar quantities, …) so that all functions run, but those values are **not constrained by any data** and an `ExperimentalMaterialWarning` names them whenever they are requested. `sf.uncalibrated_properties('NH3aq', names)` lists them without evaluating anything.
+
+**Limitations**
+- Calibrated on ice liquidus data only, x(NH₃) ≤ 0.24 (m ≤ 17.5 mol/kg). The activity of ammonia and anything at higher concentration are extrapolations.
+- The excess term has a constant excess enthalpy and a pressure-independent excess volume, both obtained from the shape of the liquidi and only marginally resolved; the sign of the volume term is opposite to the contraction known for ammonia–water mixing. Do not derive densities, compressibilities, sound speeds or heats of mixing from this material.
+- Below 240 K pure liquid water is a constant-heat-capacity continuation of `water1` from 240 K. Replacing it by the Holten et al. (2014) heat capacity shifts the liquidus by less than 0.1 K up to 20 wt%.
+- Pure liquid NH₃ (CoolProp) is tabulated on 1–900 MPa and 233–273 K and continued smoothly outside; it does not enter the chemical potential of water.
+- Ammonia hydrates and ionic speciation are not included: only ice liquidi are given, and ice may be predicted where a hydrate is the stable solid.
+- Python only for now: not yet in the Matlab functions or the GUI.
+
+The model, its inputs and the build script are in `SourceData/NH3aq/`.
+
+## Adding a new aqueous binary
+
+Every chemistry-aware function (`getProp`, `whichphase`, `phase_lines`, `wpd`, `rho2P`) keys on the material registry, not on a material name, so a new solution needs a Gibbs spline and one registry entry:
+
+1. **Write the Gibbs energy** `G(P, T, m)` of the solution in J per kg of *solution*, with `P` in MPa, `T` in K and `m` in mol of solute per kg of water.
+2. **Build and check the spline**
+   ```python
+   from seafreeze import splinebuilder as sb
+   sp = sb.build_gibbs_spline(G, P_sites, T_sites, sb.dilute_sites(m_max, 45, power=3))
+   print(sb.check_gibbs_spline(sp, G, P_test, T_test, m=m_test, MW=MW_solute))   # errors on G, rho, Cp, muw
+   sb.save_gibbs_spline(sp, '<splines>/My_aq/My_aq.mat', MW=MW_solute, nu=nu, model='...')
+   ```
+   Cluster the molality sites near zero (`dilute_sites`): the ideal-mixing term has a singular slope there.
+3. **Register it**
+   ```python
+   import seafreeze as sf
+   sf.register_solution('Myaq', 'My', MW_solute, nu, cutoff=1e-6, spline=('My_aq', 'My_aq.mat'),
+                        experimental=True, calibrated=('muw', 'aw', 'phi'))
+   ```
+   `nu` is the number of particles per formula unit (2 for NaCl, 1 for a non-electrolyte). For a permanent material, add the same entry to `phases` and `_SPLINE_MAP` in `seafreeze/seafreeze.py`.
+4. **Test it.** Add the material to `seafreeze/test/golden_cases.py` and `test_domain_edges.py`, regenerate the golden reference, and run the suite: the contract, domain-edge and physics-identity tests then run on it automatically. `test_NH3aq.py` is a template for material-specific checks (chemical potential against the generating model, melting curves, calibration data).
+
+`test_solute_registry.py` and `test_splinebuilder.py` demonstrate the whole path with materials registered at test time.
+
+---
+
 ## Important remarks 
 ### Water representation
 The ice Gibbs parametrizations are optimized to be used with `water1` (Bollengier et al. 2019), particularly for phase-equilibrium calculations. Using other water parametrizations will lead to incorrect melting curves. `water2` (Brown 2018) and `water_IAPWS95` (IAPWS-95) are provided for high-pressure extension (up to 100 GPa) and comparison only. The authors recommend `water1` for any application in the 200–355 K range and up to 2300 MPa.
@@ -364,6 +422,12 @@ SeaFreeze stability prediction is currently considered valid down to 130K, which
 * **Ula Jones** - *University of Washington, Earth and Space Sciences Department, Seattle, USA*
 
 ## Change log
+
+### Unreleased (branch `nh3aq-binary`)
+- Solute registry: chemistry functions no longer depend on the material name `NaClaq`; new `is_solution`, `solution_phases`, `solute_phase`, `register_solution`, `unregister_solution`. Any registered solution has ice melting lines in `phase_lines`; `wpd` and `whichphase` accept a solute name.
+- New `seafreeze.splinebuilder`: build, check and save a Gibbs spline from any function G(P, T, m).
+- New experimental material `NH3aq` (aqueous ammonia), with `ExperimentalMaterialWarning` and `uncalibrated_properties`.
+- Fixed: water activity `aw` used two ions per formula unit for every solute; it now uses the solute's own count (no change for NaCl).
 
 ### Changes since 0.9.0
 - `1.1.3`: Added `rho2P` — EOS pressure-from-density inversion via Newton-Raphson + bisection fallback, supporting all phases including NaClaq. Fixed low-pressure convergence for all ice phases (Ih, II, III, V, VI).

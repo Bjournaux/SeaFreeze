@@ -30,6 +30,8 @@ GOLDEN_AXES = {
     'NaClaq_LP':      dict(P=[10.0,  300.0,   900.0],   T=[250.0, 300.0,  450.0],  m=[0.5, 2.0, 5.0]),
     'NaClaq_HP':      dict(P=[600.0, 2000.0,  8000.0],  T=[300.0, 600.0,  1500.0], m=[0.5, 2.0, 5.0]),
     'NaClaq_5GPa_2024': dict(P=[100.0, 1000.0, 4000.0], T=[250.0, 300.0,  450.0],  m=[0.5, 2.0, 5.0]),
+    # Experimental (only muw/aw/phi calibrated); spans the extrapolated-water (<240 K) region.
+    'NH3aq':          dict(P=[10.0,  300.0,   800.0],   T=[230.0, 260.0,  290.0],  m=[0.5, 5.0, 15.0]),
 }
 
 # Relative tolerance for the comparison.  Spline evaluation is deterministic;

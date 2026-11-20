@@ -13,7 +13,7 @@ Baptiste Journaux - 2026
 import warnings
 import numpy as np
 
-from .seafreeze import getProp, phases, defpath
+from .seafreeze import getProp, phases, defpath, is_solution, _warn_experimental
 from .phaselines import phase_range
 
 
@@ -78,14 +78,16 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
         raise ValueError(
             f"Unknown phase '{phase}'. Supported: {', '.join(phases.keys())}")
 
-    is_nacl = phase.startswith('NaClaq')
+    is_soln = is_solution(phase)
+    if phases[phase].experimental:
+        _warn_experimental(phase, ('rho',))
 
-    if is_nacl and m is None:
+    if is_soln and m is None:
         raise ValueError(
-            f"NaClaq phase '{phase}' requires the 'm' argument (molality in mol/kg).")
-    if not is_nacl and m is not None:
+            f"Solution phase '{phase}' requires the 'm' argument (molality in mol/kg).")
+    if not is_soln and m is not None:
         warnings.warn(
-            f"'m' argument provided for non-NaClaq phase '{phase}' — it will be ignored.",
+            f"'m' argument provided for non-solution phase '{phase}' — it will be ignored.",
             UserWarning, stacklevel=2)
 
     # ---- Flatten inputs to 1-D, remember original shape -----------------------
@@ -101,7 +103,7 @@ def rho2P(rho_target, T, phase, m=None, *, P0=None, tol=0.01, max_iter=30, path=
         raise ValueError(
             f"T must be scalar or the same size as rho_target ({n}), got {T_flat.size}.")
 
-    if is_nacl:
+    if is_soln:
         m_flat = np.asarray(m, dtype=float).ravel()
         if m_flat.size == 1:
             m_flat = np.full(n, m_flat[0])
@@ -186,8 +188,7 @@ def _build_ptm(P_arr, T_arr, phase, m_arr):
     """Build a scatter PTm array (1-D object array of tuples) for getProp."""
     n = P_arr.size
     PTm = np.empty(n, dtype=object)
-    is_nacl = phase.startswith('NaClaq')
-    if is_nacl:
+    if is_solution(phase):
         for i in range(n):
             PTm[i] = (float(P_arr[i]), float(T_arr[i]), float(m_arr[i]))
     else:
