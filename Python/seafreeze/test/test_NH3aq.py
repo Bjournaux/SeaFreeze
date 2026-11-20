@@ -112,7 +112,7 @@ def test_spline_file_documents_itself(meta):
     for field in ('model', 'calibrated', 'not_calibrated', 'water_reference', 'nh3_reference', 'version'):
         assert len(str(sp[field])) > 5, field
     assert float(sp['MW'][1]) == pytest.approx(M_NH3) and int(sp['nu']) == 1
-    assert 1.0 < float(sp['fit_rms_K']) < 1.5 and int(sp['fit_n_points']) == 88
+    assert 1.0 < float(sp['fit_rms_K']) < 1.5 and int(sp['fit_n_points']) == 104
 
 
 # ---------------------------------------------------------------------------
@@ -208,11 +208,11 @@ def test_liquidus_depression_increases_with_ammonia():
 
 @pytest.mark.skipif(not DATA.exists(), reason='SourceData/NH3aq/liquidus_data.csv not available')
 def test_reproduces_calibration_data():
-    """The 88 liquidus points used for the fit, through getProp only."""
+    """The 104 liquidus points used for the fit, through getProp only."""
     import csv
     with open(DATA, newline='') as fh:
         d = list(csv.DictReader(line for line in fh if not line.startswith('#')))
-    assert len(d) == 88
+    assert len(d) == 104
     dT = []
     for row in d:
         x = float(row['x_NH3']); m = x / (1 - x) * NW; P = float(row['P_MPa']); T = float(row['T_K'])
@@ -228,8 +228,9 @@ def test_reproduces_calibration_data():
         dT.append(brentq(f, Tg[i], Tg[i + 1]) - T)
     dT = np.array(dT)
     rms = float(np.sqrt(np.mean(dT**2)))
-    assert 1.15 < rms < 1.30, f'RMS misfit {rms:.3f} K (fit: 1.22 K)'
-    assert abs(dT.mean()) < 0.4 and np.abs(dT).max() < 5.0
+    assert 1.15 < rms < 1.30, f'RMS misfit {rms:.3f} K (fit: 1.20 K)'
+    # the robust fit does not force a zero mean: the model runs about 0.4 K cold overall
+    assert abs(dT.mean()) < 0.6 and np.abs(dT).max() < 5.0
 
 
 # ---------------------------------------------------------------------------

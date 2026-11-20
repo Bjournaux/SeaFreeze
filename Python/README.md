@@ -342,7 +342,7 @@ P_rec = rho2P(rho, 300., 'water1')         # should recover ≈ 500 MPa
 
 ## Aqueous ammonia: `NH3aq` (experimental)
 
-`NH3aq` is an H₂O–NH₃ solution built from a Redlich–Kister excess Gibbs energy fitted to ice liquidus data (Choukroun & Grasset 2010; Leliwa-Kopystyński et al. 2002; 88 points, x(NH₃) ≤ 0.24, 9–971 MPa, 210–270 K, RMS 1.2 K). It is used exactly like `NaClaq`, with molality in mol of NH₃ per kg of water (10 wt% = 6.52 mol/kg, 20 wt% = 14.68 mol/kg).
+`NH3aq` is an H₂O–NH₃ solution built from a Redlich–Kister excess Gibbs energy fitted to ice liquidus data (Choukroun & Grasset 2010; Leliwa-Kopystyński et al. 2002; 104 points, x(NH₃) ≤ 0.24, 9–971 MPa, 210–270 K, RMS 1.2 K). It is used exactly like `NaClaq`, with molality in mol of NH₃ per kg of water (10 wt% = 6.52 mol/kg, 20 wt% = 14.68 mol/kg).
 
 ```python
 import numpy as np
