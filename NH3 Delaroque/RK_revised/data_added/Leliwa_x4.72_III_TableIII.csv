@@ -1,0 +1,8 @@
+# Ice III liquidus, 4.72 wt% NH3: T = 235.3 + 0.0596 p - 0.000036 p^2 (130 <= p <= 300 MPa)
+# Generated from the polynomial fit of Table III(a), Leliwa-Kopystynski, Maruyama & Nakajima (2002), Icarus 159, 518-528.
+# These are values of the published fit, NOT the raw data points (which appear only in Fig. 5 of the paper).
+P_MPa, T_K
+210.0, 246.228
+240.0, 247.530
+270.0, 248.768
+300.0, 249.940

@@ -1,0 +1,19 @@
+set,source,x_NH3,P_MPa,T_K,ice_in_source,ice_used,used_in_fit,label_change,dT_K_with_source_ice,dT_K_with_ice_used
+amm014_III,Choukroun & Grasset 2010,0.0264,269.7368,238.04,III,II,False,"stable-ice rule: III -> II (lower Gibbs energy at the measured P, T)",12.527,11.2224
+amm014_III,Choukroun & Grasset 2010,0.0264,257.8947,240.5716,III,II,False,"stable-ice rule: III -> II (lower Gibbs energy at the measured P, T)",9.5547,8.1602
+amm014_III,Choukroun & Grasset 2010,0.0264,315.7895,242.9767,III,II,False,"stable-ice rule: III -> II (lower Gibbs energy at the measured P, T)",9.1018,8.1514
+amm015_III,Choukroun & Grasset 2010,0.0741,378.9474,249.3058,III,V,True,"stable-ice rule: III -> V (lower Gibbs energy at the measured P, T)",-2.219,-1.0987
+Chroukroun_x01_III,Choukroun & Grasset 2010,0.1052,238.9706,235.3125,III,III,True,"best-fitting ice among II/III for this point, by decision (B. Journaux, 2026-11-20); source label III; 10 wt% -> source label kept",2.1647,2.1647
+Chroukroun_x01_III,Choukroun & Grasset 2010,0.1052,290.4412,238.4375,III,III,True,"best-fitting ice among II/III for this point, by decision (B. Journaux, 2026-11-20); source label III; 10 wt% -> source label kept",1.0437,1.0437
+Chroukroun_x01_III,Choukroun & Grasset 2010,0.1052,341.9118,240.9375,III,III,True,"best-fitting ice among II/III for this point, by decision (B. Journaux, 2026-11-20); source label III; 10 wt% -> source label kept",0.1155,0.1155
+Chroukroun_x01_III,Choukroun & Grasset 2010,0.1052,389.7059,243.125,III,II,True,"best-fitting ice among II/III for this point, by decision (B. Journaux, 2026-11-20); source label III; 10 wt%",-0.9305,0.7452
+Chroukroun_x02_III,Choukroun & Grasset 2010,0.2091,216.9118,215.0,III,II,True,"relabelled III -> II by decision (B. Journaux, 2026-11-20): suspected misidentification in the source; 20 wt%",-4.0994,1.607
+Chroukroun_x02_III,Choukroun & Grasset 2010,0.2091,312.5,221.875,III,II,True,"relabelled III -> II by decision (B. Journaux, 2026-11-20): suspected misidentification in the source; 20 wt%",-6.3136,-0.2892
+Chroukroun_x02_III,Choukroun & Grasset 2010,0.2091,397.0588,225.0,III,II,True,"relabelled III -> II by decision (B. Journaux, 2026-11-20): suspected misidentification in the source; 20 wt%",-6.8903,-0.3442
+amm015_V,Choukroun & Grasset 2010,0.0741,673.6842,267.6602,V,VI,True,"stable-ice rule: V -> VI (lower Gibbs energy at the measured P, T)",-2.3851,-1.3698
+amm015_V,Choukroun & Grasset 2010,0.0741,677.6316,269.8121,V,VI,True,"stable-ice rule: V -> VI (lower Gibbs energy at the measured P, T)",-4.3592,-3.1853
+amm015_V,Choukroun & Grasset 2010,0.0741,705.2632,270.0653,V,VI,True,"stable-ice rule: V -> VI (lower Gibbs energy at the measured P, T)",-3.3964,-1.1225
+Chroukroun_x02_V,Choukroun & Grasset 2010,0.2091,727.9412,242.8125,V,VI,True,"stable-ice rule: V -> VI (lower Gibbs energy at the measured P, T)",-3.0406,-0.6257
+Chroukroun_x02_V,Choukroun & Grasset 2010,0.2091,797.7941,249.0625,V,VI,True,"stable-ice rule: V -> VI (lower Gibbs energy at the measured P, T)",-6.1895,-0.8094
+Chroukroun_x02_V,Choukroun & Grasset 2010,0.2091,886.0294,255.0,V,VI,True,"stable-ice rule: V -> VI (lower Gibbs energy at the measured P, T)",-8.6342,0.3675
+Chroukroun_x02_V,Choukroun & Grasset 2010,0.2091,970.5882,260.9375,V,VI,True,"stable-ice rule: V -> VI (lower Gibbs energy at the measured P, T)",-11.6064,0.7808
