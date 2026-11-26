@@ -1,4 +1,4 @@
-# Ice liquidus data used to fit the NH3aq Redlich-Kister model (104 points, 18 series).
+# Ice liquidus data used to fit the NH3aq_RK Redlich-Kister model (104 points, 18 series).
 # Digitised by L. Delaroque from Choukroun & Grasset (2010) and Leliwa-Kopystynski et al. (2002); the three '*_TableIII' series are values of the polynomial fits published in Table III of Leliwa-Kopystynski et al. (2002), not raw points.
 # ice_label: ice named in the source (never modified); ice_fitted: ice used in the fit; label_change: why they differ, or how the ice was chosen (see ice_label_changes.csv). Leliwa compositions are wt% (3.34, 4.72, 11.1, 17.6, 22.9).
 set,source,ice_label,ice_fitted,x_NH3,P_MPa,T_K,label_change

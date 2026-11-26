@@ -27,7 +27,7 @@ on Python 3.11–3.13.
 | `test_phaselines.py`, `test_rho2P.py` | behaviour | Public API behaviour and error handling (incl. fault injection for rho2P). |
 | `test_solute_registry.py` | contract | Chemistry functions key on the registry: a second solute registered at test time (aliasing the NaCl splines) must behave exactly like NaCl in `getProp`, `whichphase`, `phase_lines`, `wpd`, `rho2P`; guard against name-based dispatch on `NaClaq`. |
 | `test_splinebuilder.py` | builder | Function → Gibbs spline: exact on polynomials, exact rebuild of `NaClaq_LP`, dilute-limit accuracy of `muw`, and a synthetic ideal binary carried through to its melting curve. |
-| `test_NH3aq.py` | material | `NH3aq`: `muw` equals the fitted model, pure-water limit, melting curves, ice II on the liquidus, the 88 calibration points, and the experimental-material warnings. |
+| `test_NH3aq.py` | material | `NH3aq_RK`: `muw` equals the fitted model, pure-water limit, melting curves, ice II on the liquidus, the 88 calibration points, and the experimental-material warnings. |
 | `test_seafreeze.py` | unit | Low-level helpers and historical spot values. |
 | `test_*_vs_matlab.py` | parity | Cross-validation against `Matlab/test/reference_*.mat`. Skip if the file is missing; set `SEAFREEZE_REQUIRE_MATLAB_REF=1` (as CI does) to fail instead. |
 

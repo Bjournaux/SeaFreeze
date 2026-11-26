@@ -1,6 +1,6 @@
 # SeaFreeze: issues to fix on the main branch
 
-Found on 2026-11-19/20 while adding the experimental `NH3aq` material (branch `nh3aq-binary`).
+Found on 2026-11-19/20 while adding the experimental `NH3aq_RK` material (branch `nh3aq-binary`).
 None of these is specific to NH3. This file lives in the untracked `NH3 Delaroque/` folder, so it
 stays visible whichever branch is checked out.
 
@@ -65,7 +65,7 @@ Status key: **open** = present on `master` and on the branch; **fixed on branch*
 - **Size:** ln(aw) is biased by about 5e-5 for a one-particle solute at that cutoff (measured on a
   synthetic ideal solution); expect roughly twice that for NaCl. `muw`, and therefore melting
   curves, are not affected.
-- **Options:** evaluate the reference at m = 0, or use a much smaller cutoff (NH3aq uses 1e-6).
+- **Options:** evaluate the reference at m = 0, or use a much smaller cutoff (NH3aq_RK uses 1e-6).
 
 ## 7. Two different molar masses for NaCl — open
 
@@ -88,7 +88,7 @@ Status key: **open** = present on `master` and on the branch; **fixed on branch*
 ## 10. Out-of-domain grid evaluation returns object-dtype arrays — open, seen once
 
 - `getProp` on a grid entirely outside the spline domain returned arrays that `np.isnan` could
-  not handle without an explicit `float` cast (seen with `NH3aq` at 5000 MPa requesting
+  not handle without an explicit `float` cast (seen with `NH3aq_RK` at 5000 MPa requesting
   `rho`, `muw`). Not checked for NaCl or the pure phases.
 
 ## 11. Tests that assumed NaCl — fixed on branch
@@ -103,6 +103,6 @@ Status key: **open** = present on `master` and on the branch; **fixed on branch*
   temperature axis `ln(T/450 K)`) used only as a loader test. It matches handbook densities at
   1 bar and gives sound speeds; it becomes unphysical (negative heat capacity) at low temperature,
   low concentration and high pressure. It could supply the density and sound-speed behaviour that
-  `NH3aq` lacks (hybrid not started).
-- **`NH3aq` open items** are listed in `SourceData/NH3aq/README.md` on the branch (Delaroque's
+  `NH3aq_RK` lacks (hybrid not started).
+- **`NH3aq_RK` open items** are listed in `SourceData/NH3aq/README.md` on the branch (Delaroque's
   agreement before publishing, Matlab and GUI support, unresolved Choukroun & Grasset compositions).

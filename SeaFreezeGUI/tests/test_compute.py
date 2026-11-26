@@ -37,7 +37,7 @@ def _m(material, grid=False):
 
 
 def test_gui_material_list_matches_package():
-    """The GUI offers every package material except experimental ones (e.g. 'NH3aq'),
+    """The GUI offers every package material except experimental ones (e.g. 'NH3aq_RK'),
     which are added to the GUI deliberately, not automatically."""
     stable = {m for m, pd in sf.phases.items() if not pd.experimental}
     assert set(ALL_MATERIALS) == stable

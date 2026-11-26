@@ -30,7 +30,7 @@ _SPLINE_MAP = {
     'NaClaq_LP':       ('NaCl_aq_LP_2026',     'NaCl_aq_LP_2026.mat'),
     'NaClaq_HP':       ('NaCl_aq_HP_2026',     'NaCl_aq_HP_2026.mat'),
     'NaClaq_5GPa_2024':('NaCl_aq_Brown2024',   'NaCl_aq_Brown2024.mat'),
-    'NH3aq':           ('NH3_aq_RK_2026',      'NH3_aq_RK_2026.mat'),
+    'NH3aq_RK':           ('NH3_aq_RK_2026',      'NH3_aq_RK_2026.mat'),
 }
 
 # ---------------------------------------------------------------------------
@@ -116,7 +116,7 @@ phases = {
     "NaClaq_5GPa_2024":PhaseDesc(None, 0, mNaCl_kgmol, 2, 0.0002, 'NaCl'),  # Brown 2024 legacy spline
     # Aqueous NH3 — EXPERIMENTAL: Redlich-Kister model fitted to ice liquidus data only
     # (x_NH3 <= 0.24, 9-971 MPa, 210-270 K).  See SourceData/NH3aq and _CALIBRATED below.
-    "NH3aq":           PhaseDesc(None, 0, mNH3_kgmol, 1, 1e-6, 'NH3', None, True),
+    "NH3aq_RK":           PhaseDesc(None, 0, mNH3_kgmol, 1, 1e-6, 'NH3', None, True),
 }
 
 # Experimental materials: the properties that ARE calibrated.  getProp warns
@@ -124,7 +124,7 @@ phases = {
 # Coordinate and composition echoes are always fine.
 _ECHO_PROPS = frozenset({'P', 'T', 'm', 'xs', 'xw', 'f'})
 _CALIBRATED = {
-    'NH3aq': frozenset({'muw', 'aw', 'phi'}),
+    'NH3aq_RK': frozenset({'muw', 'aw', 'phi'}),
 }
 
 
@@ -182,7 +182,7 @@ def register_solution(material, solute, MW, nu, cutoff, spline=None, stitch=None
                       experimental=False, calibrated=()):
     """Register an aqueous binary so that every chemistry function accepts it.
 
-    :param material:     material code, e.g. 'NH3aq'
+    :param material:     material code, e.g. 'NH3aq_RK'
     :param solute:       short solute name, e.g. 'NH3'
     :param MW:           solute molar mass [kg/mol]
     :param nu:           ions per formula unit (1 for a non-electrolyte)
@@ -314,9 +314,9 @@ def getProp(PTm, phase, path=defpath, *tdvSpec, verbose=False):
     mus, muw, Va, Cpa, Vm, Cpm, phi, Vex, aw,
     m (mol/kg echo), xs, xw, f, Vw (cm³/mol)
 
-    Experimental materials (currently 'NH3aq') return the same property set as
+    Experimental materials (currently 'NH3aq_RK') return the same property set as
     NaClaq, but only part of it is calibrated; an ExperimentalMaterialWarning
-    names the requested properties that are not.  'NH3aq': only muw, aw, phi and
+    names the requested properties that are not.  'NH3aq_RK': only muw, aw, phi and
     the ice melting curves are calibrated (x_NH3 <= 0.24, i.e. m <= 17.5 mol/kg,
     9-971 MPa, 210-270 K).
 
@@ -432,7 +432,7 @@ def whichphase(PTm, solute='water1', path=defpath):
                     Grid: numpy array([P_vec, T_vec]) or ([P, T, m_vec]).
     :param solute:  Liquid material to compare against the ices: a pure
                     water EOS ('water1' default, 'water2', 'water_IAPWS95'),
-                    a solution material ('NaClaq', 'NH3aq', ...) or a solute
+                    a solution material ('NaClaq', 'NH3aq_RK', ...) or a solute
                     name ('NaCl', 'NH3'); solutions require m in PTm.
     :param path:    Path to the ``splines/`` directory.
     :return:        numpy.ndarray with the stable phase index at each point.

@@ -1,4 +1,4 @@
-"""'NH3aq': the experimental aqueous-ammonia material.
+"""'NH3aq_RK': the experimental aqueous-ammonia material.
 
 The spline is built (SourceData/NH3aq) from a Redlich-Kister model fitted to ice
 liquidus data.  These tests check, independently of the build code, that
@@ -39,7 +39,7 @@ def wt_to_m(w):
 
 @pytest.fixture(scope='module')
 def meta():
-    sp = sfm._load_spline(sfm.defpath, 'NH3aq')
+    sp = sfm._load_spline(sfm.defpath, 'NH3aq_RK')
     rk = dict(zip(str(sp['rk_names']).split(), np.asarray(sp['rk_values'], float).ravel()))
     return sp, rk, float(sp['T_ref']), float(sp['P_ref']), float(sp['P_scale'])
 
@@ -89,19 +89,19 @@ def liquidus_model(P, m, meta, ices=ICES):
 
 def _muw(P, T, m):
     a = np.empty((1,), dtype=object); a[0] = (float(P), float(T), float(m))
-    return float(sf.getProp(a, 'NH3aq', sfm.defpath, 'muw').muw[0])
+    return float(sf.getProp(a, 'NH3aq_RK', sfm.defpath, 'muw').muw[0])
 
 
 # ---------------------------------------------------------------------------
 # Registration, domain, metadata
 # ---------------------------------------------------------------------------
 def test_registration_and_domain(meta):
-    pd = sf.phases['NH3aq']
+    pd = sf.phases['NH3aq_RK']
     assert (pd.solute, pd.nu, pd.experimental, pd.stitch) == ('NH3', 1, True, None)
     assert pd.MW == pytest.approx(17.03052e-3)
-    rng = sf.phase_range('NH3aq')
+    rng = sf.phase_range('NH3aq_RK')
     assert rng.P == (0.0, 1000.0) and rng.T == (200.0, 310.0) and rng.m == (0.0, 18.0)
-    assert sf.solute_phase('NH3') == 'NH3aq'
+    assert sf.solute_phase('NH3') == 'NH3aq_RK'
 
 
 def test_spline_file_documents_itself(meta):
@@ -132,7 +132,7 @@ def test_pure_water_limit_is_water1():
     P, T = np.array([0.1, 200.0, 600.0, 950.0]), np.array([240.0, 260.0, 300.0])
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        s = sf.getProp(np.array([P, T, np.array([0.0])], dtype=object), 'NH3aq', sfm.defpath, 'G', 'rho', 'Cp', 'muw')
+        s = sf.getProp(np.array([P, T, np.array([0.0])], dtype=object), 'NH3aq_RK', sfm.defpath, 'G', 'rho', 'Cp', 'muw')
         w = sf.getProp(np.array([P, T], dtype=object), 'water1', sfm.defpath, 'G', 'rho', 'Cp')
     # 0.1 MPa is not a building site (0 and 10 MPa are): agreement is to interpolation accuracy
     np.testing.assert_allclose(s.G[:, :, 0], w.G, rtol=0, atol=1e-2)            # J/kg
@@ -147,7 +147,7 @@ def test_pure_water_limit_is_water1():
 def test_water_activity_matches_model(meta):
     P, T = 150.0, 255.0
     m = np.array([0.5, 3.0, 9.0, 16.0])
-    out = sf.getProp(np.array([np.array([P]), np.array([T]), m], dtype=object), 'NH3aq', sfm.defpath, 'aw', 'phi')
+    out = sf.getProp(np.array([np.array([P]), np.array([T]), m], dtype=object), 'NH3aq_RK', sfm.defpath, 'aw', 'phi')
     aw_model = np.array([np.exp((muw_model(P, T, mi, meta) - water_mu(P, T)) / (R * T)) for mi in m])
     np.testing.assert_allclose(np.ravel(out.aw), aw_model, rtol=2e-5)
     assert np.all(np.diff(np.ravel(out.aw)) < 0) and np.ravel(out.aw)[-1] < 0.75
@@ -167,7 +167,7 @@ def test_melting_curve_matches_model(meta, ice, wt, P):
     m = wt_to_m(wt)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        line = sf.phase_lines(ice, 'NH3aq', m=m)
+        line = sf.phase_lines(ice, 'NH3aq_RK', m=m)
     o = np.argsort(line.P)
     T_line = np.interp(P, line.P[o], line.T[o])
     T_model, _ = liquidus_model(P, m, meta, ices=(ice,))
@@ -186,7 +186,7 @@ def test_stable_ice_on_the_liquidus(meta, wt, P, expected):
     assert ice == expected
     pts = np.empty((2,), dtype=object)
     pts[0], pts[1] = (P, T_liq - 0.5, m), (P, T_liq + 0.5, m)
-    which = sf.whichphase(pts, 'NH3aq')
+    which = sf.whichphase(pts, 'NH3aq_RK')
     assert sf.phasenum2phase(int(which[0])) == expected, f'{wt} wt% {P} MPa: below the liquidus'
     assert which[1] == 0, f'{wt} wt% {P} MPa: above the liquidus should be liquid'
 
@@ -197,7 +197,7 @@ def test_liquidus_depression_increases_with_ammonia():
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         for wt in (2.0, 8.0, 15.0, 22.0):
-            line = sf.phase_lines('Ih', 'NH3aq', m=wt_to_m(wt))
+            line = sf.phase_lines('Ih', 'NH3aq_RK', m=wt_to_m(wt))
             o = np.argsort(line.P)
             T.append(np.interp(P, line.P[o], line.T[o]))
         pure = sf.phase_lines('Ih', 'water1')
@@ -247,39 +247,39 @@ def _caught(fn):
 
 
 def test_all_properties_warns_once_and_returns_full_set():
-    w = _caught(lambda: sf.getProp(PTM, 'NH3aq'))
+    w = _caught(lambda: sf.getProp(PTM, 'NH3aq_RK'))
     assert len(w) == 1 and 'experimental' in str(w[0].message) and 'aw, muw, phi' in str(w[0].message)
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        nh3, nacl = sf.getProp(PTM, 'NH3aq'), sf.getProp(PTM, 'NaClaq')
+        nh3, nacl = sf.getProp(PTM, 'NH3aq_RK'), sf.getProp(PTM, 'NaClaq')
     assert set(vars(nh3)) == set(vars(nacl))            # same property set as NaCl
     for k, v in vars(nh3).items():
         assert np.all(np.isfinite(np.asarray(v, float))), k
 
 
 def test_calibrated_properties_do_not_warn():
-    assert _caught(lambda: sf.getProp(PTM, 'NH3aq', sfm.defpath, 'muw', 'aw', 'phi', 'm', 'xs', 'xw', 'f', 'P', 'T')) == []
-    assert _caught(lambda: sf.phase_lines('Ih', 'NH3aq', m=5.0)) == []
+    assert _caught(lambda: sf.getProp(PTM, 'NH3aq_RK', sfm.defpath, 'muw', 'aw', 'phi', 'm', 'xs', 'xw', 'f', 'P', 'T')) == []
+    assert _caught(lambda: sf.phase_lines('Ih', 'NH3aq_RK', m=5.0)) == []
     one_m = np.array([PTM[0], PTM[1], np.array([8.0])], dtype=object)     # whichphase grids take one molality
-    assert _caught(lambda: sf.whichphase(one_m, 'NH3aq')) == []
+    assert _caught(lambda: sf.whichphase(one_m, 'NH3aq_RK')) == []
     assert _caught(lambda: sf.getProp(PTM, 'NaClaq')) == []
 
 
 def test_uncalibrated_properties_are_named():
-    w = _caught(lambda: sf.getProp(PTM, 'NH3aq', sfm.defpath, 'rho', 'muw', 'Cp'))
+    w = _caught(lambda: sf.getProp(PTM, 'NH3aq_RK', sfm.defpath, 'rho', 'muw', 'Cp'))
     assert len(w) == 1 and 'Cp, rho' in str(w[0].message)
-    assert sf.uncalibrated_properties('NH3aq', ('rho', 'muw', 'Cp', 'm')) == ['Cp', 'rho']
-    assert sf.uncalibrated_properties('NH3aq', ('muw', 'aw')) == []
+    assert sf.uncalibrated_properties('NH3aq_RK', ('rho', 'muw', 'Cp', 'm')) == ['Cp', 'rho']
+    assert sf.uncalibrated_properties('NH3aq_RK', ('muw', 'aw')) == []
     assert sf.uncalibrated_properties('NaClaq', ('rho',)) == []
-    assert len(sf.uncalibrated_properties('NH3aq')) == 1
+    assert len(sf.uncalibrated_properties('NH3aq_RK')) == 1
 
 
 def test_rho2P_works_but_warns():
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         rho = sf.getProp(np.array([np.array([300.0]), np.array([260.0]), np.array([5.0])], dtype=object),
-                         'NH3aq', sfm.defpath, 'rho').rho.ravel()
-    w = _caught(lambda: np.testing.assert_allclose(sf.rho2P(rho, 260.0, 'NH3aq', m=5.0), [300.0], atol=0.05))
+                         'NH3aq_RK', sfm.defpath, 'rho').rho.ravel()
+    w = _caught(lambda: np.testing.assert_allclose(sf.rho2P(rho, 260.0, 'NH3aq_RK', m=5.0), [300.0], atol=0.05))
     assert len(w) == 1 and 'rho' in str(w[0].message)
 
 
@@ -291,5 +291,5 @@ def test_wpd_overlay_runs():
         warnings.simplefilter('ignore')
         fig = sf.wpd(solute='NH3', m=[wt_to_m(10.0)])
     labels = [l.get_label() for l in fig.axes[0].get_lines()]
-    assert any(lab.startswith('Ih-NH3aq') for lab in labels)
+    assert any(lab.startswith('Ih-NH3aq_RK') for lab in labels)
     plt.close('all')

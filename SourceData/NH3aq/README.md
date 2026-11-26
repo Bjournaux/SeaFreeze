@@ -1,4 +1,4 @@
-# NH3aq: source of the SeaFreeze aqueous-ammonia spline
+# NH3aq_RK: source of the SeaFreeze aqueous-ammonia spline
 
 Everything needed to rebuild `Python/seafreeze/splines/NH3_aq_RK_2026/NH3_aq_RK_2026.mat`.
 

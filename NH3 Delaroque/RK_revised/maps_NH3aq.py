@@ -1,7 +1,7 @@
 """
-Maps of density, heat capacity and sound speed returned by the experimental 'NH3aq'
+Maps of density, heat capacity and sound speed returned by the experimental 'NH3aq_RK'
 material, in the same layout as residuals_vs_V1.py (pressure vs NH3 content at four
-temperatures).  None of these three properties is calibrated for NH3aq.
+temperatures).  None of these three properties is calibrated for NH3aq_RK.
 
     python "NH3 Delaroque/RK_revised/maps_NH3aq.py"      (from the repository root)
 """
@@ -28,9 +28,9 @@ T = np.array([245.0, 260.0, 275.0, 290.0])
 W = np.linspace(0.0, 23.0, 47)
 m = wt2m(W)
 
-o = sf.getProp(np.array([P, T, m], dtype=object), "NH3aq", sfm.defpath, "rho", "Cp", "vel")
+o = sf.getProp(np.array([P, T, m], dtype=object), "NH3aq_RK", sfm.defpath, "rho", "Cp", "vel")
 val = {k: np.asarray(getattr(o, k), float) for k in ("rho", "Cp", "vel")}
-liquid = np.stack([np.squeeze(sf.whichphase(np.array([P, T, np.array([max(mi, 1e-9)])], dtype=object), "NH3aq")) == 0
+liquid = np.stack([np.squeeze(sf.whichphase(np.array([P, T, np.array([max(mi, 1e-9)])], dtype=object), "NH3aq_RK")) == 0
                    for mi in m], axis=2)
 
 rows = [("rho", "Density", "kg/m$^3$", "viridis", np.arange(850, 1301, 50)),
@@ -55,7 +55,7 @@ for i, (key, name, unit, cmap, levels) in enumerate(rows):
             ax.set_ylabel(f"{name}\nNH3 (wt%)")
     cb = fig.colorbar(pc, ax=axes[i, :], pad=0.01, aspect=18)
     cb.set_label(f"{name} ({unit})")
-fig.suptitle("SeaFreeze 'NH3aq': density, heat capacity and sound speed (NOT calibrated for this material)\n"
+fig.suptitle("SeaFreeze 'NH3aq_RK': density, heat capacity and sound speed (NOT calibrated for this material)\n"
              "green line: ice liquidus; the liquid is stable above it (higher NH3 content), metastable below",
              fontsize=11)
 fig.savefig(OUT / "maps_NH3aq.png", dpi=140, bbox_inches="tight")

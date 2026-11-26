@@ -48,8 +48,8 @@ with np.errstate(all="ignore"):
         & (val["vel"] > 800) & (val["vel"] < 3500)
 val = {k: np.where(ok, v, np.nan) for k, v in val.items()}
 
-# ice liquidus of NH3aq, for reference only
-liquid = np.stack([np.squeeze(sf.whichphase(np.array([P, T, np.array([max(mi, 1e-9)])], dtype=object), "NH3aq")) == 0
+# ice liquidus of NH3aq_RK, for reference only
+liquid = np.stack([np.squeeze(sf.whichphase(np.array([P, T, np.array([max(mi, 1e-9)])], dtype=object), "NH3aq_RK")) == 0
                    for mi in m], axis=2)
 
 # same colour limits and contour levels as maps_NH3aq.py
@@ -76,7 +76,7 @@ for i, (key, name, unit, cmap, levels, (vmin, vmax)) in enumerate(rows):
     cb = fig.colorbar(pc, ax=axes[i, :], pad=0.01, aspect=18, extend="both")
     cb.set_label(f"{name} ({unit})")
 fig.suptitle("Earlier NH3-H2O Gibbs spline V1 (NH3_H2O_LBF.mat): density, heat capacity and sound speed\n"
-             "same colour scales as the NH3aq maps   |   grey: V1 not physical   |   green line: ice liquidus of NH3aq, for reference",
+             "same colour scales as the NH3aq_RK maps   |   grey: V1 not physical   |   green line: ice liquidus of NH3aq_RK, for reference",
              fontsize=11)
 fig.savefig(OUT / "maps_V1.png", dpi=140, bbox_inches="tight")
 plt.close(fig)

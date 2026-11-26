@@ -1,5 +1,5 @@
 """
-Build the SeaFreeze 'NH3aq' Gibbs spline from the Redlich-Kister model.
+Build the SeaFreeze 'NH3aq_RK' Gibbs spline from the Redlich-Kister model.
 
     python SourceData/NH3aq/build_NH3aq_spline.py            (from the repository root)
 

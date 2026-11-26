@@ -1,5 +1,5 @@
 """
-Gibbs energy of H2O-NH3 solutions used to build the SeaFreeze 'NH3aq' spline.
+Gibbs energy of H2O-NH3 solutions used to build the SeaFreeze 'NH3aq_RK' spline.
 
 Per kg of water (n_w = 1/M_w mol of H2O and m mol of NH3):
 

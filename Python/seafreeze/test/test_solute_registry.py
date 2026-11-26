@@ -61,8 +61,8 @@ def test_builtin_classification():
         assert sf.is_solution(mat), mat
         assert sf.phases[mat].solute == 'NaCl'
         assert not sf.phases[mat].experimental
-    assert sf.is_solution('NH3aq') and sf.phases['NH3aq'].solute == 'NH3' and sf.phases['NH3aq'].nu == 1
-    assert sf.phases['NH3aq'].experimental
+    assert sf.is_solution('NH3aq_RK') and sf.phases['NH3aq_RK'].solute == 'NH3' and sf.phases['NH3aq_RK'].nu == 1
+    assert sf.phases['NH3aq_RK'].experimental
     for mat in ('Ih', 'II', 'III', 'V', 'VI', 'VII_X_French', 'water1', 'water2', 'water_IAPWS95'):
         assert not sf.is_solution(mat), mat
     assert not sf.is_solution('NotAPhase')
@@ -72,7 +72,7 @@ def test_builtin_classification():
 def test_solute_lookup():
     assert sf.solution_phases('NaCl') == ['NaClaq', 'NaClaq_LP', 'NaClaq_HP', 'NaClaq_5GPa_2024']
     assert sf.solution_phases('nacl') == sf.solution_phases('NaCl')
-    assert sf.solution_phases('NH3') == ['NH3aq'] and sf.solute_phase('nh3') == 'NH3aq'
+    assert sf.solution_phases('NH3') == ['NH3aq_RK'] and sf.solute_phase('nh3') == 'NH3aq_RK'
     assert sf.solution_phases() == sf.solution_phases('NaCl') + sf.solution_phases('NH3')
     assert sf.solution_phases('MgSO4') == []
     assert sf.solute_phase('NaCl') == 'NaClaq'

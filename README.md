@@ -4,7 +4,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/B_jour.svg?style=flat-square&logo=twitter&label=Follow)](https://twitter.com/B_jour)
 [![GitHub Follow](https://img.shields.io/github/followers/Bjournaux.svg?style=flat-square&logo=github&label=Follow)](https://github.com/Bjournaux)
 
-V1.1.3
+V1.1.4b (beta)
 
 <a href="https://bjournaux.wordpress.com/" target="_blank"><img src="assets/logo.png" alt="UW Planetary Mineral Physics Laboratory" width="400"/></a>
 
@@ -21,7 +21,7 @@ phase, constructed to reproduce thermodynamic measurements. The formalism is des
 Gibbs parametrization by [Bollengier, Brown, and Shaw (2019)](https://aip.scitation.org/doi/abs/10.1063/1.5097179). 
 Aqueous NaCl equation of state publication is in preparation.
 
-Both Python and Matlab versions are at 1.1.3.
+Python is at 1.1.4b (beta, adds an experimental aqueous ammonia material, `NH3aq_RK`); Matlab is at 1.1.3.
 
 Contact: bjournau (at) uw (dot) edu
 
@@ -319,6 +319,11 @@ range and up to 2300 MPa.
 
 A Gibbs energy representation of French and Redmer (2015) ice VII and X equation of state is included. The VII/X–water melting curve is stable above the VI–VII–water triple point (~2216 MPa, 354 K).
 
+### Aqueous ammonia (`NH3aq_RK`, experimental, Python only)
+Version 1.1.4b adds an experimental H₂O–NH₃ solution, `NH3aq_RK`, for 0–1000 MPa, 200–310 K and 0–18 mol/kg. It is based on the H₂O–NH₃ liquidus model and data compilation of Lorraine Delaroque (IPGP). Its Gibbs energy combines pure water (`water1`), pure liquid NH₃ (CoolProp), ideal mixing and a Redlich–Kister excess term, whose temperature- and pressure-dependent coefficients were fitted to 104 ice liquidus points (Choukroun & Grasset 2010; Leliwa-Kopystyński et al. 2002) by equating the chemical potential of water in the solution with the Gibbs energy of the coexisting ice. The liquidus is reproduced to 1.2 K (RMS).
+
+Only the water activity and the ice melting curves are calibrated. All other properties (density, heat capacity, sound speed, …) are returned so that every function runs, but they are not constrained by data and a warning is raised when they are requested. Usage, method and limitations are described in [Python/README.md](Python/README.md); the model and its inputs are in `SourceData/NH3aq/`.
+
 ### Range of validity
 SeaFreeze stability prediction is currently considered valid down to 130K, which correspond to the ice VI - ice XV transition. The ice Ih - II transition is potentially valid down to 73.4 K (ice Ih - ice XI transition).
 
@@ -350,10 +355,16 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 * **Tyler Gordon** - *University of Washington, Department of Astronomy, Seattle, USA*
 * **Matthew J. Powell-Palm** - *Texas A&M University, Department of Mechanical Engineering, USA*
 * **Steven D. Vance** - *NASA Jet Propulsion Laboratory, California Institute of Technology, Pasadena, USA*
+* **Lorraine Delaroque** - *Institut de Physique du Globe de Paris, France* (H₂O–NH₃ liquidus model and data compilation)
 
 ## Change log
 
 ### Changes since 0.9.0
+- `1.1.4b` (beta, Python only):
+  - **Experimental aqueous ammonia, `NH3aq_RK`.** H₂O–NH₃ liquid from a Redlich–Kister excess Gibbs energy fitted to 104 ice liquidus points (Choukroun & Grasset 2010; Leliwa-Kopystyński et al. 2002), x(NH₃) ≤ 0.24, 9–971 MPa, 210–270 K, RMS 1.2 K; built into a Gibbs spline on 0–1000 MPa, 200–310 K, 0–18 mol/kg. Based on the model and data compilation of Lorraine Delaroque (IPGP). Ice II, not ice III, bounds the liquidus below about 250 K. Only `muw`, `aw`, `phi` and phase equilibria (`whichphase`, `phase_lines`, `wpd`) are calibrated; all other properties are returned but flagged by an `ExperimentalMaterialWarning` (`uncalibrated_properties` lists them). Python only: not yet in the Matlab functions or the GUI. Model, inputs and build script in `SourceData/NH3aq/`.
+  - **Solute registry.** Chemistry functions (`getProp`, `whichphase`, `phase_lines`, `wpd`, `rho2P`) no longer depend on the material name `NaClaq`; new `is_solution`, `solution_phases`, `solute_phase`, `register_solution`, `unregister_solution`. Any registered solution has ice melting lines in `phase_lines`, and `wpd` and `whichphase` accept a solute name (`'NaCl'`, `'NH3'`).
+  - **Spline builder.** New `seafreeze.splinebuilder` to build, check and save a Gibbs spline from any function G(P, T, m), as the route for adding new aqueous binaries.
+  - **Fixed:** water activity `aw` assumed two ions per formula unit for every solute; it now uses the solute's own count (no change for NaCl).
 - `1.1.3`: Added `SF_rho2P` (Matlab) and `rho2P` (Python) — EOS pressure-from-density inversion via Newton-Raphson + bisection fallback, supporting all materials including NaClaq. Fixed low-pressure convergence for all ice phases (Ih, II, III, V, VI) by separating the Newton/bisection domain floor from the initial-guess seed point.
 - `1.1.2`: Fixed bug in `_get_shear_mod_GPa` where temperature was not cast to a numpy array, causing `np.sqrt` to fail on 2-D grid inputs for solid phases (ice Ih, II, III, V, VI, VII/X). All shear-wave properties (`shear`, `Vp`, `Vs`) on grids now compute correctly.
 - `1.1.1`: Added `matplotlib` to Python dependencies; removed `numpy<2` upper bound for NumPy 2.x compatibility.
@@ -371,7 +382,7 @@ The following figure shows the prediction of phase transitions from SeaFreeze (m
 
 ### Planned updates
 - MgSO4, Na2SO4 and MgCl2 aqueous solutions
-- NH3 aqueous solutions
+- NH3 aqueous solutions: calibrated volumetric and thermal properties, Matlab and GUI support (an experimental `NH3aq_RK` is in Python 1.1.4b)
 - NaCl-bearing solids (halite and hydrohalite)
 
 

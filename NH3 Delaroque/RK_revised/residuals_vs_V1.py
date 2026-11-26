@@ -1,13 +1,13 @@
 """
-Residuals of the experimental 'NH3aq' material against the NH3-H2O Gibbs spline that was
+Residuals of the experimental 'NH3aq_RK' material against the NH3-H2O Gibbs spline that was
 already in the repository (Python/mlbspline/test/NH3_H2O_LBF.mat, "V1"):
 
-    residual = (NH3aq - V1) / V1     for density, heat capacity and sound speed
+    residual = (NH3aq_RK - V1) / V1     for density, heat capacity and sound speed
 
     python "NH3 Delaroque/RK_revised/residuals_vs_V1.py"      (from the repository root)
 
 V1 is shown only where it is physical (it oscillates at high pressure and low temperature).
-None of these three properties is calibrated for NH3aq.
+None of these three properties is calibrated for NH3aq_RK.
 """
 import sys
 import warnings
@@ -55,10 +55,10 @@ T = np.array([245.0, 260.0, 275.0, 290.0])
 W = np.linspace(0.5, 23.0, 46)
 m = wt2m(W)
 
-o = sf.getProp(np.array([P, T, m], dtype=object), "NH3aq", sfm.defpath, "rho", "Cp", "vel")
+o = sf.getProp(np.array([P, T, m], dtype=object), "NH3aq_RK", sfm.defpath, "rho", "Cp", "vel")
 rk = {k: np.asarray(getattr(o, k), float) for k in ("rho", "Cp", "vel")}
 v1, ok = v1_props(P, T, m)
-liquid = np.stack([np.squeeze(sf.whichphase(np.array([P, T, np.array([mi])], dtype=object), "NH3aq")) == 0
+liquid = np.stack([np.squeeze(sf.whichphase(np.array([P, T, np.array([mi])], dtype=object), "NH3aq_RK")) == 0
                    for mi in m], axis=2)
 
 res = {k: np.where(ok, 100.0 * (rk[k] / v1[k] - 1.0), np.nan) for k in rk}
@@ -83,8 +83,8 @@ for i, (key, name, lim) in enumerate(rows):
         if j == 0:
             ax.set_ylabel(f"{name}\nNH3 (wt%)")
     cb = fig.colorbar(pc, ax=axes[i, :], pad=0.01, aspect=18, extend="both")
-    cb.set_label(f"{name}: (NH3aq - V1) / V1  (%)")
-fig.suptitle("Residuals of SeaFreeze 'NH3aq' against the earlier NH3-H2O Gibbs spline (V1)\n"
+    cb.set_label(f"{name}: (NH3aq_RK - V1) / V1  (%)")
+fig.suptitle("Residuals of SeaFreeze 'NH3aq_RK' against the earlier NH3-H2O Gibbs spline (V1)\n"
              "grey: V1 not physical there   |   green line: ice liquidus (liquid is stable on the high-temperature / "
              "high-concentration side)", fontsize=11)
 fig.savefig(OUT / "residuals_vs_V1.png", dpi=140, bbox_inches="tight")

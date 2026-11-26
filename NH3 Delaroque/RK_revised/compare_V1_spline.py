@@ -1,5 +1,5 @@
 """
-Compare the experimental 'NH3aq' material (Redlich-Kister, fitted to ice liquidi) with the
+Compare the experimental 'NH3aq_RK' material (Redlich-Kister, fitted to ice liquidi) with the
 NH3-H2O Gibbs spline already in the repository:
 
     Python/mlbspline/test/NH3_H2O_LBF.mat   variable spG_PTm_NH3_H2O_V1   ("V1")
@@ -62,7 +62,7 @@ def v1_props(P, T, m, mask=True):
 
 def rk_props(P, T, m, *names):
     P = np.atleast_1d(np.asarray(P, float)); T = np.atleast_1d(np.asarray(T, float)); m = np.atleast_1d(np.asarray(m, float))
-    o = sf.getProp(np.array([P, T, m], dtype=object), "NH3aq", sfm.defpath, *names)
+    o = sf.getProp(np.array([P, T, m], dtype=object), "NH3aq_RK", sfm.defpath, *names)
     return {n: np.asarray(getattr(o, n), float) for n in names}
 
 
@@ -112,7 +112,7 @@ for j in range(3):
     axes[0, j].set_title(["vs composition (260 K)", "vs pressure (260 K)", "vs temperature (300 MPa)"][j], fontsize=10)
     axes[0, j].legend(frameon=False, fontsize=8, ncol=2)
     axes[2, j].set_xlabel(["NH3 (wt%)", "Pressure (MPa)", "Temperature (K)"][j])
-fig.suptitle("Solid: SeaFreeze 'NH3aq' (Redlich-Kister, fitted to ice liquidi; these properties NOT calibrated)\n"
+fig.suptitle("Solid: SeaFreeze 'NH3aq_RK' (Redlich-Kister, fitted to ice liquidi; these properties NOT calibrated)\n"
              "Dashed: NH3-H2O Gibbs spline V1 already in the repository (NH3_H2O_LBF.mat), shown where it is physical", fontsize=11)
 fig.tight_layout(rect=(0, 0, 1, 0.95))
 fig.savefig(OUT / "compare_V1_properties.png", dpi=140)
@@ -131,7 +131,7 @@ for j, T in enumerate(Tm_[::2]):
     print(f"  {T:5.0f} K: " + "  ".join(lim))
 
 # numbers
-print("\nAt 260 K (NH3aq / V1):")
+print("\nAt 260 K (NH3aq_RK / V1):")
 print(f"{'P MPa':>6} {'wt%':>4} | {'vel m/s':>17} {'diff':>7} | {'rho kg/m3':>17} {'diff':>7} | {'Cp J/kg/K':>15} {'diff':>6}")
 for P in (1.0, 150.0, 300.0, 450.0):
     for wt in (5.0, 10.0, 20.0):
@@ -144,7 +144,7 @@ for P in (1.0, 150.0, 300.0, 450.0):
 # ---------------------------------------------------------------------------
 # Water activity and ice liquidus from V1 (does V1 also describe the phase equilibria?)
 # ---------------------------------------------------------------------------
-print("\nWater activity at 260 K (NH3aq / V1 / ideal):")
+print("\nWater activity at 260 K (NH3aq_RK / V1 / ideal):")
 for P in (1.0, 300.0):
     for wt in (5.0, 10.0, 20.0):
         m = float(wt2m(wt))
@@ -169,7 +169,7 @@ def liquidus(muw_fn, ice, P, lo, hi):
 
 with open(REPO / "SourceData" / "NH3aq" / "liquidus_data.csv", newline="") as fh:
     data = list(csv.DictReader(line for line in fh if not line.startswith("#")))
-res = {"NH3aq": [], "V1": []}
+res = {"NH3aq_RK": [], "V1": []}
 n_in = 0
 for row in data:
     x = float(row["x_NH3"]); m = x / (1 - x) * NW; P = float(row["P_MPa"]); T = float(row["T_K"]); ice = row["ice_fitted"]
@@ -178,7 +178,7 @@ for row in data:
     n_in += 1
     t_rk = liquidus(lambda p, t: float(np.ravel(rk_props([p], [t], [m], "muw")["muw"])[0]), ice, P, 240.0, 300.0)
     t_v1 = liquidus(lambda p, t: float(v1_props([p], [t], [m])["muw"][0, 0, 0]), ice, P, 240.0, 300.0)
-    res["NH3aq"].append(t_rk - T); res["V1"].append(t_v1 - T)
+    res["NH3aq_RK"].append(t_rk - T); res["V1"].append(t_v1 - T)
 print(f"\nIce liquidus data inside the V1 domain (T >= 240 K, P <= 795 MPa): {n_in} of {len(data)} points")
 for k, v in res.items():
     v = np.array(v); ok = np.isfinite(v)
